@@ -6,6 +6,7 @@ import {
   Put,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { SendTransactionDto, RecallRequestDto } from './transaction.dto';
@@ -60,10 +61,9 @@ export class TransactionController {
     status: 200,
     description: 'Consumable transactions fetched successfully',
   })
-  async getConsumable(@Req() req: RequestWithWalletAuth) {
-    return this.transactionService.getConsumableTransactions(
-      req.walletAuth.walletAddress,
-    );
+  async getConsumable(@Query() query: { userAddress: string }) {
+    const userAddress = query.userAddress;
+    return this.transactionService.getConsumableTransactions(userAddress);
   }
 
   // *************************************************

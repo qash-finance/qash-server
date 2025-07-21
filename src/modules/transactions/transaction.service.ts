@@ -258,9 +258,9 @@ export class TransactionService {
         status: NoteStatus.PENDING,
       });
 
-      // check if sender is the owner of the transactions
-      const isOwner = transactions.every((tx) => tx.sender === sender);
-      if (!isOwner) {
+      // Because its a consume transaction, the recipient is the sender
+      const isRecipient = transactions.every((tx) => tx.recipient === sender);
+      if (!isRecipient) {
         throw new BadRequestException(ErrorTransaction.NotOwner);
       }
 
@@ -274,7 +274,6 @@ export class TransactionService {
       );
       return { affected: affected || 0 };
     } catch (error) {
-      ``;
       handleError(error, this.logger);
     }
   }
