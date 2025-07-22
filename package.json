@@ -26,11 +26,9 @@
     "docker:db:up": "docker compose --env-file .env.development up -d && npm run build && sleep 5 && npm run migration:run",
     "docker:db:down": "docker compose --env-file .env.development down -v",
     "docker:db:test:up": "docker compose --env-file .env.test up -d && npm run build && sleep 5 && npm run migration:run",
-    "docker:db:test:down": "docker compose --env-file .env.test down -v",
-    "postinstall": "cp node_modules/@demox-labs/miden-sdk/dist/assets/miden_client_web.wasm dist/"
+    "docker:db:test:down": "docker compose --env-file .env.test down -v"
   },
   "dependencies": {
-    "@demox-labs/miden-sdk": "^0.9.4",
     "@json2csv/plainjs": "^7.0.4",
     "@nestjs-modules/mailer": "^1.10.3",
     "@nestjs/common": "^10.2.7",
