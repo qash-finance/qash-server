@@ -40,9 +40,6 @@ export class AddressBookDto {
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    message: 'address must be a valid hex address starting with 0x',
-  })
   @MinLength(3, { message: 'address is too short' })
   address: string;
 
