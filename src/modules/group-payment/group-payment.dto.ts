@@ -30,8 +30,8 @@ export class CreateGroupDto {
     description: 'Member addresses',
     type: [String],
     example: [
-      '0x1626bd9a976e21100006fc561b6b09',
-      '0x1626bd9a976e21100006fc561b6b09',
+      'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+      'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
     ],
   })
   @IsArray()
@@ -49,7 +49,7 @@ export class CreateGroupDto {
 export class CreateGroupPaymentDto {
   @ApiProperty({
     description: 'Token address or symbol',
-    example: '0x1626bd9a976e21100006fc561b6b09',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
   })
   @IsString()
   @IsNotEmpty()

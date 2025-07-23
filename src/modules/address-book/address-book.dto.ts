@@ -36,7 +36,7 @@ export class AddressBookDto {
 
   @ApiProperty({
     description: 'The address of the address book entry',
-    example: '0x1626bd9a976e21100006fc561b6b09',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
   })
   @IsString()
   @IsNotEmpty()
@@ -45,14 +45,11 @@ export class AddressBookDto {
 
   @ApiProperty({
     description: 'The token address of the address book entry',
-    example: '0x1626bd9a976e21100006fc561b6b09',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
     required: false,
   })
   @IsOptional()
   @IsString()
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    message: 'token must be a valid hex address starting with 0x',
-  })
   @MinLength(3, { message: 'token is too short' })
   token?: string;
 }
@@ -85,13 +82,10 @@ export class AddressBookNameDuplicateDto {
 
   @ApiProperty({
     description: 'The address of the user',
-    example: '0x1626bd9a976e21100006fc561b6b09',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    message: 'userAddress must be a valid hex address starting with 0x',
-  })
   @MinLength(3, { message: 'userAddress is too short' })
   userAddress: string;
 }

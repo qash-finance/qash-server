@@ -12,7 +12,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class CreateRequestPaymentDto {
   @ApiProperty({
     description: 'The address of the payer',
-    example: '0x1626bd9a976e21100006fc561b6b09',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
   })
   @IsNotEmpty()
   @IsString()
@@ -24,7 +24,7 @@ export class CreateRequestPaymentDto {
 
   @ApiProperty({
     description: 'The address of the payee',
-    example: '0x1626bd9a976e21100006fc561b6b09',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
   })
   @IsNotEmpty()
   @IsString()
@@ -34,10 +34,7 @@ export class CreateRequestPaymentDto {
   @MinLength(3, { message: 'payee address is too short' })
   payee: string;
 
-  @ApiProperty({
-    description: 'The amount of the request',
-    example: '1000',
-  })
+  @ApiProperty({ description: 'The amount of the request', example: '1000' })
   @IsNotEmpty()
   @IsString()
   @Matches(/^\d+(\.\d+)?$/, {
@@ -47,7 +44,7 @@ export class CreateRequestPaymentDto {
 
   @ApiProperty({
     description: 'The token of the request',
-    example: '0x1626bd9a976e21100006fc561b6b09',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
   })
   @IsNotEmpty()
   @IsString()

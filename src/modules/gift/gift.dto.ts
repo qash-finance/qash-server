@@ -14,7 +14,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class CreateGiftDto {
   @ApiProperty({
     description: 'Token address or symbol',
-    example: '0x1626bd9a976e21100006fc561b6b09',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
   })
   @IsString()
   @IsNotEmpty()
@@ -24,10 +24,7 @@ export class CreateGiftDto {
   @MinLength(3, { message: 'token is too short' })
   token: string;
 
-  @ApiProperty({
-    description: 'Amount',
-    example: '1000',
-  })
+  @ApiProperty({ description: 'Amount', example: '1000' })
   @IsString()
   @IsNotEmpty()
   @Matches(/^\d+(\.\d+)?$/, {
@@ -35,10 +32,7 @@ export class CreateGiftDto {
   })
   amount: string;
 
-  @ApiProperty({
-    description: 'Serial number',
-    example: [1, 2, 3, 4],
-  })
+  @ApiProperty({ description: 'Serial number', example: [1, 2, 3, 4] })
   @IsArray()
   @ArrayMinSize(4, { message: 'serialNumber must contain exactly 4 elements' })
   @ArrayMaxSize(4, { message: 'serialNumber must contain exactly 4 elements' })

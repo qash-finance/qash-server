@@ -30,10 +30,7 @@ export class AssetDto {
   @MinLength(3, { message: 'faucetId is too short' })
   faucetId: string;
 
-  @ApiProperty({
-    description: 'Amount',
-    example: '1000',
-  })
+  @ApiProperty({ description: 'Amount', example: '1000' })
   @IsString()
   @Matches(/^\d+(\.\d+)?$/, {
     message: 'amount must be a valid positive number',
@@ -42,7 +39,7 @@ export class AssetDto {
 }
 
 export class SendTransactionDto {
-  @ApiProperty({ example: '0x1626bd9a976e21100006fc561b6b09' })
+  @ApiProperty({ example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a' })
   @IsString()
   @Matches(/^0x[0-9a-fA-F]+$/, {
     message: 'recipient must be a valid hex address starting with 0x',
@@ -51,12 +48,7 @@ export class SendTransactionDto {
   recipient: string;
 
   @ApiProperty({
-    example: [
-      {
-        faucetId: '0x09bcfc41564f0420000864bbc261d4',
-        amount: '1000',
-      },
-    ],
+    example: [{ faucetId: '0x09bcfc41564f0420000864bbc261d4', amount: '1000' }],
     isArray: true,
   })
   @IsArray()

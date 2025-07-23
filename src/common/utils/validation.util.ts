@@ -15,21 +15,13 @@ export function validateAddress(
     throw new BadRequestException(`${fieldName} must be a string`);
   }
 
-  if (!address.startsWith('mt')) {
-    throw new BadRequestException(`${fieldName} must start with mt`);
+  if (!address.startsWith('mt') && !address.startsWith('mm')) {
+    throw new BadRequestException(`${fieldName} must start with mt or mm`);
   }
 
   if (address.length < 3) {
     throw new BadRequestException(`${fieldName} is too short`);
   }
-
-  // Check if the rest of the string contains only valid hex characters
-  // const hexPart = address.slice(2);
-  // if (!/^[0-9a-fA-F]+$/.test(hexPart)) {
-  //   throw new BadRequestException(
-  //     `${fieldName} contains invalid hex characters`,
-  //   );
-  // }
 }
 
 /**
