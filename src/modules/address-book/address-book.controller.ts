@@ -18,6 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
+import { CategoryEntity } from './category.entity';
 
 @ApiTags('Address Book')
 @ApiBearerAuth()
@@ -38,7 +39,7 @@ export class AddressBookController {
     status: 200,
     description: 'Address book entries fetched successfully',
   })
-  async getAllAddressBookEntries(@Req() req: RequestWithWalletAuth) {
+  async getAllAddressBookEntries(@Req() req: RequestWithWalletAuth): Promise<CategoryEntity[]> {
     return this.addressBookService.getAllAddressBookEntries(
       req.walletAuth.walletAddress,
     );

@@ -14,12 +14,16 @@ import {
   sanitizeString,
 } from 'src/common/utils/validation.util';
 import { ErrorAddressBook } from 'src/common/constants/errors';
+import { CategoryRepository } from './category.repository';
 
 @Injectable()
 export class AddressBookService {
   private readonly logger = new Logger(AddressBookService.name);
 
-  constructor(private readonly addressBookRepository: AddressBookRepository) {}
+  constructor(
+    private readonly addressBookRepository: AddressBookRepository,
+    private readonly categoryRepository: CategoryRepository,
+  ) {}
 
   // *************************************************
   // **************** GET METHODS ******************
@@ -31,8 +35,13 @@ export class AddressBookService {
 
       const normalizedUserAddress = normalizeAddress(userAddress);
 
-      return this.addressBookRepository.find({
-        userAddress: normalizedUserAddress,
+      return this.categoryRepository.find({
+        relations: ['addressBooks'],
+        where: {
+          addressBooks: {
+            userAddress: normalizedUserAddress,
+          },
+        },
       });
     } catch (error) {
       handleError(error, this.logger);
@@ -72,7 +81,9 @@ export class AddressBookService {
 
       const existingCategory = await this.addressBookRepository.findOne({
         userAddress: normalizedUserAddress,
-        category: sanitizedCategory,
+        category: {
+          name: sanitizedCategory,
+        },
       });
       return existingCategory !== null;
     } catch (error) {
@@ -136,12 +147,22 @@ export class AddressBookService {
         throw new BadRequestException(ErrorAddressBook.AddressAlreadyExists);
       }
 
+      // Find or create category
+      let category = await this.categoryRepository.findByName(sanitizedCategory);
+      
+      if (!category) {
+        // Create new category if it doesn't exist
+        category = await this.categoryRepository.create({
+          name: sanitizedCategory,
+        });
+      }
+
       // Create the entry with normalized and sanitized data
       const createDto = {
         userAddress: normalizedUserAddress,
         address: normalizedAddress,
         name: sanitizedName,
-        category: sanitizedCategory,
+        category,
         token: normalizedToken,
       };
 
@@ -162,7 +183,9 @@ export class AddressBookService {
     const existingEntry = await this.addressBookRepository.findOne({
       userAddress,
       name,
-      category,
+      category: {
+        name: category,
+      },
     });
     return existingEntry !== null;
   }
@@ -175,7 +198,9 @@ export class AddressBookService {
     const existingEntry = await this.addressBookRepository.findOne({
       userAddress,
       address,
-      category,
+      category: {
+        name: category,
+      },
     });
     return existingEntry !== null;
   }

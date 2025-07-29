@@ -29,6 +29,7 @@ import {
   WalletAuthKeyEntity,
   WalletAuthSessionEntity,
 } from 'src/modules/wallet-auth/wallet-auth.entity';
+import { CategoryEntity } from 'src/modules/address-book/category.entity';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import {
             // **************** ADDRESS BOOK ******************
             // *************************************************
             AddressBookEntity,
+            CategoryEntity,
             // *************************************************
             // **************** REQUEST PAYMENT ***************
             // *************************************************
