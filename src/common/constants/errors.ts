@@ -62,6 +62,7 @@ export enum ErrorAddressBook {
   InvalidCategory = 'Invalid category format',
   AddressAlreadyExists = 'Address already exists in this category',
   SelfAddressNotAllowed = 'Cannot add your own address to address book',
+  CategoryNotFound = 'Category not found',
 }
 
 export enum ErrorRequestPayment {
