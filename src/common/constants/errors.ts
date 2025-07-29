@@ -53,6 +53,7 @@ export enum ErrorTransaction {
   InvalidAmount = 'Invalid amount',
   InvalidToken = 'Invalid token address',
   NotOwner = 'Sender is not the owner of the transactions',
+  NotRecipient = 'Caller is not the recipient of the transactions',
 }
 
 export enum ErrorAddressBook {

@@ -20,7 +20,7 @@ export class GiftEntity extends BaseEntity {
   public recallableTime: Date | null;
 
   @Column({ type: 'jsonb' })
-  public serialNumber: number[];
+  public serialNumber: string[];
 
   @Column({ type: 'enum', enum: NoteType, default: NoteType.GIFT })
   public noteType: NoteType;

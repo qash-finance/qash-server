@@ -232,8 +232,7 @@ export class WalletAuthService {
       const signatureTime = new Date(dto.timestamp);
       const now = new Date();
       const timeDiff = Math.abs(now.getTime() - signatureTime.getTime());
-      if (timeDiff > 5 * 60 * 1000) {
-        // 5 minutes
+      if (timeDiff > 60 * 60 * 1000) {
         throw new UnauthorizedException('Signature timestamp too old');
       }
 

@@ -29,17 +29,29 @@ export class TransactionService {
   // **************** GET METHODS ********************
   // *************************************************
 
-  async getConsumableTransactions(userId: string): Promise<any[]> {
+  async getConsumableTransactions(userId: string): Promise<{
+    consumableTxs: TransactionEntity[];
+    recallableTxs: TransactionEntity[];
+  }> {
     try {
       validateAddress(userId, 'userId');
       const normalizedUserId = normalizeAddress(userId);
 
-      // Fetch all private, non-recallable, and pending transactions sent to this user
+      // Fetch all private, recallable, and pending transactions sent to this user
       const txs = await this.transactionRepository.find({
         recipient: normalizedUserId,
         status: NoteStatus.PENDING,
       });
-      return txs;
+
+      const recallableTxs = await this.transactionRepository.find({
+        sender: normalizedUserId,
+        recallable: true,
+        status: NoteStatus.PENDING,
+      });
+      return {
+        consumableTxs: txs,
+        recallableTxs,
+      };
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -54,6 +66,7 @@ export class TransactionService {
       const allRecallable = await this.transactionRepository.find({
         sender: normalizedUserAddress,
         recallable: true,
+        status: NoteStatus.PENDING,
       });
 
       // Split into recallable (pending recall) and waitingToRecall
@@ -151,6 +164,7 @@ export class TransactionService {
     sender: string,
   ): Promise<TransactionEntity | null> {
     try {
+      console.log('DID I HIT THIS');
       const entityData = await this.validateTransaction(dto, sender);
       if (!entityData) return null;
       return await this.transactionRepository.create(entityData);
@@ -200,11 +214,11 @@ export class TransactionService {
   // *************************************************
 
   async recallTransactions(
-    transactionIds: string[],
+    noteIds: string[],
     sender: string,
   ): Promise<{ affected: number }> {
     try {
-      const ids = this.parseAndValidateTransactionIds(transactionIds);
+      const ids = this.parseAndValidateTransactionIds(noteIds);
 
       // First check if transactions are available and in pending status
       const transactions = await this.transactionRepository.find({
@@ -246,35 +260,30 @@ export class TransactionService {
   }
 
   async consumeTransactions(
-    transactionIds: string[],
+    noteIds: string[],
     sender: string,
   ): Promise<{ affected: number }> {
     try {
-      const ids = this.parseAndValidateTransactionIds(transactionIds);
+      const ids = this.parseAndValidateTransactionIds(noteIds);
 
       // First check if transactions are available and in pending status
       const transactions = await this.transactionRepository.find({
-        id: In(ids),
+        noteId: In(ids),
         status: NoteStatus.PENDING,
       });
 
-      // check if sender is the owner of the transactions
-      const isOwner = transactions.every((tx) => tx.sender === sender);
-      if (!isOwner) {
-        throw new BadRequestException(ErrorTransaction.NotOwner);
-      }
-
-      if (transactions.length !== ids.length) {
-        throw new BadRequestException(ErrorTransaction.TransactionNotFound);
+      // check if sender is the recipient of the transactions
+      const isRecipient = transactions.every((tx) => tx.recipient === sender);
+      if (!isRecipient) {
+        throw new BadRequestException(ErrorTransaction.NotRecipient);
       }
 
       const affected = await this.transactionRepository.updateMany(
-        { id: In(ids), status: NoteStatus.PENDING },
+        { noteId: In(ids), status: NoteStatus.PENDING },
         { status: NoteStatus.CONSUMED },
       );
       return { affected: affected || 0 };
     } catch (error) {
-      ``;
       handleError(error, this.logger);
     }
   }
@@ -385,6 +394,7 @@ export class TransactionService {
       const normalizedAssets = dto.assets.map((asset) => ({
         faucetId: normalizeAddress(asset.faucetId),
         amount: asset.amount,
+        metadata: asset.metadata,
       }));
 
       return {
@@ -396,8 +406,10 @@ export class TransactionService {
         recallableTime: dto.recallableTime
           ? new Date(dto.recallableTime)
           : null,
+        recallableHeight: dto.recallableHeight,
         serialNumber: dto.serialNumber,
         noteType: dto.noteType,
+        noteId: dto.noteId,
         status: NoteStatus.PENDING,
       };
     } catch (error) {
@@ -405,27 +417,13 @@ export class TransactionService {
     }
   }
 
-  private parseAndValidateTransactionIds(transactionIds: string[]): number[] {
-    if (
-      !transactionIds ||
-      !Array.isArray(transactionIds) ||
-      transactionIds.length === 0
-    ) {
+  private parseAndValidateTransactionIds(noteIds: string[]): string[] {
+    if (!noteIds || !Array.isArray(noteIds) || noteIds.length === 0) {
       throw new BadRequestException(
         'Transaction IDs array is required and cannot be empty',
       );
     }
 
-    if (transactionIds.length > 100) {
-      throw new BadRequestException('Maximum 100 transaction IDs allowed');
-    }
-
-    return transactionIds.map((id) => {
-      const parsedId = Number(id);
-      if (isNaN(parsedId) || parsedId <= 0) {
-        throw new BadRequestException(ErrorTransaction.InvalidTransactionId);
-      }
-      return parsedId;
-    });
+    return noteIds;
   }
 }

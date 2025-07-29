@@ -147,11 +147,11 @@ export class TransactionController {
     },
   })
   async consumeTransactions(
-    @Body() transactionIds: string[],
+    @Body() noteIds: string[],
     @Req() req: RequestWithWalletAuth,
   ) {
     return this.transactionService.consumeTransactions(
-      transactionIds,
+      noteIds,
       req.walletAuth.walletAddress,
     );
   }
