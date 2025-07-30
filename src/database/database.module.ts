@@ -30,6 +30,7 @@ import {
   WalletAuthSessionEntity,
 } from 'src/modules/wallet-auth/wallet-auth.entity';
 import { CategoryEntity } from 'src/modules/address-book/category.entity';
+import { NotificationEntity } from 'src/modules/notification/notification.entity';
 
 @Module({
   imports: [
@@ -86,6 +87,10 @@ import { CategoryEntity } from 'src/modules/address-book/category.entity';
             WalletAuthKeyEntity,
             WalletAuthSessionEntity,
             WalletAuthChallengeEntity,
+            // *************************************************
+            // **************** NOTIFICATIONS ******************
+            // *************************************************
+            NotificationEntity,
           ],
           // We are using migrations, synchronize should be set to false.
           synchronize: false,
