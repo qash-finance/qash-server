@@ -53,7 +53,11 @@ export class WalletAuthController {
   async registerKey(@Body() dto: RegisterKeyDto, @Req() req: Request) {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('User-Agent');
-    const result = await this.walletAuthService.registerKey(dto, ipAddress, userAgent);
+    const result = await this.walletAuthService.registerKey(
+      dto,
+      ipAddress,
+      userAgent,
+    );
 
     // Create notification for the wallet
     await this.notificationService.createNotification({
@@ -66,7 +70,7 @@ export class WalletAuthController {
         publicKey: dto.publicKey,
       },
     });
-    
+
     return result;
   }
 

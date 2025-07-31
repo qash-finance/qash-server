@@ -8,7 +8,7 @@ export class NotificationMigrations1753847559000 implements MigrationInterface {
     await queryRunner.query(`
             CREATE TYPE "public"."notifications_type_enum" AS ENUM('SEND', 'CLAIM', 'REFUND', 'BATCH_SEND', 'WALLET_CREATE')
         `);
-    
+
     // Create notification status enum
     await queryRunner.query(`
             CREATE TYPE "public"."notifications_status_enum" AS ENUM('UNREAD', 'READ')
@@ -42,15 +42,15 @@ export class NotificationMigrations1753847559000 implements MigrationInterface {
     await queryRunner.query(`
             CREATE INDEX "IDX_notifications_wallet_address" ON "notifications" ("wallet_address")
         `);
-    
+
     await queryRunner.query(`
             CREATE INDEX "IDX_notifications_status" ON "notifications" ("status")
         `);
-    
+
     await queryRunner.query(`
             CREATE INDEX "IDX_notifications_type" ON "notifications" ("type")
         `);
-    
+
     await queryRunner.query(`
             CREATE INDEX "IDX_notifications_wallet_address_status" ON "notifications" ("wallet_address", "status")
         `);
@@ -76,19 +76,19 @@ export class NotificationMigrations1753847559000 implements MigrationInterface {
     await queryRunner.query(`
             DROP INDEX "IDX_notifications_wallet_address_created_at"
         `);
-    
+
     await queryRunner.query(`
             DROP INDEX "IDX_notifications_wallet_address_status"
         `);
-    
+
     await queryRunner.query(`
             DROP INDEX "IDX_notifications_type"
         `);
-    
+
     await queryRunner.query(`
             DROP INDEX "IDX_notifications_status"
         `);
-    
+
     await queryRunner.query(`
             DROP INDEX "IDX_notifications_wallet_address"
         `);
@@ -102,7 +102,7 @@ export class NotificationMigrations1753847559000 implements MigrationInterface {
     await queryRunner.query(`
             DROP TYPE "public"."notifications_status_enum"
         `);
-    
+
     await queryRunner.query(`
             DROP TYPE "public"."notifications_type_enum"
         `);
@@ -112,4 +112,4 @@ export class NotificationMigrations1753847559000 implements MigrationInterface {
             ALTER TABLE "wallet_auth_keys" DROP CONSTRAINT "UQ_wallet_auth_keys_wallet_address"
         `);
   }
-} 
+}

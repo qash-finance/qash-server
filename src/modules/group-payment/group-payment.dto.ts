@@ -2,7 +2,6 @@ import {
   IsString,
   IsArray,
   IsNotEmpty,
-  IsOptional,
   IsNumber,
   Matches,
   MinLength,
@@ -11,7 +10,7 @@ import {
   ArrayMaxSize,
   Min,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateGroupDto {
   @ApiProperty({ description: 'Group name', example: 'Group 1' })

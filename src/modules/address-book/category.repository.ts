@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CategoryEntity } from './category.entity';
 
@@ -31,7 +31,10 @@ export class CategoryRepository {
     return this.repository.save(newCategory);
   }
 
-  async update(id: number, category: Partial<CategoryEntity>): Promise<CategoryEntity | null> {
+  async update(
+    id: number,
+    category: Partial<CategoryEntity>,
+  ): Promise<CategoryEntity | null> {
     await this.repository.update(id, category);
     return this.findById(id);
   }
@@ -39,4 +42,4 @@ export class CategoryRepository {
   async delete(id: number): Promise<void> {
     await this.repository.delete(id);
   }
-} 
+}

@@ -24,4 +24,4 @@ import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
   ],
   exports: [NotificationService, NotificationGateway],
 })
-export class NotificationModule {} 
+export class NotificationModule {}

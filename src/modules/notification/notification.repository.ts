@@ -8,7 +8,10 @@ import {
 } from 'typeorm';
 
 import { NotificationEntity } from './notification.entity';
-import { CreateNotificationDto, UpdateNotificationStatusDto } from './notification.dto';
+import {
+  CreateNotificationDto,
+  UpdateNotificationStatusDto,
+} from './notification.dto';
 import { NotificationStatus } from 'src/common/enums/notification';
 
 @Injectable()
@@ -65,7 +68,8 @@ export class NotificationRepository {
     where: FindOptionsWhere<NotificationEntity>,
     dto: Partial<UpdateNotificationStatusDto>,
   ): Promise<NotificationEntity> {
-    const notification = await this.notificationEntityRepository.findOneBy(where);
+    const notification =
+      await this.notificationEntityRepository.findOneBy(where);
 
     if (!notification) {
       this.logger.error('Notification not found for update');
@@ -73,7 +77,7 @@ export class NotificationRepository {
     }
 
     Object.assign(notification, dto);
-    
+
     // Set readAt timestamp when marking as read
     if (dto.status === 'READ') {
       notification.readAt = new Date();
@@ -97,4 +101,4 @@ export class NotificationRepository {
       { status: NotificationStatus.READ, readAt: new Date() },
     );
   }
-} 
+}

@@ -8,7 +8,11 @@ import {
   Req,
 } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import { SendTransactionDto, RecallRequestDto } from './transaction.dto';
+import {
+  SendTransactionDto,
+  RecallRequestDto,
+  ConsumePublicTransactionDto,
+} from './transaction.dto';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -18,15 +22,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
-import { RequestWithUser, RequestWithWalletAuth } from 'src/common/interfaces';
-import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from 'src/common/enums/notification';
+import { RequestWithWalletAuth } from 'src/common/interfaces';
 
 @ApiTags('Transactions')
 @ApiBearerAuth()
 @Controller('/transactions')
 export class TransactionController {
-  constructor(private readonly transactionService: TransactionService, private readonly notificationService: NotificationService) {}
+  constructor(private readonly transactionService: TransactionService) {}
 
   // *************************************************
   // **************** GET METHODS ********************
@@ -86,19 +88,10 @@ export class TransactionController {
     @Body() body: SendTransactionDto & { userId: number },
     @Req() req: RequestWithWalletAuth,
   ) {
-
     const transaction = await this.transactionService.sendSingle(
       body,
       req.walletAuth.walletAddress,
     );
-
-    await this.notificationService.createNotification({
-      walletAddress: req.walletAuth.walletAddress,
-      title: 'Transaction sent successfully',
-      message: 'Transaction sent successfully',
-      type: NotificationType.SEND,
-    });
-
     return transaction;
   }
 
@@ -159,11 +152,31 @@ export class TransactionController {
     },
   })
   async consumeTransactions(
-    @Body() noteIds: string[],
+    @Body() notes: { noteId: string; txId: string }[],
     @Req() req: RequestWithWalletAuth,
   ) {
     return this.transactionService.consumeTransactions(
-      noteIds,
+      notes,
+      req.walletAuth.walletAddress,
+    );
+  }
+
+  @Put('/consume-public')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({
+    summary: 'Consume public transactions not storing in the database',
+    description: 'Consume transactions',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Transactions consumed successfully',
+  })
+  async consumePublicTransactions(
+    @Body() notes: ConsumePublicTransactionDto[],
+    @Req() req: RequestWithWalletAuth,
+  ) {
+    return this.transactionService.consumePublicTransactions(
+      notes,
       req.walletAuth.walletAddress,
     );
   }

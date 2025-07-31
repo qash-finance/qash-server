@@ -9,7 +9,10 @@ import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
 import { CategoryRepository } from './category.repository';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AddressBookEntity, CategoryEntity]), WalletAuthModule],
+  imports: [
+    TypeOrmModule.forFeature([AddressBookEntity, CategoryEntity]),
+    WalletAuthModule,
+  ],
   providers: [AddressBookRepository, AddressBookService, CategoryRepository],
   controllers: [AddressBookController],
   exports: [AddressBookService, AddressBookRepository],

@@ -104,6 +104,9 @@ export class SendTransactionDto {
 
   @IsString()
   noteId: string;
+
+  @IsString()
+  transactionId: string;
 }
 
 export class RecallItem {
@@ -129,4 +132,27 @@ export class RecallRequestDto {
   @ValidateNested({ each: true })
   @Type(() => RecallItem)
   items: RecallItem[];
+
+  @IsString()
+  txId: string;
+}
+
+export class ConsumePublicTransactionDto {
+  @IsString()
+  sender: string;
+
+  @IsString()
+  recipient: string;
+
+  @IsNumber()
+  amount: number;
+
+  @IsString()
+  tokenId: string;
+
+  @IsString()
+  tokenName: string;
+
+  @IsNumber()
+  txId: string;
 }

@@ -148,8 +148,9 @@ export class AddressBookService {
       }
 
       // Find or create category
-      let category = await this.categoryRepository.findByName(sanitizedCategory);
-      
+      let category =
+        await this.categoryRepository.findByName(sanitizedCategory);
+
       if (!category) {
         // Create new category if it doesn't exist
         category = await this.categoryRepository.create({

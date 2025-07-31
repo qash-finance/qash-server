@@ -1,7 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsObject, IsUrl } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { NotificationType, NotificationStatus } from '../../common/enums/notification';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsObject,
+  IsUrl,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
+import {
+  NotificationType,
+  NotificationStatus,
+} from '../../common/enums/notification';
 
 export class CreateNotificationDto {
   @ApiProperty()
@@ -95,4 +105,4 @@ export class NotificationResponseDto {
 
   @ApiPropertyOptional()
   public readAt: Date | null;
-} 
+}

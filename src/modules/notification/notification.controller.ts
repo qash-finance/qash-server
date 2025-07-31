@@ -21,11 +21,9 @@ import {
 } from '@nestjs/swagger';
 
 import { NotificationService } from './notification.service';
-import { JwtAuthGuard } from '../../common/guards';
 import { RequestWithWalletAuth } from '../../common/interfaces';
 import {
   CreateNotificationDto,
-  UpdateNotificationStatusDto,
   NotificationQueryDto,
   NotificationResponseDto,
 } from './notification.dto';
@@ -43,15 +41,30 @@ export class NotificationController {
   /***************************************/
   /***************** GET *****************/
   /***************************************/
-  
+
   @Get()
   @ApiOperation({
     summary: 'Get user notifications',
-    description: 'Retrieve notifications for the authenticated user with pagination and filtering',
+    description:
+      'Retrieve notifications for the authenticated user with pagination and filtering',
   })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 10)' })
-  @ApiQuery({ name: 'type', required: false, enum: ['SEND', 'CLAIM', 'REFUND', 'BATCH_SEND', 'WALLET_CREATE'] })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10)',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    enum: ['SEND', 'CLAIM', 'REFUND', 'BATCH_SEND', 'WALLET_CREATE'],
+  })
   @ApiQuery({ name: 'status', required: false, enum: ['UNREAD', 'READ'] })
   @ApiResponse({
     status: 200,
@@ -66,13 +79,17 @@ export class NotificationController {
     @Request() req: RequestWithWalletAuth,
     @Query() query: NotificationQueryDto,
   ) {
-    return this.notificationService.getWalletNotifications(req.walletAuth.walletAddress, query);
+    return this.notificationService.getWalletNotifications(
+      req.walletAuth.walletAddress,
+      query,
+    );
   }
 
   @Get('/unread-count')
   @ApiOperation({
     summary: 'Get unread notification count',
-    description: 'Get the count of unread notifications for the authenticated user',
+    description:
+      'Get the count of unread notifications for the authenticated user',
   })
   @ApiResponse({
     status: 200,
@@ -85,7 +102,9 @@ export class NotificationController {
     },
   })
   public async getUnreadCount(@Request() req: RequestWithWalletAuth) {
-    const count = await this.notificationService.getUnreadCount(req.walletAuth.walletAddress);
+    const count = await this.notificationService.getUnreadCount(
+      req.walletAuth.walletAddress,
+    );
     return { count };
   }
 
@@ -108,7 +127,10 @@ export class NotificationController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req: RequestWithWalletAuth,
   ) {
-    const notification = await this.notificationService.getNotificationById(id, req.walletAuth.walletAddress);
+    const notification = await this.notificationService.getNotificationById(
+      id,
+      req.walletAuth.walletAddress,
+    );
     return this.notificationService['mapToResponseDto'](notification);
   }
 
@@ -135,7 +157,10 @@ export class NotificationController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req: RequestWithWalletAuth,
   ) {
-    const notification = await this.notificationService.markAsRead(id, req.walletAuth.walletAddress);
+    const notification = await this.notificationService.markAsRead(
+      id,
+      req.walletAuth.walletAddress,
+    );
     return this.notificationService['mapToResponseDto'](notification);
   }
 
@@ -158,7 +183,10 @@ export class NotificationController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req: RequestWithWalletAuth,
   ) {
-    const notification = await this.notificationService.markAsUnread(id, req.walletAuth.walletAddress);
+    const notification = await this.notificationService.markAsUnread(
+      id,
+      req.walletAuth.walletAddress,
+    );
     return this.notificationService['mapToResponseDto'](notification);
   }
 
@@ -190,7 +218,8 @@ export class NotificationController {
   @Post('/test-emit')
   @ApiOperation({
     summary: 'Test endpoint to emit notification',
-    description: 'Test endpoint to emit any notification back to user (for testing purposes only)',
+    description:
+      'Test endpoint to emit any notification back to user (for testing purposes only)',
   })
   @ApiBody({
     schema: {
@@ -199,24 +228,24 @@ export class NotificationController {
         walletAddress: { type: 'string', example: '0x1234567890abcdef' },
         title: { type: 'string', example: 'Test Notification' },
         message: { type: 'string', example: 'This is a test notification' },
-        type: { 
-          type: 'string', 
+        type: {
+          type: 'string',
           enum: ['SEND', 'CLAIM', 'REFUND', 'BATCH_SEND', 'WALLET_CREATE'],
-          example: 'SEND'
+          example: 'SEND',
         },
-        metadata: { 
-          type: 'object', 
+        metadata: {
+          type: 'object',
           example: { testKey: 'testValue' },
-          nullable: true
+          nullable: true,
         },
-        actionUrl: { 
-          type: 'string', 
+        actionUrl: {
+          type: 'string',
           example: 'https://example.com/action',
-          nullable: true
+          nullable: true,
         },
       },
-      required: ['walletAddress', 'title', 'message', 'type']
-    }
+      required: ['walletAddress', 'title', 'message', 'type'],
+    },
   })
   @ApiResponse({
     status: 201,
@@ -228,7 +257,8 @@ export class NotificationController {
     description: 'Bad request - invalid data',
   })
   public async testEmitNotification(
-    @Body() testData: {
+    @Body()
+    testData: {
       walletAddress: string;
       title: string;
       message: string;
@@ -253,9 +283,10 @@ export class NotificationController {
       actionUrl: testData.actionUrl || null,
     };
 
-    const notification = await this.notificationService.createNotification(createNotificationDto);
+    const notification = await this.notificationService.createNotification(
+      createNotificationDto,
+    );
 
     return this.notificationService['mapToResponseDto'](notification);
   }
-
-} 
+}

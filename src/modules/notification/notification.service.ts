@@ -10,11 +10,13 @@ import { NotificationEntity } from './notification.entity';
 import { NotificationRepository } from './notification.repository';
 import {
   CreateNotificationDto,
-  UpdateNotificationStatusDto,
   NotificationQueryDto,
   NotificationResponseDto,
 } from './notification.dto';
-import { NotificationType, NotificationStatus } from '../../common/enums/notification';
+import {
+  NotificationType,
+  NotificationStatus,
+} from '../../common/enums/notification';
 import { NotificationGateway } from './notification.gateway';
 
 @Injectable()
@@ -27,18 +29,31 @@ export class NotificationService {
     private readonly notificationGateway?: NotificationGateway,
   ) {}
 
-  public async createNotification(dto: CreateNotificationDto): Promise<NotificationEntity> {
-    this.logger.log(`Creating notification for wallet ${dto.walletAddress} of type ${dto.type}`);
+  public async createNotification(
+    dto: CreateNotificationDto,
+  ): Promise<NotificationEntity> {
+    this.logger.log(
+      `Creating notification for wallet ${dto.walletAddress} of type ${dto.type}`,
+    );
     const notification = await this.notificationRepository.create(dto);
 
     // Emit real-time notification to wallet if gateway is available and wallet is connected
-    if (this.notificationGateway && this.notificationGateway.isWalletConnected(dto.walletAddress)) {
+    if (
+      this.notificationGateway &&
+      this.notificationGateway.isWalletConnected(dto.walletAddress)
+    ) {
       const notificationDto = this.mapToResponseDto(notification);
-      this.notificationGateway.emitNotificationToWallet(dto.walletAddress, notificationDto);
-      
+      this.notificationGateway.emitNotificationToWallet(
+        dto.walletAddress,
+        notificationDto,
+      );
+
       // Also emit updated unread count
       const unreadCount = await this.getUnreadCount(dto.walletAddress);
-      this.notificationGateway.emitUnreadCountToWallet(dto.walletAddress, unreadCount);
+      this.notificationGateway.emitUnreadCountToWallet(
+        dto.walletAddress,
+        unreadCount,
+      );
     }
 
     return notification;
@@ -61,10 +76,11 @@ export class NotificationService {
     if (type) where.type = type;
     if (status) where.status = status;
 
-    const [notifications, total] = await this.notificationRepository.findAndCount(where, {
-      skip,
-      take: limit,
-    });
+    const [notifications, total] =
+      await this.notificationRepository.findAndCount(where, {
+        skip,
+        take: limit,
+      });
 
     const totalPages = Math.ceil(total / limit);
 
@@ -77,7 +93,10 @@ export class NotificationService {
     };
   }
 
-  public async getNotificationById(id: number, walletAddress: string): Promise<NotificationEntity> {
+  public async getNotificationById(
+    id: number,
+    walletAddress: string,
+  ): Promise<NotificationEntity> {
     const notification = await this.notificationRepository.findOne({
       id,
       walletAddress,
@@ -90,29 +109,37 @@ export class NotificationService {
     return notification;
   }
 
-  public async markAsRead(id: number, walletAddress: string): Promise<NotificationEntity> {
-    const notification = await this.getNotificationById(id, walletAddress);
-    
+  public async markAsRead(
+    id: number,
+    walletAddress: string,
+  ): Promise<NotificationEntity> {
     const updatedNotification = await this.notificationRepository.updateOne(
       { id, walletAddress },
       { status: NotificationStatus.READ },
     );
 
     // Emit real-time update if gateway is available and wallet is connected
-    if (this.notificationGateway && this.notificationGateway.isWalletConnected(walletAddress)) {
+    if (
+      this.notificationGateway &&
+      this.notificationGateway.isWalletConnected(walletAddress)
+    ) {
       this.notificationGateway.emitNotificationReadToWallet(walletAddress, id);
-      
+
       // Also emit updated unread count
       const unreadCount = await this.getUnreadCount(walletAddress);
-      this.notificationGateway.emitUnreadCountToWallet(walletAddress, unreadCount);
+      this.notificationGateway.emitUnreadCountToWallet(
+        walletAddress,
+        unreadCount,
+      );
     }
 
     return updatedNotification;
   }
 
-  public async markAsUnread(id: number, walletAddress: string): Promise<NotificationEntity> {
-    const notification = await this.getNotificationById(id, walletAddress);
-    
+  public async markAsUnread(
+    id: number,
+    walletAddress: string,
+  ): Promise<NotificationEntity> {
     return this.notificationRepository.updateOne(
       { id, walletAddress },
       { status: NotificationStatus.UNREAD },
@@ -121,10 +148,15 @@ export class NotificationService {
 
   public async markAllAsRead(walletAddress: string): Promise<void> {
     await this.notificationRepository.markAllAsRead(walletAddress);
-    this.logger.log(`Marked all notifications as read for wallet ${walletAddress}`);
+    this.logger.log(
+      `Marked all notifications as read for wallet ${walletAddress}`,
+    );
 
     // Emit real-time update if gateway is available and wallet is connected
-    if (this.notificationGateway && this.notificationGateway.isWalletConnected(walletAddress)) {
+    if (
+      this.notificationGateway &&
+      this.notificationGateway.isWalletConnected(walletAddress)
+    ) {
       this.notificationGateway.emitAllNotificationsReadToWallet(walletAddress);
       this.notificationGateway.emitUnreadCountToWallet(walletAddress, 0);
     }
@@ -152,7 +184,9 @@ export class NotificationService {
       title: 'Payment Sent',
       message: `You sent ${data.amount} ${data.assetType} to ${data.recipientAddress}`,
       metadata: data,
-      actionUrl: data.transactionId ? `/transactions/${data.transactionId}` : null,
+      actionUrl: data.transactionId
+        ? `/transactions/${data.transactionId}`
+        : null,
     });
   }
 
@@ -167,11 +201,13 @@ export class NotificationService {
   ): Promise<NotificationEntity> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.CLAIM,
+      type: NotificationType.CONSUME,
       title: 'Payment Received',
       message: `You received ${data.amount} ${data.assetType} from ${data.senderAddress}`,
       metadata: data,
-      actionUrl: data.transactionId ? `/transactions/${data.transactionId}` : null,
+      actionUrl: data.transactionId
+        ? `/transactions/${data.transactionId}`
+        : null,
     });
   }
 
@@ -190,7 +226,9 @@ export class NotificationService {
       title: 'Payment Refunded',
       message: `Your payment of ${data.amount} ${data.assetType} to ${data.originalRecipient} has been refunded`,
       metadata: data,
-      actionUrl: data.transactionId ? `/transactions/${data.transactionId}` : null,
+      actionUrl: data.transactionId
+        ? `/transactions/${data.transactionId}`
+        : null,
     });
   }
 
@@ -230,7 +268,9 @@ export class NotificationService {
     });
   }
 
-  private mapToResponseDto(notification: NotificationEntity): NotificationResponseDto {
+  private mapToResponseDto(
+    notification: NotificationEntity,
+  ): NotificationResponseDto {
     return {
       id: notification.id,
       title: notification.title,
@@ -245,4 +285,4 @@ export class NotificationService {
       readAt: notification.readAt,
     };
   }
-} 
+}

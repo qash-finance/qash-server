@@ -23,7 +23,9 @@ interface WalletSocket extends Socket {
   },
   namespace: '/notifications',
 })
-export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -34,7 +36,7 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
 
   async handleConnection(client: WalletSocket) {
     this.logger.log(`Client ${client.id} connected to notifications`);
-    
+
     // Send connection confirmation
     client.emit('connected', {
       message: 'Successfully connected to notifications',
@@ -44,16 +46,21 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
 
   handleDisconnect(client: WalletSocket) {
     if (client.walletAddress) {
-      const walletSockets = this.connectedWallets.get(client.walletAddress) || [];
-      const updatedSockets = walletSockets.filter(socketId => socketId !== client.id);
-      
+      const walletSockets =
+        this.connectedWallets.get(client.walletAddress) || [];
+      const updatedSockets = walletSockets.filter(
+        (socketId) => socketId !== client.id,
+      );
+
       if (updatedSockets.length === 0) {
         this.connectedWallets.delete(client.walletAddress);
       } else {
         this.connectedWallets.set(client.walletAddress, updatedSockets);
       }
 
-      this.logger.log(`Wallet ${client.walletAddress} disconnected via socket ${client.id}`);
+      this.logger.log(
+        `Wallet ${client.walletAddress} disconnected via socket ${client.id}`,
+      );
     } else {
       this.logger.log(`Client ${client.id} disconnected`);
     }
@@ -62,11 +69,14 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   @SubscribeMessage('join_wallet')
   handleJoinWallet(
     @ConnectedSocket() client: WalletSocket,
-    @MessageBody() data: { walletAddress: string }
+    @MessageBody() data: { walletAddress: string },
   ) {
     const { walletAddress } = data;
-    console.log("🚀 ~ NotificationGateway ~ handleJoinWallet ~ walletAddress:", walletAddress)
-    
+    console.log(
+      '🚀 ~ NotificationGateway ~ handleJoinWallet ~ walletAddress:',
+      walletAddress,
+    );
+
     if (!walletAddress) {
       client.emit('error', { message: 'Wallet address is required' });
       return;
@@ -81,7 +91,7 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     // Join new wallet room
     client.walletAddress = walletAddress;
     client.join(`wallet_${walletAddress}`);
-    
+
     // Track connected wallet
     const walletSockets = this.connectedWallets.get(walletAddress) || [];
     walletSockets.push(client.id);
@@ -100,21 +110,23 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     if (client.walletAddress) {
       client.leave(`wallet_${client.walletAddress}`);
       this.removeFromWalletTracking(client);
-      
-      this.logger.log(`Client ${client.id} left wallet room: ${client.walletAddress}`);
-      
+
+      this.logger.log(
+        `Client ${client.id} left wallet room: ${client.walletAddress}`,
+      );
+
       client.emit('left_wallet', {
         message: 'Left wallet notification room',
         walletAddress: client.walletAddress,
       });
-      
+
       client.walletAddress = undefined;
     }
   }
 
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() client: WalletSocket) {
-    client.emit('pong', { 
+    client.emit('pong', {
       timestamp: new Date().toISOString(),
       socketId: client.id,
       walletAddress: client.walletAddress,
@@ -122,14 +134,19 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   }
 
   // Method to emit notification to specific wallet address
-  public emitNotificationToWallet(walletAddress: string, notification: NotificationResponseDto) {
+  public emitNotificationToWallet(
+    walletAddress: string,
+    notification: NotificationResponseDto,
+  ) {
     this.server.to(`wallet_${walletAddress}`).emit('new_notification', {
       type: 'notification',
       data: notification,
       timestamp: new Date().toISOString(),
     });
 
-    this.logger.log(`Emitted notification ${notification.id} to wallet ${walletAddress}`);
+    this.logger.log(
+      `Emitted notification ${notification.id} to wallet ${walletAddress}`,
+    );
   }
 
   // Method to emit notification count update to wallet
@@ -144,7 +161,10 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   }
 
   // Method to emit when notification is marked as read to wallet
-  public emitNotificationReadToWallet(walletAddress: string, notificationId: number) {
+  public emitNotificationReadToWallet(
+    walletAddress: string,
+    notificationId: number,
+  ) {
     this.server.to(`wallet_${walletAddress}`).emit('notification_read', {
       type: 'notification_read',
       notificationId,
@@ -178,9 +198,12 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   // Helper method to remove client from wallet tracking
   private removeFromWalletTracking(client: WalletSocket) {
     if (client.walletAddress) {
-      const walletSockets = this.connectedWallets.get(client.walletAddress) || [];
-      const updatedSockets = walletSockets.filter(socketId => socketId !== client.id);
-      
+      const walletSockets =
+        this.connectedWallets.get(client.walletAddress) || [];
+      const updatedSockets = walletSockets.filter(
+        (socketId) => socketId !== client.id,
+      );
+
       if (updatedSockets.length === 0) {
         this.connectedWallets.delete(client.walletAddress);
       } else {
@@ -188,4 +211,4 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
       }
     }
   }
-} 
+}

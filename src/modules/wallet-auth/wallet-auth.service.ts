@@ -292,11 +292,7 @@ export class WalletAuthService {
   /**
    * Refresh an existing session
    */
-  async refreshToken(
-    dto: RefreshTokenDto,
-    ipAddress?: string,
-    userAgent?: string,
-  ): Promise<AuthResponse> {
+  async refreshToken(dto: RefreshTokenDto): Promise<AuthResponse> {
     try {
       const session = await this.sessionRepository.findOne({
         where: {
@@ -311,7 +307,6 @@ export class WalletAuthService {
         throw new UnauthorizedException('Invalid or expired session');
       }
 
-      // Get key info
       const keyRecord = await this.keyRepository.findOne({
         where: { id: session.authKeyId },
       });

@@ -1,7 +1,10 @@
 import { Column, Entity, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../database/base.entity';
 import { WalletAuthKeyEntity } from '../wallet-auth/wallet-auth.entity';
-import { NotificationType, NotificationStatus } from '../../common/enums/notification';
+import {
+  NotificationType,
+  NotificationStatus,
+} from '../../common/enums/notification';
 
 @Entity({ name: 'notifications' })
 @Index(['walletAddress', 'status'])
@@ -16,7 +19,11 @@ export class NotificationEntity extends BaseEntity {
   @Column({ type: 'enum', enum: NotificationType })
   public type: NotificationType;
 
-  @Column({ type: 'enum', enum: NotificationStatus, default: NotificationStatus.UNREAD })
+  @Column({
+    type: 'enum',
+    enum: NotificationStatus,
+    default: NotificationStatus.UNREAD,
+  })
   public status: NotificationStatus;
 
   @Column({ type: 'jsonb', nullable: true })

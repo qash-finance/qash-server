@@ -9,4 +9,4 @@ export class CategoryEntity extends BaseEntity {
 
   @OneToMany(() => AddressBookEntity, (addressBook) => addressBook.category)
   addressBooks: AddressBookEntity[];
-} 
+}

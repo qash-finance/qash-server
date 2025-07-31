@@ -20,7 +20,9 @@ export class AddressBookRepository {
   ) {}
 
   public async create(
-    dto: Omit<Partial<AddressBookDto>, 'category'> & { category: CategoryEntity },
+    dto: Omit<Partial<AddressBookDto>, 'category'> & {
+      category: CategoryEntity;
+    },
   ): Promise<AddressBookEntity> {
     try {
       const entity = this.addressBookRepository.create({

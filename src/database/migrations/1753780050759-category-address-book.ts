@@ -42,7 +42,6 @@ export class CategoryAddressBook1753780050759 implements MigrationInterface {
       ALTER TABLE "address_book" 
       ALTER COLUMN "categoryId" SET NOT NULL
     `);
-
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -77,4 +76,4 @@ export class CategoryAddressBook1753780050759 implements MigrationInterface {
       DROP TABLE "categories"
     `);
   }
-} 
+}

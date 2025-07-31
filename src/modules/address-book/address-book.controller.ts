@@ -39,7 +39,9 @@ export class AddressBookController {
     status: 200,
     description: 'Address book entries fetched successfully',
   })
-  async getAllAddressBookEntries(@Req() req: RequestWithWalletAuth): Promise<CategoryEntity[]> {
+  async getAllAddressBookEntries(
+    @Req() req: RequestWithWalletAuth,
+  ): Promise<CategoryEntity[]> {
     return this.addressBookService.getAllAddressBookEntries(
       req.walletAuth.walletAddress,
     );
