@@ -10,7 +10,6 @@ import {
   validateAmount,
   validateSerialNumber,
   normalizeAddress,
-  sanitizeString,
 } from 'src/common/utils/validation.util';
 import { ErrorGift } from 'src/common/constants/errors';
 

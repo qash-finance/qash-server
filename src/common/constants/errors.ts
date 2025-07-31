@@ -53,6 +53,7 @@ export enum ErrorTransaction {
   InvalidAmount = 'Invalid amount',
   InvalidToken = 'Invalid token address',
   NotOwner = 'Sender is not the owner of the transactions',
+  NotRecipient = 'Caller is not the recipient of the transactions',
 }
 
 export enum ErrorAddressBook {
@@ -62,6 +63,7 @@ export enum ErrorAddressBook {
   InvalidCategory = 'Invalid category format',
   AddressAlreadyExists = 'Address already exists in this category',
   SelfAddressNotAllowed = 'Cannot add your own address to address book',
+  CategoryNotFound = 'Category not found',
 }
 
 export enum ErrorRequestPayment {

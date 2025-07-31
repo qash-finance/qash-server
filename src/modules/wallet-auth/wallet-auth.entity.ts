@@ -19,7 +19,7 @@ export enum DeviceType {
 @Index(['publicKey'])
 @Index(['createdAt'])
 export class WalletAuthKeyEntity extends BaseEntity {
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', unique: true })
   @Index()
   walletAddress: string;
 

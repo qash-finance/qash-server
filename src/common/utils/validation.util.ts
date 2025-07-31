@@ -103,7 +103,7 @@ export function validateNonEmptyArray<T>(array: T[], fieldName: string): void {
  * Validates if a serial number array has exactly 4 numeric elements
  */
 export function validateSerialNumber(
-  serialNumber: number[],
+  serialNumber: string[],
   fieldName: string = 'serialNumber',
 ): void {
   if (!Array.isArray(serialNumber)) {
@@ -115,14 +115,6 @@ export function validateSerialNumber(
       `${fieldName} must contain exactly 4 elements`,
     );
   }
-
-  serialNumber.forEach((num, index) => {
-    if (typeof num !== 'number' || !Number.isInteger(num)) {
-      throw new BadRequestException(
-        `${fieldName}[${index}] must be an integer`,
-      );
-    }
-  });
 }
 
 /**

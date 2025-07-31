@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThan, LessThan } from 'typeorm';
+import { Repository } from 'typeorm';
 import {
   AnalyticsEventEntity,
   AnalyticsUserSessionEntity,

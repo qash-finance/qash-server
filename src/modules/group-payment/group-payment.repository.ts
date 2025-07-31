@@ -7,7 +7,6 @@ import {
   GroupPaymentMemberStatus,
   GroupPaymentMemberStatusEntity,
 } from './group-payment.entity';
-import { CreateGroupDto } from './group-payment.dto';
 
 @Injectable()
 export class GroupPaymentRepository {

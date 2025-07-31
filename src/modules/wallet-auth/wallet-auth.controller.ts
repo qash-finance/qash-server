@@ -25,11 +25,16 @@ import {
   RevokeSessionDto,
 } from './wallet-auth.dto';
 import { WalletAuthGuard } from './wallet-auth.guard';
+import { NotificationType } from 'src/common/enums/notification';
+import { NotificationService } from '../notification/notification.service';
 
 @ApiTags('Wallet Authentication')
 @Controller('wallet-auth')
 export class WalletAuthController {
-  constructor(private readonly walletAuthService: WalletAuthService) {}
+  constructor(
+    private readonly walletAuthService: WalletAuthService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   @Post('/initiate')
   @ApiOperation({ summary: 'Initiate authentication process' })
@@ -48,7 +53,25 @@ export class WalletAuthController {
   async registerKey(@Body() dto: RegisterKeyDto, @Req() req: Request) {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('User-Agent');
-    return this.walletAuthService.registerKey(dto, ipAddress, userAgent);
+    const result = await this.walletAuthService.registerKey(
+      dto,
+      ipAddress,
+      userAgent,
+    );
+
+    // Create notification for the wallet
+    await this.notificationService.createNotification({
+      walletAddress: dto.walletAddress,
+      type: NotificationType.WALLET_CREATE,
+      title: 'New Wallet Created',
+      message: `Your new wallet has been created successfully`,
+      metadata: {
+        walletAddress: dto.walletAddress,
+        publicKey: dto.publicKey,
+      },
+    });
+
+    return result;
   }
 
   @Post('authenticate')

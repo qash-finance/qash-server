@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { AddressBookEntity } from './address-book.entity';
 import { AddressBookDto } from './address-book.dto';
+import { CategoryEntity } from './category.entity';
 
 @Injectable()
 export class AddressBookRepository {
@@ -19,10 +20,15 @@ export class AddressBookRepository {
   ) {}
 
   public async create(
-    dto: Partial<AddressBookDto>,
+    dto: Omit<Partial<AddressBookDto>, 'category'> & {
+      category: CategoryEntity;
+    },
   ): Promise<AddressBookEntity> {
     try {
-      const entity = this.addressBookRepository.create(dto);
+      const entity = this.addressBookRepository.create({
+        ...dto,
+        category: dto.category,
+      });
       return await entity.save();
     } catch (error) {
       this.logger.error('Error creating address book entry:', error);

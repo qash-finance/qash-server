@@ -13,20 +13,24 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
   Min,
+  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { NoteType } from 'src/common/enums/note';
 
+export type FaucetMetadata = {
+  symbol: string;
+  decimals: number;
+  maxSupply: number;
+};
+
 export class AssetDto {
   @ApiProperty({
     description: 'Faucet ID (token address)',
-    example: '0x09bcfc41564f0420000864bbc261d4',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
   })
   @IsString()
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    message: 'faucetId must be a valid hex address starting with 0x',
-  })
   @MinLength(3, { message: 'faucetId is too short' })
   faucetId: string;
 
@@ -36,19 +40,32 @@ export class AssetDto {
     message: 'amount must be a valid positive number',
   })
   amount: string;
+
+  @ApiProperty({
+    example: { symbol: 'MTST', decimals: 18, maxSupply: 1000000000000000000 },
+  })
+  @IsObject()
+  metadata: FaucetMetadata;
 }
 
 export class SendTransactionDto {
   @ApiProperty({ example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a' })
   @IsString()
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    message: 'recipient must be a valid hex address starting with 0x',
-  })
   @MinLength(3, { message: 'recipient address is too short' })
   recipient: string;
 
   @ApiProperty({
-    example: [{ faucetId: '0x09bcfc41564f0420000864bbc261d4', amount: '1000' }],
+    example: [
+      {
+        faucetId: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+        amount: '1000',
+        metadata: {
+          symbol: 'MTST',
+          decimals: 18,
+          maxSupply: 1000000000000000000,
+        },
+      },
+    ],
     isArray: true,
   })
   @IsArray()
@@ -69,21 +86,27 @@ export class SendTransactionDto {
   @ApiProperty({ example: '2025-01-01T00:00:00.000Z' })
   @IsOptional()
   @IsDateString()
-  recallableTime?: Date;
+  recallableTime: Date;
 
-  @ApiProperty({ example: [1, 2, 3, 4] })
+  @IsOptional()
+  @IsNumber()
+  recallableHeight: number;
+
+  @ApiProperty({ example: ['1', '2', '3', '4'] })
   @IsArray()
   @ArrayMinSize(4, { message: 'serialNumber must contain exactly 4 elements' })
   @ArrayMaxSize(4, { message: 'serialNumber must contain exactly 4 elements' })
-  @IsNumber(
-    {},
-    { each: true, message: 'Each element in serialNumber must be a number' },
-  )
-  serialNumber: number[];
+  serialNumber: string[];
 
   @ApiProperty({ example: NoteType.P2ID })
   @IsEnum(NoteType)
   noteType: NoteType;
+
+  @IsString()
+  noteId: string;
+
+  @IsString()
+  transactionId: string;
 }
 
 export class RecallItem {
@@ -109,4 +132,27 @@ export class RecallRequestDto {
   @ValidateNested({ each: true })
   @Type(() => RecallItem)
   items: RecallItem[];
+
+  @IsString()
+  txId: string;
+}
+
+export class ConsumePublicTransactionDto {
+  @IsString()
+  sender: string;
+
+  @IsString()
+  recipient: string;
+
+  @IsNumber()
+  amount: number;
+
+  @IsString()
+  tokenId: string;
+
+  @IsString()
+  tokenName: string;
+
+  @IsNumber()
+  txId: string;
 }

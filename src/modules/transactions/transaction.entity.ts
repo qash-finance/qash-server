@@ -1,6 +1,7 @@
 import { Column, Entity } from 'typeorm';
 import { BaseEntity } from '../../database/base.entity';
 import { NoteStatus, NoteType } from 'src/common/enums/note';
+import { FaucetMetadata } from './transaction.dto';
 
 @Entity({ name: 'transactions' })
 export class TransactionEntity extends BaseEntity {
@@ -11,7 +12,11 @@ export class TransactionEntity extends BaseEntity {
   public recipient: string;
 
   @Column({ type: 'jsonb' })
-  public assets: { faucetId: string; amount: string }[];
+  public assets: {
+    faucetId: string;
+    amount: string;
+    metadata: FaucetMetadata;
+  }[];
 
   @Column({ type: 'boolean', default: true })
   public private: boolean;
@@ -22,16 +27,18 @@ export class TransactionEntity extends BaseEntity {
   @Column({ type: 'timestamp', nullable: true })
   public recallableTime: Date | null;
 
+  @Column({ type: 'integer', nullable: true })
+  public recallableHeight: number | null;
+
   @Column({ type: 'jsonb' })
-  public serialNumber: number[];
+  public serialNumber: string[];
 
   @Column({ type: 'enum', enum: NoteType, nullable: true })
   public noteType: NoteType | null;
 
-  @Column({
-    type: 'enum',
-    enum: NoteStatus,
-    default: NoteStatus.PENDING,
-  })
+  @Column({ type: 'varchar', nullable: true })
+  public noteId: string;
+
+  @Column({ type: 'enum', enum: NoteStatus, default: NoteStatus.PENDING })
   public status: NoteStatus;
 }

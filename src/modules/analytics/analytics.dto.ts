@@ -7,7 +7,6 @@ import {
   IsNumber,
   IsObject,
   IsArray,
-  IsBoolean,
 } from 'class-validator';
 import { AnalyticsEventType } from './analytics.entity';
 

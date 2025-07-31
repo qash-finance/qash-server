@@ -8,7 +8,11 @@ import {
   Req,
 } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import { SendTransactionDto, RecallRequestDto } from './transaction.dto';
+import {
+  SendTransactionDto,
+  RecallRequestDto,
+  ConsumePublicTransactionDto,
+} from './transaction.dto';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -81,13 +85,14 @@ export class TransactionController {
   })
   @ApiBody({ type: SendTransactionDto })
   async sendSingle(
-    @Body() body: SendTransactionDto,
+    @Body() body: SendTransactionDto & { userId: number },
     @Req() req: RequestWithWalletAuth,
   ) {
-    return this.transactionService.sendSingle(
+    const transaction = await this.transactionService.sendSingle(
       body,
       req.walletAuth.walletAddress,
     );
+    return transaction;
   }
 
   @Post('/send-batch')
@@ -147,11 +152,31 @@ export class TransactionController {
     },
   })
   async consumeTransactions(
-    @Body() transactionIds: string[],
+    @Body() notes: { noteId: string; txId: string }[],
     @Req() req: RequestWithWalletAuth,
   ) {
     return this.transactionService.consumeTransactions(
-      transactionIds,
+      notes,
+      req.walletAuth.walletAddress,
+    );
+  }
+
+  @Put('/consume-public')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({
+    summary: 'Consume public transactions not storing in the database',
+    description: 'Consume transactions',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Transactions consumed successfully',
+  })
+  async consumePublicTransactions(
+    @Body() notes: ConsumePublicTransactionDto[],
+    @Req() req: RequestWithWalletAuth,
+  ) {
+    return this.transactionService.consumePublicTransactions(
+      notes,
       req.walletAuth.walletAddress,
     );
   }
