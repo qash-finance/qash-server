@@ -8,6 +8,7 @@ import {
 import { WalletAuthService } from './wallet-auth.service';
 import { WalletAuthController } from './wallet-auth.controller';
 import { WalletAuthGuard } from './wallet-auth.guard';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { WalletAuthGuard } from './wallet-auth.guard';
       WalletAuthSessionEntity,
       WalletAuthChallengeEntity,
     ]),
+    NotificationModule,
   ],
   providers: [WalletAuthService, WalletAuthGuard],
   controllers: [WalletAuthController],

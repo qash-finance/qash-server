@@ -23,6 +23,7 @@ import { GroupPaymentModule } from './modules/group-payment/group-payment.module
 import { AnalyticsModule, AnalyticsMiddleware } from './modules/analytics';
 import { WalletAuthModule } from './modules/wallet-auth/wallet-auth.module';
 import { AppConfigServiceModule } from './common/config/services/config.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { AppConfigServiceModule } from './common/config/services/config.module';
     GroupPaymentModule,
     AnalyticsModule,
     WalletAuthModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

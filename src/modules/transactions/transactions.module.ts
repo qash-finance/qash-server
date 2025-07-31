@@ -6,12 +6,14 @@ import { TransactionService } from './transaction.service';
 import { TransactionController } from './transaction.controller';
 import { GiftModule } from '../gift/gift.module';
 import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([TransactionEntity]),
     GiftModule,
     WalletAuthModule,
+    NotificationModule,
   ],
   providers: [TransactionRepository, TransactionService],
   controllers: [TransactionController],

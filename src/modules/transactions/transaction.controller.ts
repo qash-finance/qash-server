@@ -18,13 +18,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
-import { RequestWithWalletAuth } from 'src/common/interfaces';
+import { RequestWithUser, RequestWithWalletAuth } from 'src/common/interfaces';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from 'src/common/enums/notification';
 
 @ApiTags('Transactions')
 @ApiBearerAuth()
 @Controller('/transactions')
 export class TransactionController {
-  constructor(private readonly transactionService: TransactionService) {}
+  constructor(private readonly transactionService: TransactionService, private readonly notificationService: NotificationService) {}
 
   // *************************************************
   // **************** GET METHODS ********************
@@ -81,13 +83,23 @@ export class TransactionController {
   })
   @ApiBody({ type: SendTransactionDto })
   async sendSingle(
-    @Body() body: SendTransactionDto,
+    @Body() body: SendTransactionDto & { userId: number },
     @Req() req: RequestWithWalletAuth,
   ) {
-    return this.transactionService.sendSingle(
+
+    const transaction = await this.transactionService.sendSingle(
       body,
       req.walletAuth.walletAddress,
     );
+
+    await this.notificationService.createNotification({
+      walletAddress: req.walletAuth.walletAddress,
+      title: 'Transaction sent successfully',
+      message: 'Transaction sent successfully',
+      type: NotificationType.SEND,
+    });
+
+    return transaction;
   }
 
   @Post('/send-batch')
