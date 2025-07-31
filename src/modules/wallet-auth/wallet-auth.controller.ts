@@ -89,9 +89,7 @@ export class WalletAuthController {
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiBody({ type: RefreshTokenDto })
   async refreshToken(@Body() dto: RefreshTokenDto, @Req() req: Request) {
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const userAgent = req.get('User-Agent');
-    return this.walletAuthService.refreshToken(dto, ipAddress, userAgent);
+    return this.walletAuthService.refreshToken(dto);
   }
 
   @Post('revoke-keys')
