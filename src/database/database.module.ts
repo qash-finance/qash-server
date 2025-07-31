@@ -9,28 +9,28 @@ import { TokenEntity } from '../modules/auth/token.entity';
 import { APP } from '../common/constants';
 import { AppConfigService } from '../common/config/services/config.service';
 import { ReferralCodeEntity } from '../modules/referral/referral.entity';
-import { TransactionEntity } from 'src/modules/transactions/transaction.entity';
-import { AddressBookEntity } from 'src/modules/address-book/address-book.entity';
-import { RequestPaymentEntity } from 'src/modules/request-payment/request-payment.entity';
-import { GiftEntity } from 'src/modules/gift/gift.entity';
+import { TransactionEntity } from '../modules/transactions/transaction.entity';
+import { AddressBookEntity } from '../modules/address-book/address-book.entity';
+import { RequestPaymentEntity } from '../modules/request-payment/request-payment.entity';
+import { GiftEntity } from '../modules/gift/gift.entity';
 import {
   GroupPaymentEntity,
   GroupPaymentGroupEntity,
   GroupPaymentMemberStatusEntity,
-} from 'src/modules/group-payment/group-payment.entity';
+} from '../modules/group-payment/group-payment.entity';
 import {
   AnalyticsEndpointStatsEntity,
   AnalyticsEventEntity,
   AnalyticsTransactionStatsEntity,
   AnalyticsUserSessionEntity,
-} from 'src/modules/analytics';
+} from '../modules/analytics';
 import {
   WalletAuthChallengeEntity,
   WalletAuthKeyEntity,
   WalletAuthSessionEntity,
-} from 'src/modules/wallet-auth/wallet-auth.entity';
-import { CategoryEntity } from 'src/modules/address-book/category.entity';
-import { NotificationEntity } from 'src/modules/notification/notification.entity';
+} from '../modules/wallet-auth/wallet-auth.entity';
+import { CategoryEntity } from '../modules/address-book/category.entity';
+import { NotificationEntity } from '../modules/notification/notification.entity';
 
 @Module({
   imports: [

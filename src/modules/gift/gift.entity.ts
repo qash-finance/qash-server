@@ -1,5 +1,5 @@
-import { NoteStatus, NoteType } from 'src/common/enums/note';
-import { BaseEntity } from 'src/database/base.entity';
+import { NoteStatus, NoteType } from '../../common/enums/note';
+import { BaseEntity } from '../../database/base.entity';
 import { Entity, Column } from 'typeorm';
 
 @Entity({ name: 'gift' })

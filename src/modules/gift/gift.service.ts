@@ -2,16 +2,16 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { randomBytes, createHash } from 'crypto';
 import { GiftRepository } from './gift.repository';
 import { CreateGiftDto } from './gift.dto';
-import { AppConfigService } from 'src/common/config/services/config.service';
-import { NoteStatus, NoteType } from 'src/common/enums/note';
-import { handleError } from 'src/common/utils/errors';
+import { AppConfigService } from '../../common/config/services/config.service';
+import { NoteStatus, NoteType } from '../../common/enums/note';
+import { handleError } from '../../common/utils/errors';
 import {
   validateAddress,
   validateAmount,
   validateSerialNumber,
   normalizeAddress,
-} from 'src/common/utils/validation.util';
-import { ErrorGift } from 'src/common/constants/errors';
+} from '../../common/utils/validation.util';
+import { ErrorGift } from '../../common/constants/errors';
 
 function hashSecret(secret: string): string {
   return createHash('sha256').update(secret).digest('hex');

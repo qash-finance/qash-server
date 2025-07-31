@@ -17,7 +17,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { NoteType } from 'src/common/enums/note';
+import { NoteType } from '../../common/enums/note';
 
 export type FaucetMetadata = {
   symbol: string;

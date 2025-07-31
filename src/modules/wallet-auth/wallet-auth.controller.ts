@@ -25,7 +25,7 @@ import {
   RevokeSessionDto,
 } from './wallet-auth.dto';
 import { WalletAuthGuard } from './wallet-auth.guard';
-import { NotificationType } from 'src/common/enums/notification';
+import { NotificationType } from '../../common/enums/notification';
 import { NotificationService } from '../notification/notification.service';
 
 @ApiTags('Wallet Authentication')

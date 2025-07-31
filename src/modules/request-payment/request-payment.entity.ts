@@ -1,4 +1,4 @@
-import { BaseEntity } from 'src/database/base.entity';
+import { BaseEntity } from '../../database/base.entity';
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { GroupPaymentEntity } from '../group-payment/group-payment.entity';
 

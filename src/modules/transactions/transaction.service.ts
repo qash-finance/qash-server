@@ -6,10 +6,10 @@ import {
   RecallRequestDto,
   ConsumePublicTransactionDto,
 } from './transaction.dto';
-import { handleError } from 'src/common/utils/errors';
+import { handleError } from '../../common/utils/errors';
 import { In } from 'typeorm';
 import { GiftService } from '../gift/gift.service';
-import { NoteStatus } from 'src/common/enums/note';
+import { NoteStatus } from '../../common/enums/note';
 import {
   validateAddress,
   validateAmount,
@@ -17,10 +17,10 @@ import {
   validateFutureDate,
   validateDifferentAddresses,
   normalizeAddress,
-} from 'src/common/utils/validation.util';
-import { ErrorTransaction } from 'src/common/constants/errors';
+} from '../../common/utils/validation.util';
+import { ErrorTransaction } from '../../common/constants/errors';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from 'src/common/enums/notification';
+import { NotificationType } from '../../common/enums/notification';
 
 @Injectable()
 export class TransactionService {

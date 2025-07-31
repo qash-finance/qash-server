@@ -22,7 +22,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
-import { RequestWithWalletAuth } from 'src/common/interfaces';
+import { RequestWithWalletAuth } from '../../common/interfaces';
 
 @ApiTags('Transactions')
 @ApiBearerAuth()

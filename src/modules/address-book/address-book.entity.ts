@@ -1,4 +1,4 @@
-import { BaseEntity } from 'src/database/base.entity';
+import { BaseEntity } from '../../database/base.entity';
 import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
 import { CategoryEntity } from './category.entity';
 

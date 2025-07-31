@@ -19,7 +19,7 @@ import {
 import { GroupPaymentService } from './group-payment.service';
 import { CreateGroupDto, CreateGroupPaymentDto } from './group-payment.dto';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
-import { RequestWithWalletAuth } from 'src/common/interfaces';
+import { RequestWithWalletAuth } from '../../common/interfaces';
 
 @ApiTags('Group Payment')
 @ApiBearerAuth()

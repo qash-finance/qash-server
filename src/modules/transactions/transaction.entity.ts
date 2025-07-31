@@ -1,6 +1,6 @@
 import { Column, Entity } from 'typeorm';
 import { BaseEntity } from '../../database/base.entity';
-import { NoteStatus, NoteType } from 'src/common/enums/note';
+import { NoteStatus, NoteType } from '../../common/enums/note';
 import { FaucetMetadata } from './transaction.dto';
 
 @Entity({ name: 'transactions' })

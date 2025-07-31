@@ -9,7 +9,7 @@ import { In } from 'typeorm';
 import { RequestPaymentRepository } from './request-payment.repository';
 import { CreateRequestPaymentDto } from './request-payment.dto';
 import { RequestPaymentStatus } from './request-payment.entity';
-import { handleError } from 'src/common/utils/errors';
+import { handleError } from '../../common/utils/errors';
 import { GroupPaymentRepository } from '../group-payment/group-payment.repository';
 import {
   GroupPaymentMemberStatus,
@@ -22,8 +22,8 @@ import {
   validateDifferentAddresses,
   normalizeAddress,
   sanitizeString,
-} from 'src/common/utils/validation.util';
-import { ErrorRequestPayment } from 'src/common/constants/errors';
+} from '../../common/utils/validation.util';
+import { ErrorRequestPayment } from '../../common/constants/errors';
 
 @Injectable()
 export class RequestPaymentService {

@@ -12,7 +12,7 @@ import {
   CreateNotificationDto,
   UpdateNotificationStatusDto,
 } from './notification.dto';
-import { NotificationStatus } from 'src/common/enums/notification';
+import { NotificationStatus } from '../../common/enums/notification';
 
 @Injectable()
 export class NotificationRepository {

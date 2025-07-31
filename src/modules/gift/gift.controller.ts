@@ -19,7 +19,7 @@ import {
 import { GiftService } from './gift.service';
 import { CreateGiftDto } from './gift.dto';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
-import { RequestWithWalletAuth } from 'src/common/interfaces';
+import { RequestWithWalletAuth } from '../../common/interfaces';
 
 @ApiTags('Gift')
 @ApiBearerAuth()

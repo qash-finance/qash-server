@@ -1,4 +1,4 @@
-import { BaseEntity } from 'src/database/base.entity';
+import { BaseEntity } from '../../database/base.entity';
 import { Entity, Column, Index } from 'typeorm';
 
 export enum AnalyticsEventType {

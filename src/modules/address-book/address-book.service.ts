@@ -4,7 +4,7 @@ import {
   AddressBookDto,
   AddressBookNameDuplicateDto,
 } from './address-book.dto';
-import { handleError } from 'src/common/utils/errors';
+import { handleError } from '../../common/utils/errors';
 import {
   validateAddress,
   validateName,
@@ -12,8 +12,8 @@ import {
   normalizeAddress,
   validateDifferentAddresses,
   sanitizeString,
-} from 'src/common/utils/validation.util';
-import { ErrorAddressBook } from 'src/common/constants/errors';
+} from '../../common/utils/validation.util';
+import { ErrorAddressBook } from '../../common/constants/errors';
 import { CategoryRepository } from './category.repository';
 
 @Injectable()

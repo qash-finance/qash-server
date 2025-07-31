@@ -29,7 +29,7 @@ import {
 } from './notification.dto';
 import { NotificationType } from '../../common/enums/notification';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
-import { Public } from 'src/common/decorators/public';
+import { Public } from '../../common/decorators/public';
 
 @ApiBearerAuth()
 @UseGuards(WalletAuthGuard)

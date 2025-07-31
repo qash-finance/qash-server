@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { AddressBookService } from './address-book.service';
 import { AddressBookDto } from './address-book.dto';
-import { RequestWithWalletAuth } from 'src/common/interfaces';
+import { RequestWithWalletAuth } from '../../common/interfaces';
 import {
   ApiBearerAuth,
   ApiBody,

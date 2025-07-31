@@ -10,7 +10,7 @@ import { CreateGroupDto, CreateGroupPaymentDto } from './group-payment.dto';
 import { GroupPaymentStatus } from './group-payment.entity';
 import { RequestPaymentService } from '../request-payment/request-payment.service';
 import { GroupPaymentMemberStatus } from './group-payment.entity';
-import { handleError } from 'src/common/utils/errors';
+import { handleError } from '../../common/utils/errors';
 import {
   validateAddress,
   validateAmount,
@@ -19,8 +19,8 @@ import {
   validateNonEmptyArray,
   normalizeAddress,
   sanitizeString,
-} from 'src/common/utils/validation.util';
-import { ErrorGroupPayment } from 'src/common/constants/errors';
+} from '../../common/utils/validation.util';
+import { ErrorGroupPayment } from '../../common/constants/errors';
 
 @Injectable()
 export class GroupPaymentService {
