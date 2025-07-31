@@ -88,7 +88,7 @@ export class WalletAuthController {
   @ApiOperation({ summary: 'Refresh authentication token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiBody({ type: RefreshTokenDto })
-  async refreshToken(@Body() dto: RefreshTokenDto, @Req() req: Request) {
+  async refreshToken(@Body() dto: RefreshTokenDto) {
     return this.walletAuthService.refreshToken(dto);
   }
 
