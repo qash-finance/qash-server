@@ -151,7 +151,6 @@ export class AnalyticsController {
   }
 
   @Get('dashboard')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get analytics dashboard data' })
   @ApiResponse({
     status: 200,

@@ -35,18 +35,18 @@ export class AnalyticsRepository {
     const queryBuilder = this.eventRepository.createQueryBuilder('event');
 
     if (query.startDate) {
-      queryBuilder.andWhere('event.createdAt >= :startDate', {
+      queryBuilder.andWhere('event.created_at >= :startDate', {
         startDate: query.startDate,
       });
     }
     if (query.endDate) {
-      queryBuilder.andWhere('event.createdAt <= :endDate', {
+      queryBuilder.andWhere('event.created_at <= :endDate', {
         endDate: query.endDate,
       });
     }
     if (query.userAddress) {
-      queryBuilder.andWhere('event.userAddress = :userAddress', {
-        userAddress: query.userAddress,
+      queryBuilder.andWhere('event.user_address = :user_address', {
+        user_address: query.userAddress,
       });
     }
     if (query.eventType) {
@@ -55,7 +55,7 @@ export class AnalyticsRepository {
       });
     }
 
-    queryBuilder.orderBy('event.createdAt', 'DESC');
+    queryBuilder.orderBy('event.created_at', 'DESC');
 
     if (query.limit) {
       queryBuilder.limit(query.limit);
@@ -89,14 +89,14 @@ export class AnalyticsRepository {
   }
 
   async getActiveSessions(
-    userAddress?: string,
+    user_address?: string,
   ): Promise<AnalyticsUserSessionEntity[]> {
     const query = this.sessionRepository
       .createQueryBuilder('session')
       .where('session.isActive = :isActive', { isActive: true });
 
-    if (userAddress) {
-      query.andWhere('session.userAddress = :userAddress', { userAddress });
+    if (user_address) {
+      query.andWhere('session.user_address = :user_address', { user_address });
     }
 
     return query.getMany();
@@ -120,7 +120,7 @@ export class AnalyticsRepository {
         'AVG(stats.responseTime) as avgResponseTime',
         'SUM(CASE WHEN stats.statusCode >= 400 THEN 1 ELSE 0 END) as errorCount',
       ])
-      .where('stats.createdAt BETWEEN :startDate AND :endDate', {
+      .where('stats.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
@@ -146,7 +146,7 @@ export class AnalyticsRepository {
         'SUM(CAST(stats.amount AS DECIMAL)) as totalAmount',
         'COUNT(*) as transactionCount',
       ])
-      .where('stats.createdAt BETWEEN :startDate AND :endDate', {
+      .where('stats.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
@@ -158,12 +158,12 @@ export class AnalyticsRepository {
   async getDailyActiveUsers(startDate: Date, endDate: Date): Promise<number> {
     const result = await this.sessionRepository
       .createQueryBuilder('session')
-      .select('COUNT(DISTINCT session.userAddress)', 'count')
-      .where('session.createdAt BETWEEN :startDate AND :endDate', {
+      .select('COUNT(DISTINCT session.user_address)', 'count')
+      .where('session.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
-      .andWhere('session.userAddress IS NOT NULL')
+      .andWhere('session.user_address IS NOT NULL')
       .getRawOne();
 
     return parseInt(result.count) || 0;
@@ -172,12 +172,12 @@ export class AnalyticsRepository {
   async getMonthlyActiveUsers(startDate: Date, endDate: Date): Promise<number> {
     const result = await this.sessionRepository
       .createQueryBuilder('session')
-      .select('COUNT(DISTINCT session.userAddress)', 'count')
-      .where('session.createdAt BETWEEN :startDate AND :endDate', {
+      .select('COUNT(DISTINCT session.user_address)', 'count')
+      .where('session.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
-      .andWhere('session.userAddress IS NOT NULL')
+      .andWhere('session.user_address IS NOT NULL')
       .getRawOne();
 
     return parseInt(result.count) || 0;
@@ -190,7 +190,7 @@ export class AnalyticsRepository {
     const result = await this.sessionRepository
       .createQueryBuilder('session')
       .select('AVG(session.duration)', 'avgDuration')
-      .where('session.createdAt BETWEEN :startDate AND :endDate', {
+      .where('session.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
@@ -207,7 +207,7 @@ export class AnalyticsRepository {
       .where('event.eventType = :eventType', {
         eventType: AnalyticsEventType.PAGE_VIEW,
       })
-      .andWhere('event.createdAt BETWEEN :startDate AND :endDate', {
+      .andWhere('event.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
@@ -220,7 +220,7 @@ export class AnalyticsRepository {
     const result = await this.endpointStatsRepository
       .createQueryBuilder('stats')
       .select('COUNT(*)', 'count')
-      .where('stats.createdAt BETWEEN :startDate AND :endDate', {
+      .where('stats.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
@@ -240,16 +240,16 @@ export class AnalyticsRepository {
     return this.sessionRepository
       .createQueryBuilder('session')
       .select([
-        `TO_CHAR(session.createdAt, '${dateFormat}') as date`,
-        'COUNT(DISTINCT session.userAddress) as activeUsers',
+        `TO_CHAR(session.created_at, '${dateFormat}') as date`,
+        'COUNT(DISTINCT session.user_address) as activeUsers',
         'SUM(session.pageViews) as pageViews',
         'SUM(session.apiCalls) as apiCalls',
       ])
-      .where('session.createdAt BETWEEN :startDate AND :endDate', {
+      .where('session.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
-      .groupBy(`TO_CHAR(session.createdAt, '${dateFormat}')`)
+      .groupBy(`TO_CHAR(session.created_at, '${dateFormat}')`)
       .orderBy('date', 'ASC')
       .getRawMany();
   }
@@ -258,13 +258,13 @@ export class AnalyticsRepository {
   async getNewUsers(startDate: Date, endDate: Date): Promise<number> {
     const result = await this.sessionRepository
       .createQueryBuilder('session')
-      .select('COUNT(DISTINCT session.userAddress)', 'count')
-      .where('session.userAddress IS NOT NULL')
+      .select('COUNT(DISTINCT session.user_address)', 'count')
+      .where('session.user_address IS NOT NULL')
       .andWhere(
-        'session.userAddress NOT IN (SELECT DISTINCT s2.userAddress FROM analytics_user_sessions s2 WHERE s2.createdAt < :startDate AND s2.userAddress IS NOT NULL)',
+        'session.user_address NOT IN (SELECT DISTINCT s2.user_address FROM analytics_user_sessions s2 WHERE s2.created_at < :startDate AND s2.user_address IS NOT NULL)',
         { startDate },
       )
-      .andWhere('session.createdAt BETWEEN :startDate AND :endDate', {
+      .andWhere('session.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
@@ -276,13 +276,13 @@ export class AnalyticsRepository {
   async getReturningUsers(startDate: Date, endDate: Date): Promise<number> {
     const result = await this.sessionRepository
       .createQueryBuilder('session')
-      .select('COUNT(DISTINCT session.userAddress)', 'count')
-      .where('session.userAddress IS NOT NULL')
+      .select('COUNT(DISTINCT session.user_address)', 'count')
+      .where('session.user_address IS NOT NULL')
       .andWhere(
-        'session.userAddress IN (SELECT DISTINCT s2.userAddress FROM analytics_user_sessions s2 WHERE s2.createdAt < :startDate AND s2.userAddress IS NOT NULL)',
+        'session.user_address IN (SELECT DISTINCT s2.user_address FROM analytics_user_sessions s2 WHERE s2.created_at < :startDate AND s2.user_address IS NOT NULL)',
         { startDate },
       )
-      .andWhere('session.createdAt BETWEEN :startDate AND :endDate', {
+      .andWhere('session.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
