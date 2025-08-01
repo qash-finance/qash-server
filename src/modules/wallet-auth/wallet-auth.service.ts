@@ -167,23 +167,41 @@ export class WalletAuthService {
         expiresAt.getHours() + (dto.expirationHours || this.KEY_EXPIRY_HOURS),
       );
 
-      // Create key record
-      const keyRecord = this.keyRepository.create({
-        walletAddress: dto.walletAddress,
-        publicKey: dto.publicKey,
-        hashedSecretKey,
-        keyDerivationSalt: salt,
-        expiresAt,
-        deviceFingerprint: dto.deviceFingerprint,
-        deviceType: dto.deviceType,
-        ipAddress,
-        userAgent,
-        metadata: challenge.challengeData,
+      // Check if key already exists for this wallet address
+      const existingWalletKey = await this.keyRepository.findOne({
+        where: { walletAddress: dto.walletAddress },
       });
 
-      await this.keyRepository.save(keyRecord);
+      if (existingWalletKey) {
+        existingWalletKey.publicKey = dto.publicKey;
+        existingWalletKey.hashedSecretKey = hashedSecretKey;
+        existingWalletKey.keyDerivationSalt = salt;
+        existingWalletKey.expiresAt = expiresAt;
+        existingWalletKey.deviceFingerprint = dto.deviceFingerprint;
+        existingWalletKey.deviceType = dto.deviceType;
+        existingWalletKey.ipAddress = ipAddress;
+        existingWalletKey.userAgent = userAgent;
+        existingWalletKey.metadata = challenge.challengeData;
+        existingWalletKey.status = WalletAuthStatus.ACTIVE;
 
-      // Mark challenge as used
+        await this.keyRepository.save(existingWalletKey);
+      } else {
+        const keyRecord = this.keyRepository.create({
+          walletAddress: dto.walletAddress,
+          publicKey: dto.publicKey,
+          hashedSecretKey,
+          keyDerivationSalt: salt,
+          expiresAt,
+          deviceFingerprint: dto.deviceFingerprint,
+          deviceType: dto.deviceType,
+          ipAddress,
+          userAgent,
+          metadata: challenge.challengeData,
+        });
+
+        await this.keyRepository.save(keyRecord);
+      }
+
       challenge.isUsed = true;
       await this.challengeRepository.save(challenge);
 
