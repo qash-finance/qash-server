@@ -7,7 +7,6 @@ import {
   Req,
   Res,
   HttpStatus,
-  UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import {
@@ -27,7 +26,6 @@ import {
   GenerateReportDto,
   AnalyticsQueryDto,
 } from './analytics.dto';
-import { JwtAuthGuard } from '../../common/guards';
 
 @ApiTags('Analytics')
 @Controller('analytics')
