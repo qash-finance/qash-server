@@ -268,6 +268,29 @@ export class NotificationService {
     });
   }
 
+  public async createRequestPaymentNotification(
+    walletAddress: string,
+    data: {
+      message: string;
+      amount: string;
+      tokenName: string;
+      tokenId: string;
+      payee: string;
+    },
+  ): Promise<NotificationEntity> {
+    return this.createNotification({
+      walletAddress,
+      type: NotificationType.REQUEST_PAYMENT,
+      title: 'Payment Request',
+      message: data.message,
+      metadata: {
+        payee: data.payee,
+        amount: data.amount,
+        tokenId: data.tokenId,
+        tokenName: data.tokenName,
+      },
+    });
+  }
   private mapToResponseDto(
     notification: NotificationEntity,
   ): NotificationResponseDto {

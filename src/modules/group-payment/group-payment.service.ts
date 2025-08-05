@@ -97,7 +97,6 @@ export class GroupPaymentService {
     try {
       // Validate all inputs
       validateAddress(ownerAddress, 'ownerAddress');
-      validateAddress(dto.token, 'token');
       validateAmount(dto.amount, 'amount');
 
       if (dto.groupId <= 0) {
@@ -110,7 +109,6 @@ export class GroupPaymentService {
 
       // Normalize addresses
       const normalizedOwnerAddress = normalizeAddress(ownerAddress);
-      const normalizedToken = normalizeAddress(dto.token);
 
       // Find the group
       const group = await this.groupPaymentRepository.findOneGroup({
@@ -172,7 +170,7 @@ export class GroupPaymentService {
       const payment = await this.groupPaymentRepository.createPayment({
         group,
         ownerAddress: normalizedOwnerAddress,
-        token: normalizedToken,
+        tokens: dto.tokens,
         amount: dto.amount,
         perMember: perMember,
         linkCode,
@@ -188,8 +186,8 @@ export class GroupPaymentService {
         normalizedOwnerAddress,
         members,
         perMember.toString(),
-        normalizedToken,
-        `Group payment request - ${dto.amount} ${normalizedToken} split among ${members.length} members`,
+        dto.tokens,
+        `Group payment request - ${perMember.toString()} ${dto.tokens[0].faucetId} split among ${members.length} members`,
       );
 
       return { ...payment, link: `/group-payment/${linkCode}`, perMember };

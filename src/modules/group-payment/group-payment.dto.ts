@@ -9,8 +9,10 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { FaucetMetadata } from '../transactions/transaction.dto';
 
 export class CreateGroupDto {
   @ApiProperty({ description: 'Group name', example: 'Group 1' })
@@ -47,16 +49,23 @@ export class CreateGroupDto {
 
 export class CreateGroupPaymentDto {
   @ApiProperty({
-    description: 'Token address or symbol',
-    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+    description: 'Tokens',
+    example: [
+      {
+        faucetId: '0x2342342342342342342342342342342342342342',
+        amount: '100',
+        metadata: { name: 'test' },
+      },
+    ],
   })
-  @IsString()
+  @IsArray()
   @IsNotEmpty()
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    message: 'token must be a valid hex address starting with 0x',
-  })
-  @MinLength(3, { message: 'token is too short' })
-  token: string;
+  @ValidateNested({ each: true })
+  tokens: {
+    faucetId: string;
+    amount: string;
+    metadata: FaucetMetadata;
+  }[];
 
   @ApiProperty({ description: 'Total amount to split', example: '100' })
   @IsString()

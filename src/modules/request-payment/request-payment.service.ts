@@ -24,6 +24,10 @@ import {
   sanitizeString,
 } from '../../common/utils/validation.util';
 import { ErrorRequestPayment } from '../../common/constants/errors';
+import { FaucetMetadata } from '../transactions/transaction.dto';
+import { NotificationType } from 'src/common/enums/notification';
+import { NotificationService } from '../notification/notification.service';
+import { AddressBookService } from '../address-book/address-book.service';
 
 @Injectable()
 export class RequestPaymentService {
@@ -32,18 +36,25 @@ export class RequestPaymentService {
     private readonly requestPaymentRepository: RequestPaymentRepository,
     @Inject(forwardRef(() => GroupPaymentRepository))
     private readonly groupPaymentRepository: GroupPaymentRepository,
+    private readonly notificationService: NotificationService,
+    private readonly addressBookService: AddressBookService,
   ) {}
 
   // *************************************************
   // **************** CREATE METHODS ****************
   // *************************************************
 
+
   async createGroupPaymentRequests(
     groupPaymentId: number,
     ownerAddress: string,
     members: string[],
     amount: string,
-    token: string,
+    tokens: {
+      faucetId: string;
+      amount: string;
+      metadata: FaucetMetadata;
+    }[],
     message: string,
   ) {
     try {
@@ -54,7 +65,6 @@ export class RequestPaymentService {
 
       validateAddress(ownerAddress, 'ownerAddress');
       validateAmount(amount, 'amount');
-      validateAddress(token, 'token');
       validateMessage(message, 'message');
 
       if (!members || !Array.isArray(members) || members.length === 0) {
@@ -70,7 +80,6 @@ export class RequestPaymentService {
 
       // Normalize addresses
       const normalizedOwnerAddress = normalizeAddress(ownerAddress);
-      const normalizedToken = normalizeAddress(token);
       const normalizedMembers = members.map((member) =>
         normalizeAddress(member),
       );
@@ -93,7 +102,7 @@ export class RequestPaymentService {
         payer: member,
         payee: normalizedOwnerAddress,
         amount,
-        token: normalizedToken,
+        tokens: tokens.map(token => ({ ...token })), // Convert to plain objects
         message: sanitizedMessage,
         isGroupPayment: true,
         groupPaymentId,
@@ -146,14 +155,12 @@ export class RequestPaymentService {
       // Validate all inputs
       validateAddress(dto.payer, 'payer');
       validateAddress(dto.payee, 'payee');
-      validateAddress(dto.token, 'token');
       validateAmount(dto.amount, 'amount');
       validateMessage(dto.message, 'message');
 
       // Normalize addresses
       const normalizedPayer = normalizeAddress(dto.payer);
       const normalizedPayee = normalizeAddress(dto.payee);
-      const normalizedToken = normalizeAddress(dto.token);
 
       // Check if payer and payee are different
       validateDifferentAddresses(
@@ -166,16 +173,22 @@ export class RequestPaymentService {
       // Sanitize message
       const sanitizedMessage = sanitizeString(dto.message);
 
-      // Check for duplicate request (same payer, payee, amount, token, and status pending)
-      const existingRequest = await this.requestPaymentRepository.findOne({
+
+      // Check for duplicate request (same payer, payee, amount, and status pending)
+      // Note: We can't easily compare JSONB tokens arrays in the query, so we'll check after creation
+      const existingRequests = await this.requestPaymentRepository.find({
         payer: normalizedPayer,
         payee: normalizedPayee,
         amount: dto.amount,
-        token: normalizedToken,
         status: RequestPaymentStatus.PENDING,
       });
 
-      if (existingRequest) {
+      // Check if any existing request has matching tokens
+      const duplicateRequest = existingRequests.find(request => 
+        JSON.stringify(request.tokens) === JSON.stringify(dto.tokens)
+      );
+
+      if (duplicateRequest) {
         throw new BadRequestException(ErrorRequestPayment.DuplicateRequest);
       }
 
@@ -184,21 +197,40 @@ export class RequestPaymentService {
         payer: normalizedPayer,
         payee: normalizedPayee,
         amount: dto.amount,
-        token: normalizedToken,
+        tokens: dto.tokens,
         message: sanitizedMessage,
       };
+
+      // Find payee name from address book
+      const payeeName = await this.findPayeeNameFromAddressBook(normalizedPayer, normalizedPayee);
+      
+      // Create notification message with payee name if available
+      const notificationMessage = payeeName 
+        ? `${payeeName} has requested you to transfer ${dto.amount} ${dto.tokens[0].metadata.symbol}`
+        : `${dto.payee} has requested you to transfer ${dto.amount} ${dto.tokens[0].metadata.symbol}`;
+
+      console.log("🚀 ~ RequestPaymentService ~ createRequest ~ dto.tokens[0].metadata.symbol:", dto.tokens)
+
+      //create notification for payer
+      await this.notificationService.createRequestPaymentNotification(normalizedPayer, {
+        message: notificationMessage,
+        amount: dto.amount,
+        tokenName: dto.tokens[0].metadata.symbol,
+        tokenId: dto.tokens[0].faucetId,
+        payee: payeeName || normalizedPayee,
+      });
 
       return this.requestPaymentRepository.create(createDto);
     } catch (error) {
       handleError(error, this.logger);
     }
-  }
+  } 
 
   // *************************************************
   // **************** PUT METHODS ******************
   // *************************************************
 
-  async acceptRequest(id: number, userAddress: string) {
+  async acceptRequest(id: number, userAddress: string, txid: string) {
     try {
       if (!id || id <= 0) {
         throw new BadRequestException('Invalid request ID');
@@ -233,6 +265,10 @@ export class RequestPaymentService {
           normalizedUserAddress,
         );
       }
+
+      // Update the request payment txid
+      updatedRequest.txid = txid;
+      await updatedRequest.save();
 
       return updatedRequest;
     } catch (error) {
@@ -322,6 +358,45 @@ export class RequestPaymentService {
       return updatedRequest;
     } catch (error) {
       handleError(error, this.logger);
+    }
+  }
+
+  // *************************************************
+  // **************** HELPER METHODS ****************
+  // *************************************************
+
+
+  /**
+   * Find the name of a payee from the payer's address book
+   * @param payerAddress - The address of the payer
+   * @param payeeAddress - The address of the payee
+   * @returns The name of the payee from address book, or null if not found
+   */
+  private async findPayeeNameFromAddressBook(
+    payerAddress: string,
+    payeeAddress: string,
+  ): Promise<string | null> {
+    try {
+      const addressBookEntries = await this.addressBookService.getAllAddressBookEntries(payerAddress);
+      
+      if (!addressBookEntries || addressBookEntries.length === 0) {
+        return null;
+      }
+      
+      // Flatten all address book entries from all categories
+      const allEntries = addressBookEntries.flatMap(category => 
+        category.addressBooks || []
+      );
+      
+      // Find the entry that matches the payee address (case-insensitive)
+      const payeeEntry = allEntries.find(entry => 
+        entry.address.toLowerCase() === payeeAddress.toLowerCase()
+      );
+      
+      return payeeEntry ? payeeEntry.name : null;
+    } catch (error) {
+      this.logger.warn(`Error finding payee name from address book: ${error.message}`);
+      return null;
     }
   }
 }

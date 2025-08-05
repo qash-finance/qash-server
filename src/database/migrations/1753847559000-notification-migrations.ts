@@ -6,7 +6,7 @@ export class NotificationMigrations1753847559000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create notification type enum
     await queryRunner.query(`
-            CREATE TYPE "public"."notifications_type_enum" AS ENUM('SEND', 'CLAIM', 'REFUND', 'BATCH_SEND', 'WALLET_CREATE')
+            CREATE TYPE "public"."notifications_type_enum" AS ENUM('SEND', 'CLAIM', 'REFUND', 'BATCH_SEND', 'WALLET_CREATE', 'REQUEST_PAYMENT', 'RECEIVED_PAYMENT', 'ADD_TO_BATCH')
         `);
 
     // Create notification status enum

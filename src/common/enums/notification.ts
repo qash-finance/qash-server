@@ -4,6 +4,9 @@ export enum NotificationType {
   REFUND = 'REFUND',
   BATCH_SEND = 'BATCH_SEND',
   WALLET_CREATE = 'WALLET_CREATE',
+  REQUEST_PAYMENT = 'REQUEST_PAYMENT',
+  RECEIVED_PAYMENT = 'RECEIVED_PAYMENT',
+  ADD_TO_BATCH = 'ADD_TO_BATCH',
 }
 
 export enum NotificationStatus {

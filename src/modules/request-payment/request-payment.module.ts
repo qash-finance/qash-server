@@ -6,12 +6,16 @@ import { RequestPaymentService } from './request-payment.service';
 import { RequestPaymentController } from './request-payment.controller';
 import { GroupPaymentModule } from '../group-payment/group-payment.module';
 import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
+import { AddressBookModule } from '../address-book/address-book.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([RequestPaymentEntity]),
     forwardRef(() => GroupPaymentModule),
     WalletAuthModule,
+    AddressBookModule,
+    NotificationModule, 
   ],
   providers: [RequestPaymentRepository, RequestPaymentService],
   controllers: [RequestPaymentController],
