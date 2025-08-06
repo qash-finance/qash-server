@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -30,11 +31,22 @@ export class GiftController {
   // *************************************************
   // **************** GET METHODS *******************
   // *************************************************
-  @Get('/:secret')
+  // get gift dashboard
+  @Get('/dashboard')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({ summary: 'Get gift dashboard' })
+  @ApiResponse({ status: 200, description: 'Gift dashboard' })
+  async getGiftDashboard(@Req() req: RequestWithWalletAuth) {
+    return this.service.getGiftDashboard(req.walletAuth.walletAddress);
+  }
+
+  @Get('/detail')
   @ApiOperation({ summary: 'Get gift details by secret' })
   @ApiResponse({ status: 200, description: 'Gift details' })
-  async getGift(@Param('secret') secret: string) {
-    return this.service.getGiftBySecret(secret);
+  async getGift(@Query('secret') secret: string) {
+    // decode code
+    const secretWithPlus = secret.replace(/ /g, '+');
+    return this.service.getGiftBySecret(secretWithPlus);
   }
 
   // *************************************************
@@ -57,12 +69,19 @@ export class GiftController {
   // *************************************************
   // **************** PUT METHODS *******************
   // *************************************************
-  @Put('/:secret/open')
+  @Put('/open')
   @UseGuards(WalletAuthGuard)
   @ApiOperation({ summary: 'Open a gift' })
   @ApiParam({ name: 'secret', description: 'Secret of the gift' })
   @ApiResponse({ status: 200, description: 'Gift opened' })
-  async openGift(@Param('secret') secret: string) {
-    return this.service.openGift(secret);
+  async openGift(
+    @Body() body: { txId: string; secret: string },
+    @Req() req: RequestWithWalletAuth,
+  ) {
+    return this.service.openGift(
+      body.secret,
+      body.txId,
+      req.walletAuth.walletAddress,
+    );
   }
 }

@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { randomBytes, createHash } from 'crypto';
 import { GiftRepository } from './gift.repository';
 import { CreateGiftDto } from './gift.dto';
 import { AppConfigService } from '../../common/config/services/config.service';
@@ -7,15 +6,12 @@ import { NoteStatus, NoteType } from '../../common/enums/note';
 import { handleError } from '../../common/utils/errors';
 import {
   validateAddress,
-  validateAmount,
   validateSerialNumber,
   normalizeAddress,
 } from '../../common/utils/validation.util';
 import { ErrorGift } from '../../common/constants/errors';
-
-function hashSecret(secret: string): string {
-  return createHash('sha256').update(secret).digest('hex');
-}
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from 'src/common/enums/notification';
 
 @Injectable()
 export class GiftService {
@@ -23,27 +19,18 @@ export class GiftService {
 
   constructor(
     private readonly giftRepository: GiftRepository,
+    private readonly notificationService: NotificationService,
     private readonly appConfigService: AppConfigService,
   ) {}
 
   // *************************************************
   // **************** GET METHODS ********************
   // *************************************************
-  public async getGiftBySecret(secret: string) {
+  public async getGiftBySecret(secretNumber: string) {
     try {
-      if (!secret || typeof secret !== 'string') {
-        throw new BadRequestException(
-          'Secret is required and must be a string',
-        );
-      }
-
-      if (secret.length < 10) {
-        throw new BadRequestException('Invalid secret format');
-      }
-
-      const secretHash = hashSecret(secret);
+      console.log('FINDING GIFT BY SECRET', secretNumber);
       const gift = await this.giftRepository.findOne({
-        secretHash,
+        secretNumber: secretNumber,
       });
 
       if (!gift) {
@@ -56,52 +43,63 @@ export class GiftService {
     }
   }
 
+  public async getGiftDashboard(senderAddress: string) {
+    try {
+      validateAddress(senderAddress, 'senderAddress');
+      const normalizedSenderAddress = normalizeAddress(senderAddress);
+
+      // we will get all gifts for the sender
+      const gifts = await this.giftRepository.find({
+        sender: normalizedSenderAddress,
+      });
+
+      // calculate total amount of gifts
+      const totalAmount = gifts.reduce((acc, gift) => {
+        return acc + Number(gift.assets[0].amount);
+      }, 0);
+
+      // total opened gifts
+      const totalOpenedGifts = gifts.filter(
+        (gift) => gift.status === NoteStatus.CONSUMED,
+      ).length;
+
+      return {
+        totalAmount,
+        totalOpenedGifts,
+        gifts,
+      };
+    } catch (error) {
+      handleError(error, this.logger);
+    }
+  }
+
   // *************************************************
   // **************** POST METHODS *******************
   // *************************************************
 
   public async sendGift(dto: CreateGiftDto, senderAddress: string) {
     try {
-      // Validate all inputs
       validateAddress(senderAddress, 'senderAddress');
-      validateAddress(dto.token, 'token');
-      validateAmount(dto.amount, 'amount');
       validateSerialNumber(dto.serialNumber, 'serialNumber');
 
-      // Normalize addresses
       const normalizedSenderAddress = normalizeAddress(senderAddress);
-      const normalizedToken = normalizeAddress(dto.token);
 
-      // Generate secure secret
-      const secret = randomBytes(24).toString('hex');
-      const secretHash = hashSecret(secret);
+      const gift = await this.createGiftEntity(dto, normalizedSenderAddress);
 
-      // Check if secret hash already exists (extremely unlikely but good practice)
-      const existingGift = await this.giftRepository.findOne({ secretHash });
-      if (existingGift) {
-        // Generate a new secret if collision occurs
-        const newSecret = randomBytes(32).toString('hex');
-        const newSecretHash = hashSecret(newSecret);
-
-        const gift = await this.createGiftEntity(
-          dto,
-          newSecretHash,
-          normalizedSenderAddress,
-          normalizedToken,
-        );
-        return { ...gift, link: `/gift/${newSecret}` };
-      }
-
-      const gift = await this.createGiftEntity(
-        dto,
-        secretHash,
-        normalizedSenderAddress,
-        normalizedToken,
-      );
-
-      // todo: create recallable transaction for creator, because all gift are default recallable
-
-      return { ...gift, link: `/gift/${secret}` };
+      // create notification
+      await this.notificationService.createNotification({
+        walletAddress: senderAddress,
+        title: 'Gift created successfully',
+        message: 'Gift created successfully',
+        type: NotificationType.GIFT_SEND,
+        metadata: {
+          tokenId: dto.assets[0].faucetId,
+          tokenName: dto.assets[0].metadata.symbol,
+          amount: dto.assets[0].amount,
+          transactionId: dto.txId,
+        },
+      });
+      return { ...gift };
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -111,7 +109,7 @@ export class GiftService {
   // **************** PUT METHODS *******************
   // *************************************************
 
-  public async openGift(secret: string) {
+  public async openGift(secret: string, txId: string, caller: string) {
     try {
       if (!secret || typeof secret !== 'string') {
         throw new BadRequestException(
@@ -119,14 +117,16 @@ export class GiftService {
         );
       }
 
-      if (secret.length < 10) {
-        throw new BadRequestException('Invalid secret format');
-      }
+      // decode secret
+      const decodedSecret = decodeURIComponent(secret);
 
-      const secretHash = hashSecret(secret);
+      // if there's a space in the secret, replace it with a plus
+      const secretWithPlus = decodedSecret.replace(/ /g, '+');
 
       // Find the gift by secret hash
-      const gift = await this.giftRepository.findOne({ secretHash });
+      const gift = await this.giftRepository.findOne({
+        secretNumber: secretWithPlus,
+      });
       if (!gift) {
         throw new BadRequestException(ErrorGift.GiftNotFound);
       }
@@ -141,22 +141,22 @@ export class GiftService {
         throw new BadRequestException('Gift has been recalled by sender');
       }
 
-      // Check if gift is expired (if recallable time has passed and it's still pending)
-      if (
-        gift.recallableTime &&
-        gift.recallableTime <= new Date() &&
-        gift.status === NoteStatus.PENDING
-      ) {
-        // Auto-expire the gift
-        await this.giftRepository.updateOne(
-          { secretHash },
-          { status: NoteStatus.RECALLED, recalledAt: new Date() },
-        );
-        throw new BadRequestException(ErrorGift.GiftExpired);
-      }
+      await this.notificationService.createNotification({
+        walletAddress: gift.sender,
+        title: 'Gift opened by',
+        message: 'Gift opened by',
+        type: NotificationType.GIFT_OPEN,
+        metadata: {
+          tokenId: gift.assets[0].faucetId,
+          tokenName: gift.assets[0].metadata.symbol,
+          amount: gift.assets[0].amount,
+          transactionId: txId,
+          caller: caller,
+        },
+      });
 
       return this.giftRepository.updateOne(
-        { secretHash },
+        { secretNumber: secret },
         { status: NoteStatus.CONSUMED, openedAt: new Date() },
       );
     } catch (error) {
@@ -203,7 +203,7 @@ export class GiftService {
     }
   }
 
-  public async recallGift(id: number) {
+  public async recallGift(id: number, txId: string) {
     try {
       if (!id || typeof id !== 'number' || id <= 0) {
         throw new BadRequestException('Invalid gift ID');
@@ -231,6 +231,20 @@ export class GiftService {
         );
       }
 
+      // create notification
+      await this.notificationService.createNotification({
+        walletAddress: gift.sender,
+        title: 'Gift recalled successfully',
+        message: 'Gift recalled successfully',
+        type: NotificationType.REFUND,
+        metadata: {
+          tokenId: gift.assets[0].faucetId,
+          tokenName: gift.assets[0].metadata.symbol,
+          amount: gift.assets[0].amount,
+          transactionId: txId,
+        },
+      });
+
       return this.giftRepository.updateOne(
         { id },
         { status: NoteStatus.RECALLED, recalledAt: new Date() },
@@ -240,26 +254,21 @@ export class GiftService {
     }
   }
 
+  // gift can be recall immediately
   private async createGiftEntity(
     dto: CreateGiftDto,
-    secretHash: string,
     normalizedSenderAddress: string,
-    normalizedToken: string,
   ) {
     return this.giftRepository.create({
       sender: normalizedSenderAddress,
-      assets: {
-        faucetId: normalizedToken,
-        amount: dto.amount,
-      },
-      secretHash,
+      assets: dto.assets,
       status: NoteStatus.PENDING,
-      recallableTime: new Date(
-        Date.now() +
-          this.appConfigService.otherConfig.giftRecallableAfter * 1000,
-      ),
+      recallableTime: new Date(Date.now()),
+      recallable: true,
+      secretNumber: dto.secretNumber,
       serialNumber: dto.serialNumber,
       noteType: NoteType.GIFT,
+      noteId: dto.txId,
     });
   }
 }
