@@ -17,7 +17,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { GroupPaymentService } from './group-payment.service';
-import { CreateGroupDto, CreateGroupPaymentDto } from './group-payment.dto';
+import { CreateGroupDto, CreateGroupPaymentDto, CreateDefaultGroupDto } from './group-payment.dto';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
 import { RequestWithWalletAuth } from '../../common/interfaces';
 
@@ -37,6 +37,18 @@ export class GroupPaymentController {
     @Req() req: RequestWithWalletAuth,
   ) {
     return this.service.createGroup(dto, req.walletAuth.walletAddress);
+  }
+
+  @Post('default-group')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({ summary: 'Create a default group (e.g., Quick Share) with optional members' })
+  @ApiResponse({ status: 201, description: 'Default group created' })
+  @ApiBody({ type: CreateDefaultGroupDto })
+  async createDefaultGroup(
+    @Body() dto: CreateDefaultGroupDto,
+    @Req() req: RequestWithWalletAuth,
+  ) {
+    return this.service.createDefaultGroup(dto, req.walletAuth.walletAddress);
   }
 
   @Post('create-payment')

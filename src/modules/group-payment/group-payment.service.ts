@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { GroupPaymentRepository } from './group-payment.repository';
-import { CreateGroupDto, CreateGroupPaymentDto } from './group-payment.dto';
+import { CreateGroupDto, CreateGroupPaymentDto, CreateDefaultGroupDto } from './group-payment.dto';
 import { GroupPaymentStatus } from './group-payment.entity';
 import { RequestPaymentService } from '../request-payment/request-payment.service';
 import { GroupPaymentMemberStatus } from './group-payment.entity';
@@ -93,7 +93,67 @@ export class GroupPaymentService {
     }
   }
 
+  async createDefaultGroup(dto: CreateDefaultGroupDto, ownerAddress: string) {
+    try {
+      // Validate all inputs
+      validateAddress(ownerAddress, 'ownerAddress');
+      validateName(dto.name, 'name');
+
+      // Normalize addresses
+      const normalizedOwnerAddress = normalizeAddress(ownerAddress);
+      const normalizedMembers = (dto.members || []).map((member) =>
+        normalizeAddress(member),
+      );
+
+      // Validate each member address if provided
+      normalizedMembers.forEach((member, index) => {
+        validateAddress(member, `members[${index}]`);
+      });
+
+      // Check for duplicate members (only if members exist)
+      if (normalizedMembers.length > 0) {
+        validateUniqueArray(normalizedMembers, 'members');
+      }
+
+      // Check if owner is in members list (only if members exist)
+      if (normalizedMembers.length > 0 && normalizedMembers.includes(normalizedOwnerAddress)) {
+        throw new BadRequestException(ErrorGroupPayment.OwnerInMembersList);
+      }
+
+      // Check maximum members
+      if (normalizedMembers.length > 50) {
+        throw new BadRequestException(ErrorGroupPayment.TooManyMembers);
+      }
+
+      // Sanitize name
+      const sanitizedName = sanitizeString(dto.name);
+
+      // Check if group name already exists for this owner
+      const existingGroup = await this.groupPaymentRepository.findGroup({
+        name: sanitizedName,
+        ownerAddress: normalizedOwnerAddress,
+      });
+
+      if (existingGroup.length > 0) {
+        throw new BadRequestException(ErrorGroupPayment.GroupNameAlreadyExists);
+      }
+
+      // Create group with normalized data
+      const createDto = {
+        name: sanitizedName,
+        ownerAddress: normalizedOwnerAddress,
+        members: normalizedMembers,
+      };
+
+      return this.groupPaymentRepository.createGroup(createDto);
+    } catch (error) {
+      handleError(error, this.logger);
+    }
+  }
+
   async createGroupPayment(dto: CreateGroupPaymentDto, ownerAddress: string) {
+    console.log("🚀 ~ GroupPaymentService ~ createGroupPayment ~ ownerAddress:", ownerAddress)
+    console.log("🚀 ~ GroupPaymentService ~ createGroupPayment ~ dto:", dto)
     try {
       // Validate all inputs
       validateAddress(ownerAddress, 'ownerAddress');
@@ -147,7 +207,7 @@ export class GroupPaymentService {
       const perMember = parseFloat((total / members.length).toFixed(6));
 
       // Validate that the calculated perMember matches the provided one (with some tolerance)
-      if (Math.abs(perMember - dto.perMember) > 0.000001) {
+      if (Math.abs(perMember - dto.perMember) > 0.01) {
         throw new BadRequestException(
           'Calculated perMember amount does not match provided perMember',
         );
@@ -187,7 +247,7 @@ export class GroupPaymentService {
         members,
         perMember.toString(),
         dto.tokens,
-        `Group payment request - ${perMember.toString()} ${dto.tokens[0].faucetId} split among ${members.length} members`,
+        `Group payment request - ${perMember.toString()} ${dto.tokens[0].metadata.symbol} split among ${members.length} members`,
       );
 
       return { ...payment, link: `/group-payment/${linkCode}`, perMember };
