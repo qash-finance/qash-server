@@ -16,7 +16,8 @@ export class Migrationsts1754457619143 implements MigrationInterface {
                 'BATCH_SEND',
                 'WALLET_CREATE',
                 'GIFT_SEND',
-                'GIFT_OPEN'
+                'GIFT_OPEN',
+                'GIFT_CLAIM'
             )
         `);
     await queryRunner.query(`
@@ -36,6 +37,9 @@ export class Migrationsts1754457619143 implements MigrationInterface {
                 'REFUND',
                 'BATCH_SEND',
                 'WALLET_CREATE',
+                'GIFT_SEND',
+                'GIFT_OPEN',
+                'GIFT_CLAIM'
             )
         `);
     await queryRunner.query(`

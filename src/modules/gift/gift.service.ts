@@ -155,6 +155,20 @@ export class GiftService {
         },
       });
 
+      await this.notificationService.createNotification({
+        walletAddress: caller,
+        title: 'You claimed a gift!',
+        message: 'Gift claimed successfully',
+        type: NotificationType.GIFT_CLAIM,
+        metadata: {
+          tokenId: gift.assets[0].faucetId,
+          tokenName: gift.assets[0].metadata.symbol,
+          amount: gift.assets[0].amount,
+          transactionId: txId,
+          caller: caller,
+        },
+      });
+
       return this.giftRepository.updateOne(
         { secretNumber: secret },
         { status: NoteStatus.CONSUMED, openedAt: new Date() },
