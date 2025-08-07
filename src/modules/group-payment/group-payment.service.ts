@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { GroupPaymentRepository } from './group-payment.repository';
-import { CreateGroupDto, CreateGroupPaymentDto, CreateDefaultGroupDto } from './group-payment.dto';
+import { CreateGroupDto, CreateGroupPaymentDto, CreateDefaultGroupDto, CreateQuickSharePaymentDto } from './group-payment.dto';
 import { GroupPaymentStatus } from './group-payment.entity';
 import { RequestPaymentService } from '../request-payment/request-payment.service';
 import { GroupPaymentMemberStatus } from './group-payment.entity';
@@ -376,5 +376,177 @@ export class GroupPaymentService {
     } catch (error) {
       handleError(error, this.logger);
     }
+  }
+
+  // Quick Share specific methods - separate logic from regular group payments
+  async createQuickSharePayment(dto: CreateQuickSharePaymentDto, ownerAddress: string) {
+    try {
+      // Validate all inputs
+      validateAddress(ownerAddress, 'ownerAddress');
+      validateAmount(dto.amount, 'amount');
+
+      // Normalize addresses
+      const normalizedOwnerAddress = normalizeAddress(ownerAddress);
+
+      // Find or create the user's Quick Share group
+      let group = await this.groupPaymentRepository.findOneGroup({
+        ownerAddress: normalizedOwnerAddress,
+        name: 'Quick Share',
+      });
+
+      // If user doesn't have a Quick Share group, create one
+      if (!group) {
+        group = await this.groupPaymentRepository.createGroup({
+          name: 'Quick Share',
+          ownerAddress: normalizedOwnerAddress,
+          members: [], // Start with empty members
+        });
+      }
+
+      // Validate memberCount
+      if (dto.memberCount <= 0 || dto.memberCount > 50) {
+        throw new BadRequestException('memberCount must be between 1 and 50');
+      }
+
+      // For Quick Share, we create placeholder members based on expected count
+      const total = parseFloat(dto.amount);
+      if (total <= 0) {
+        throw new BadRequestException('Total amount must be greater than 0');
+      }
+
+      // Calculate perMember based on expected member count
+      const perMember = parseFloat((total / dto.memberCount).toFixed(6));
+
+      // Create placeholder members (represented as "-" for each expected slot)
+      const placeholderMembers = Array(dto.memberCount).fill('-');
+
+      // Update the group with placeholder members
+      await this.groupPaymentRepository.updateGroupMembers(group.id, placeholderMembers);
+
+      // Generate unique link code
+      const { nanoid } = await import('nanoid');
+      let linkCode = nanoid(16);
+
+      // Ensure link code is unique
+      let existingPayment =
+        await this.groupPaymentRepository.findPaymentByLinkCode(linkCode);
+      while (existingPayment) {
+        linkCode = nanoid(16);
+        existingPayment =
+          await this.groupPaymentRepository.findPaymentByLinkCode(linkCode);
+      }
+
+      // Create payment with placeholder members for Quick Share
+      const payment = await this.groupPaymentRepository.createPayment({
+        group,
+        ownerAddress: normalizedOwnerAddress,
+        tokens: dto.tokens,
+        amount: dto.amount,
+        perMember: perMember,
+        linkCode,
+        status: GroupPaymentStatus.PENDING,
+      });
+
+      // Create member statuses for all placeholder slots (all PENDING initially)
+      await this.groupPaymentRepository.createMemberStatus(payment.id, placeholderMembers);
+
+      // Return the code and member info for Quick Share
+      return { 
+        code: linkCode,
+        memberCount: dto.memberCount,
+        perMember: perMember,
+        members: placeholderMembers 
+      };
+    } catch (error) {
+      handleError(error, this.logger);
+    }
+  }
+
+  async addMemberToQuickShare(code: string, userAddress: string, requestorAddress: string) {
+    try {
+      // Validate inputs
+      if (!code || typeof code !== 'string') {
+        throw new BadRequestException('code is required and must be a string');
+      }
+
+      validateAddress(userAddress, 'userAddress');
+      validateAddress(requestorAddress, 'requestorAddress');
+
+      const normalizedUserAddress = normalizeAddress(userAddress);
+      const normalizedRequestorAddress = normalizeAddress(requestorAddress);
+
+      // Find the payment by code
+      const payment = await this.groupPaymentRepository.findPaymentByLinkCode(code);
+
+      if (!payment) {
+        throw new BadRequestException('Quick Share payment not found');
+      }
+
+      // Verify this is a Quick Share group
+      if (!this.isQuickShareGroup(payment.group.name)) {
+        throw new BadRequestException(
+          'This endpoint is only for Quick Share payments',
+        );
+      }
+
+      // Check if payment is still pending
+      if (payment.status !== GroupPaymentStatus.PENDING) {
+        throw new BadRequestException(
+          'Cannot add members to a completed or expired payment',
+        );
+      }
+
+      // Check if user is already a member (not a placeholder)
+      const currentMembers = payment.group.members || [];
+      if (currentMembers.includes(normalizedUserAddress)) {
+        throw new BadRequestException('User is already a member of this Quick Share');
+      }
+
+      // Check if user is the owner
+      if (normalizedUserAddress === normalizeAddress(payment.ownerAddress)) {
+        throw new BadRequestException('Owner cannot be added as a member');
+      }
+
+      // Find the first available placeholder slot ("-")
+      const placeholderIndex = currentMembers.findIndex(member => member === '-');
+      if (placeholderIndex === -1) {
+        throw new BadRequestException('No available slots in this Quick Share payment');
+      }
+
+      // Replace the placeholder with the actual user address
+      const updatedMembers = [...currentMembers];
+      updatedMembers[placeholderIndex] = normalizedUserAddress;
+      
+      // Update the group with new members
+      await this.groupPaymentRepository.updateGroupMembers(payment.group.id, updatedMembers);
+
+      // perMember amount stays the same since we're just filling a pre-allocated slot
+      const perMember = payment.perMember;
+
+      // Update the specific member status to PAID for this user (replacing the placeholder status)
+      await this.groupPaymentRepository.updateMemberStatusByIndex(payment.id, placeholderIndex, normalizedUserAddress);
+
+      // No payment request needed - user already paid!
+
+      const filledSlots = updatedMembers.filter(member => member !== '-').length;
+      const totalSlots = updatedMembers.length;
+
+      return {
+        success: true,
+        message: 'Member added to Quick Share successfully',
+        memberCount: totalSlots,
+        filledSlots: filledSlots,
+        perMember: perMember,
+        members: updatedMembers,
+      };
+    } catch (error) {
+      handleError(error, this.logger);
+    }
+  }
+
+  private isQuickShareGroup(groupName: string): boolean {
+    // Check if the group name indicates it's a Quick Share group
+    const quickShareNames = ['quick share', 'quickshare', 'quick-share'];
+    return quickShareNames.includes(groupName.toLowerCase());
   }
 }

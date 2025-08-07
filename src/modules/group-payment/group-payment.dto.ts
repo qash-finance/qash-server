@@ -9,6 +9,7 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
   Min,
+  Max,
   ValidateNested,
   IsObject,
 } from 'class-validator';
@@ -138,6 +139,50 @@ export class CreateGroupPaymentDto {
   @IsNotEmpty()
   @Min(1, { message: 'groupId must be a positive number' })
   groupId: number;
+}
+
+export class CreateQuickSharePaymentDto {
+  @ApiProperty({
+    description: 'Tokens',
+    example: [
+      {
+        faucetId: '0x2342342342342342342342342342342342342342',
+        amount: '100',
+        metadata: { name: 'test' },
+      },
+    ],
+  })
+  @IsArray()
+  @IsNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => TokenDto)
+  tokens: TokenDto[];
+
+  @ApiProperty({ description: 'Total amount to share', example: '100' })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d+(\.\d+)?$/, {
+    message: 'amount must be a valid positive number',
+  })
+  amount: string;
+
+  @ApiProperty({ description: 'Expected number of members', example: 5 })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(1, { message: 'memberCount must be at least 1' })
+  @Max(50, { message: 'memberCount cannot exceed 50' })
+  memberCount: number;
+}
+
+export class UpdateQuickShareMemberDto {
+  @ApiProperty({ description: 'User address to add to Quick Share' })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
+    message: 'userAddress must be a valid address starting with mt or mm',
+  })
+  @MinLength(3, { message: 'userAddress is too short' })
+  userAddress: string;
 }
 
 export class PayGroupPaymentDto {

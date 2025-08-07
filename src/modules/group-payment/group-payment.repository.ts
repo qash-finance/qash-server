@@ -153,4 +153,84 @@ export class GroupPaymentRepository {
       throw error;
     }
   }
+
+  // Quick Share specific repository methods
+  async updateGroupMembers(
+    groupId: number,
+    members: string[],
+  ): Promise<void> {
+    try {
+      await this.groupRepository.update(groupId, { members });
+    } catch (error) {
+      this.logger.error('Error updating group members:', error);
+      throw error;
+    }
+  }
+
+  async updatePaymentPerMember(
+    paymentId: number,
+    perMember: number,
+  ): Promise<void> {
+    try {
+      await this.paymentRepository.update(paymentId, { perMember });
+    } catch (error) {
+      this.logger.error('Error updating payment per member:', error);
+      throw error;
+    }
+  }
+
+  async updateMemberStatusToPaid(
+    groupPaymentId: number,
+    memberAddress: string,
+  ): Promise<void> {
+    try {
+      await this.memberStatusRepository.update(
+        {
+          groupPayment: { id: groupPaymentId },
+          memberAddress: memberAddress,
+        },
+        {
+          status: GroupPaymentMemberStatus.PAID,
+          paidAt: new Date(),
+        }
+      );
+    } catch (error) {
+      this.logger.error('Error updating member status to paid:', error);
+      throw error;
+    }
+  }
+
+  async updateMemberStatusByIndex(
+    groupPaymentId: number,
+    memberIndex: number,
+    newMemberAddress: string,
+  ): Promise<void> {
+    try {
+      // Get all member statuses for this payment, ordered by creation time
+      const memberStatuses = await this.memberStatusRepository.find({
+        where: { groupPayment: { id: groupPaymentId } },
+        order: { createdAt: 'ASC' },
+      });
+
+      // Find the status at the specific index
+      if (memberIndex < 0 || memberIndex >= memberStatuses.length) {
+        throw new Error('Invalid member index');
+      }
+
+      const targetStatus = memberStatuses[memberIndex];
+
+      // Update the member status with new address and mark as PAID
+      await this.memberStatusRepository.update(
+        { id: targetStatus.id },
+        {
+          memberAddress: newMemberAddress,
+          status: GroupPaymentMemberStatus.PAID,
+          paidAt: new Date(),
+        }
+      );
+    } catch (error) {
+      this.logger.error('Error updating member status by index:', error);
+      throw error;
+    }
+  }
 }
