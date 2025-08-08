@@ -41,4 +41,7 @@ export class TransactionEntity extends BaseEntity {
 
   @Column({ type: 'enum', enum: NoteStatus, default: NoteStatus.PENDING })
   public status: NoteStatus;
+
+  @Column({ type: 'int', nullable: true })
+  public requestPaymentId: number | null;
 }

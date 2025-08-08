@@ -323,6 +323,51 @@ export class RequestPaymentService {
     }
   }
 
+  /**
+   * Mark a request payment as paid when the receiver claims the transaction.
+   * Also updates group payment member status and payment completion if applicable.
+   */
+  public async settleOnClaim(
+    requestPaymentId: number,
+    claimerAddress: string,
+    txid?: string,
+  ) {
+    try {
+      if (!requestPaymentId || requestPaymentId <= 0) {
+        throw new BadRequestException('Invalid requestPaymentId');
+      }
+
+      validateAddress(claimerAddress, 'claimerAddress');
+      const normalizedClaimer = normalizeAddress(claimerAddress);
+
+      const req = await this.requestPaymentRepository.findOne({ id: requestPaymentId });
+      if (!req) {
+        throw new BadRequestException(ErrorRequestPayment.NotFound);
+      }
+
+      // Only transition to ACCEPTED here (paid), if still pending
+      if (req.status === RequestPaymentStatus.PENDING) {
+        await this.requestPaymentRepository.updateStatus(
+          requestPaymentId,
+          RequestPaymentStatus.ACCEPTED,
+        );
+      }
+
+      // Attach txid if provided and not set
+      if (txid && !req.txid) {
+        req.txid = txid as unknown as any;
+        await req.save();
+      }
+
+      // If group payment, mark member as PAID now (on claim)
+      if (req.isGroupPayment && req.groupPaymentId) {
+        await this.updateGroupPaymentMemberStatus(req.groupPaymentId, normalizedClaimer);
+      }
+    } catch (error) {
+      handleError(error, this.logger);
+    }
+  }
+
   async denyRequest(id: number, userAddress: string) {
     try {
       if (!id || id <= 0) {
@@ -351,9 +396,13 @@ export class RequestPaymentService {
         RequestPaymentStatus.DENIED,
       );
 
-      // If this is a group payment request, we might want to handle denial differently
-      // For now, we'll just deny the individual request without affecting the group payment
-      // The group payment will remain pending for other members
+      // If this is a group payment request, mark the member status as DENIED
+      if (req.isGroupPayment && req.groupPaymentId) {
+        await this.groupPaymentRepository.updateMemberStatusToDenied(
+          req.groupPaymentId,
+          normalizedUserAddress,
+        );
+      }
 
       return updatedRequest;
     } catch (error) {

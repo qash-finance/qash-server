@@ -233,4 +233,25 @@ export class GroupPaymentRepository {
       throw error;
     }
   }
+
+  async updateMemberStatusToDenied(
+    groupPaymentId: number,
+    memberAddress: string,
+  ): Promise<void> {
+    try {
+      await this.memberStatusRepository.update(
+        {
+          groupPayment: { id: groupPaymentId },
+          memberAddress: memberAddress,
+        },
+        {
+          status: GroupPaymentMemberStatus.DENIED,
+          paidAt: null,
+        }
+      );
+    } catch (error) {
+      this.logger.error('Error updating member status to denied:', error);
+      throw error;
+    }
+  }
 }

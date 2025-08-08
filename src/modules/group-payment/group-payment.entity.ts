@@ -11,6 +11,7 @@ export enum GroupPaymentStatus {
 export enum GroupPaymentMemberStatus {
   PENDING = 'pending',
   PAID = 'paid',
+  DENIED = 'denied',
 }
 
 @Entity({ name: 'group_payment_group' })
