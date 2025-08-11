@@ -7,6 +7,9 @@ export enum NotificationType {
   REQUEST_PAYMENT = 'REQUEST_PAYMENT',
   RECEIVED_PAYMENT = 'RECEIVED_PAYMENT',
   ADD_TO_BATCH = 'ADD_TO_BATCH',
+  GIFT_SEND = 'GIFT_SEND',
+  GIFT_OPEN = 'GIFT_OPEN',
+  GIFT_CLAIM = 'GIFT_CLAIM',
 }
 
 export enum NotificationStatus {

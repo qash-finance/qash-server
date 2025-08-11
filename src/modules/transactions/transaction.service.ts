@@ -15,7 +15,6 @@ import {
   validateAmount,
   validateSerialNumber,
   validateFutureDate,
-  validateDifferentAddresses,
   normalizeAddress,
 } from '../../common/utils/validation.util';
 import { ErrorTransaction } from '../../common/constants/errors';
@@ -478,7 +477,7 @@ export class TransactionService {
           }
         } else if (item.type === 'gift') {
           try {
-            await this.giftService.recallGift(item.id);
+            await this.giftService.recallGift(item.id, dto.txId);
             results.push({ type: 'gift', id: item.id, success: true });
           } catch (e) {
             results.push({
@@ -514,12 +513,12 @@ export class TransactionService {
       const normalizedRecipient = normalizeAddress(dto.recipient);
 
       // Check if sender and recipient are different
-      validateDifferentAddresses(
-        normalizedSender,
-        normalizedRecipient,
-        'sender',
-        'recipient',
-      );
+      // validateDifferentAddresses(
+      //   normalizedSender,
+      //   normalizedRecipient,
+      //   'sender',
+      //   'recipient',
+      // );
 
       // We don't store public transactions that are not recallable
       if (!dto.private && !dto.recallable) {
