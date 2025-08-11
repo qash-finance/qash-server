@@ -17,6 +17,22 @@ import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { FaucetMetadata } from '../transactions/transaction.dto';
 
+export class MemberDto {
+  @ApiProperty({ description: 'Member address', example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a' })
+  @IsString()
+  @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
+    message: 'address must be a valid address starting with mt or mm',
+  })
+  @MinLength(3, { message: 'address is too short' })
+  address: string;
+
+  @ApiProperty({ description: 'Member name', example: 'Alice' })
+  @IsString()
+  @MinLength(1, { message: 'name is too short' })
+  @MaxLength(100, { message: 'name cannot be longer than 100 characters' })
+  name: string;
+}
+
 export class TokenDto {
   @ApiProperty({
     description: 'Faucet ID (token address)',
@@ -54,23 +70,19 @@ export class CreateGroupDto {
   name: string;
 
   @ApiProperty({
-    description: 'Member addresses',
-    type: [String],
+    description: 'Members list',
+    type: [MemberDto],
     example: [
-      'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
-      'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+      { address: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a', name: 'Alice' },
+      { address: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6b', name: 'Bob' },
     ],
   })
   @IsArray()
   @ArrayMinSize(1, { message: 'At least 1 member is required' })
   @ArrayMaxSize(50, { message: 'Maximum 50 members allowed' })
-  @IsString({ each: true })
-  @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
-    each: true,
-    message: 'Each member must be a valid address starting with mt or mm',
-  })
-  @MinLength(3, { each: true, message: 'Each member address is too short' })
-  members: string[];
+  @ValidateNested({ each: true })
+  @Type(() => MemberDto)
+  members: MemberDto[];
 }
 
 export class CreateDefaultGroupDto {
@@ -87,20 +99,16 @@ export class CreateDefaultGroupDto {
   name: string;
 
   @ApiProperty({
-    description: 'Member addresses (optional for default groups)',
-    type: [String],
+    description: 'Members list (optional for default groups)',
+    type: [MemberDto],
     required: false,
     example: [],
   })
   @IsArray()
   @ArrayMaxSize(50, { message: 'Maximum 50 members allowed' })
-  @IsString({ each: true })
-  @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
-    each: true,
-    message: 'Each member must be a valid address starting with mt or mm',
-  })
-  @MinLength(3, { each: true, message: 'Each member address is too short' })
-  members: string[] = [];
+  @ValidateNested({ each: true })
+  @Type(() => MemberDto)
+  members: MemberDto[] = [];
 }
 
 export class CreateGroupPaymentDto {

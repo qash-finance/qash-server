@@ -41,20 +41,21 @@ export class GroupPaymentService {
 
       // Validate each member address
       dto.members.forEach((member, index) => {
-        validateAddress(member, `members[${index}]`);
+        validateAddress(member.address, `members[${index}].address`);
       });
 
-      // Check for duplicate members
-      validateUniqueArray(dto.members, 'members');
+      // Check for duplicate members by address
+      validateUniqueArray(dto.members.map((m) => m.address), 'members');
 
       // Normalize addresses
       const normalizedOwnerAddress = normalizeAddress(ownerAddress);
-      const normalizedMembers = dto.members.map((member) =>
-        normalizeAddress(member),
-      );
+      const normalizedMembers = dto.members.map((member) => ({
+        address: normalizeAddress(member.address),
+        name: sanitizeString(member.name),
+      }));
 
       // Check if owner is in members list
-      if (normalizedMembers.includes(normalizedOwnerAddress)) {
+      if (normalizedMembers.some((m) => m.address === normalizedOwnerAddress)) {
         throw new BadRequestException(ErrorGroupPayment.OwnerInMembersList);
       }
 
@@ -93,6 +94,91 @@ export class GroupPaymentService {
     }
   }
 
+  async updateGroup(groupId: number, dto: CreateGroupDto, ownerAddress: string) {
+    try {
+      if (!groupId || groupId <= 0) {
+        throw new BadRequestException('groupId must be a positive number');
+      }
+
+      validateAddress(ownerAddress, 'ownerAddress');
+      validateName(dto.name, 'name');
+      validateNonEmptyArray(dto.members, 'members');
+
+      // validate members, duplicates
+      dto.members.forEach((member, index) => validateAddress(member.address, `members[${index}].address`));
+      validateUniqueArray(dto.members.map((m) => m.address), 'members');
+
+      const normalizedOwnerAddress = normalizeAddress(ownerAddress);
+      const normalizedMembers = dto.members.map((m) => ({
+        address: normalizeAddress(m.address),
+        name: sanitizeString(m.name),
+      }));
+      const sanitizedName = sanitizeString(dto.name);
+
+      if (normalizedMembers.some((m) => m.address === normalizedOwnerAddress)) {
+        throw new BadRequestException(ErrorGroupPayment.OwnerInMembersList);
+      }
+
+      if (normalizedMembers.length < 1) {
+        throw new BadRequestException(ErrorGroupPayment.EmptyMembersList);
+      }
+
+      if (normalizedMembers.length > 50) {
+        throw new BadRequestException(ErrorGroupPayment.TooManyMembers);
+      }
+
+      // ensure group exists and owned by caller
+      const existing = await this.groupPaymentRepository.findOneGroup({ id: groupId });
+      if (!existing) {
+        throw new BadRequestException(ErrorGroupPayment.GroupNotFound);
+      }
+      if (normalizeAddress(existing.ownerAddress) !== normalizedOwnerAddress) {
+        throw new BadRequestException(ErrorGroupPayment.NotOwner);
+      }
+
+      // check name uniqueness among owner's groups (excluding this group)
+      const sameName = await this.groupPaymentRepository.findGroup({
+        ownerAddress: normalizedOwnerAddress,
+        name: sanitizedName,
+      });
+      if (sameName.some((g) => g.id !== groupId)) {
+        throw new BadRequestException(ErrorGroupPayment.GroupNameAlreadyExists);
+      }
+
+      const updated = await this.groupPaymentRepository.updateGroup(groupId, {
+        name: sanitizedName,
+        members: normalizedMembers,
+      });
+
+      return updated;
+    } catch (error) {
+      handleError(error, this.logger);
+    }
+  }
+
+  async deleteGroup(groupId: number, ownerAddress: string) {
+    try {
+      if (!groupId || groupId <= 0) {
+        throw new BadRequestException('groupId must be a positive number');
+      }
+      validateAddress(ownerAddress, 'ownerAddress');
+      const normalizedOwnerAddress = normalizeAddress(ownerAddress);
+
+      const existing = await this.groupPaymentRepository.findOneGroup({ id: groupId });
+      if (!existing) {
+        throw new BadRequestException(ErrorGroupPayment.GroupNotFound);
+      }
+      if (normalizeAddress(existing.ownerAddress) !== normalizedOwnerAddress) {
+        throw new BadRequestException(ErrorGroupPayment.NotOwner);
+      }
+
+      await this.groupPaymentRepository.deleteGroup(groupId);
+      return { success: true };
+    } catch (error) {
+      handleError(error, this.logger);
+    }
+  }
+
   async createDefaultGroup(dto: CreateDefaultGroupDto, ownerAddress: string) {
     try {
       // Validate all inputs
@@ -101,22 +187,23 @@ export class GroupPaymentService {
 
       // Normalize addresses
       const normalizedOwnerAddress = normalizeAddress(ownerAddress);
-      const normalizedMembers = (dto.members || []).map((member) =>
-        normalizeAddress(member),
-      );
+      const normalizedMembers = (dto.members || []).map((member) => ({
+        address: normalizeAddress(member.address),
+        name: sanitizeString(member.name),
+      }));
 
       // Validate each member address if provided
       normalizedMembers.forEach((member, index) => {
-        validateAddress(member, `members[${index}]`);
+        validateAddress(member.address, `members[${index}].address`);
       });
 
       // Check for duplicate members (only if members exist)
       if (normalizedMembers.length > 0) {
-        validateUniqueArray(normalizedMembers, 'members');
+        validateUniqueArray(normalizedMembers.map((m) => m.address), 'members');
       }
 
       // Check if owner is in members list (only if members exist)
-      if (normalizedMembers.length > 0 && normalizedMembers.includes(normalizedOwnerAddress)) {
+      if (normalizedMembers.length > 0 && normalizedMembers.some((m) => m.address === normalizedOwnerAddress)) {
         throw new BadRequestException(ErrorGroupPayment.OwnerInMembersList);
       }
 
@@ -186,7 +273,7 @@ export class GroupPaymentService {
         );
       }
 
-      const members = group.members;
+      const members = group.members as unknown as { address: string; name: string }[];
 
       // Validate that group has members
       if (!members || members.length === 0) {
@@ -238,13 +325,16 @@ export class GroupPaymentService {
       });
 
       // Create member statuses
-      await this.groupPaymentRepository.createMemberStatus(payment.id, members);
+      await this.groupPaymentRepository.createMemberStatus(
+        payment.id,
+        members.map((m) => ({ address: m.address, name: m.name }))
+      );
 
       // Create pending request payments for each member
       await this.requestPaymentService.createGroupPaymentRequests(
         payment.id,
         normalizedOwnerAddress,
-        members,
+        members.map((m) => m.address),
         perMember.toString(),
         dto.tokens,
         `Group payment request - ${perMember.toString()} ${dto.tokens[0].metadata.symbol} split among ${members.length} members`,
@@ -361,7 +451,7 @@ export class GroupPaymentService {
 
       // Calculate per-member amount
       const total = parseFloat(payment.amount);
-      const memberCount = payment.group ? payment.group.members.length : 1;
+      const memberCount = payment.group ? (payment.group.members?.length || 1) : 1;
       const perMember = (total / memberCount).toFixed(6);
 
       return {
@@ -418,7 +508,7 @@ export class GroupPaymentService {
       const perMember = parseFloat((total / dto.memberCount).toFixed(6));
 
       // Create placeholder members (represented as "-" for each expected slot)
-      const placeholderMembers = Array(dto.memberCount).fill('-');
+      const placeholderMembers = Array(dto.memberCount).fill({ address: '-', name: '-' });
 
       // Update the group with placeholder members
       await this.groupPaymentRepository.updateGroupMembers(group.id, placeholderMembers);
@@ -497,8 +587,8 @@ export class GroupPaymentService {
       }
 
       // Check if user is already a member (not a placeholder)
-      const currentMembers = payment.group.members || [];
-      if (currentMembers.includes(normalizedUserAddress)) {
+      const currentMembers = (payment.group.members || []) as unknown as { address: string; name: string }[];
+      if (currentMembers.some((m) => m.address === normalizedUserAddress)) {
         throw new BadRequestException('User is already a member of this Quick Share');
       }
 
@@ -508,14 +598,14 @@ export class GroupPaymentService {
       }
 
       // Find the first available placeholder slot ("-")
-      const placeholderIndex = currentMembers.findIndex(member => member === '-');
+      const placeholderIndex = currentMembers.findIndex(member => member.address === '-');
       if (placeholderIndex === -1) {
         throw new BadRequestException('No available slots in this Quick Share payment');
       }
 
       // Replace the placeholder with the actual user address
       const updatedMembers = [...currentMembers];
-      updatedMembers[placeholderIndex] = normalizedUserAddress;
+      updatedMembers[placeholderIndex] = { address: normalizedUserAddress, name: '-' };
       
       // Update the group with new members
       await this.groupPaymentRepository.updateGroupMembers(payment.group.id, updatedMembers);
@@ -528,7 +618,7 @@ export class GroupPaymentService {
 
       // No payment request needed - user already paid!
 
-      const filledSlots = updatedMembers.filter(member => member !== '-').length;
+      const filledSlots = updatedMembers.filter(member => member.address !== '-').length;
       const totalSlots = updatedMembers.length;
 
       return {

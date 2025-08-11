@@ -23,7 +23,10 @@ export class GroupPaymentGroupEntity extends BaseEntity {
   ownerAddress: string;
 
   @Column({ type: 'jsonb' })
-  members: string[];
+  members: {
+    address: string;
+    name: string;
+  }[];
 }
 
 @Entity({ name: 'group_payment' })

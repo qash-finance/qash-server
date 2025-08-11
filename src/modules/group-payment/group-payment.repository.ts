@@ -33,6 +33,29 @@ export class GroupPaymentRepository {
     }
   }
 
+  public async updateGroup(
+    groupId: number,
+    update: Partial<GroupPaymentGroupEntity>,
+  ): Promise<GroupPaymentGroupEntity> {
+    try {
+      await this.groupRepository.update(groupId, update);
+      const updated = await this.groupRepository.findOne({ where: { id: groupId } });
+      return updated as GroupPaymentGroupEntity;
+    } catch (error) {
+      this.logger.error('Error updating group:', error);
+      throw error;
+    }
+  }
+
+  public async deleteGroup(groupId: number): Promise<void> {
+    try {
+      await this.groupRepository.delete(groupId);
+    } catch (error) {
+      this.logger.error('Error deleting group:', error);
+      throw error;
+    }
+  }
+
   public async createPayment(
     dto: Partial<GroupPaymentEntity>,
   ): Promise<GroupPaymentEntity> {
@@ -47,16 +70,17 @@ export class GroupPaymentRepository {
 
   public async createMemberStatus(
     groupPaymentId: number,
-    members: string[],
+    members: { address: string; name: string }[] | string[],
   ): Promise<GroupPaymentMemberStatusEntity[]> {
     try {
-      const memberStatusEntities = members.map((member) =>
-        this.memberStatusRepository.create({
+      const memberStatusEntities = members.map((member) => {
+        const address = typeof member === 'string' ? member : member.address;
+        return this.memberStatusRepository.create({
           groupPayment: { id: groupPaymentId },
-          memberAddress: member,
+          memberAddress: address,
           status: GroupPaymentMemberStatus.PENDING,
-        }),
-      );
+        });
+      });
 
       return await this.memberStatusRepository.save(memberStatusEntities);
     } catch (error) {
@@ -157,7 +181,7 @@ export class GroupPaymentRepository {
   // Quick Share specific repository methods
   async updateGroupMembers(
     groupId: number,
-    members: string[],
+    members: { address: string; name: string }[],
   ): Promise<void> {
     try {
       await this.groupRepository.update(groupId, { members });

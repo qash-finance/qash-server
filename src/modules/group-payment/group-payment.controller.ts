@@ -7,6 +7,7 @@ import {
   Patch,
   UseGuards,
   Req,
+  Delete,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -137,5 +138,31 @@ export class GroupPaymentController {
   })
   async getPaymentByLink(@Param('linkCode') linkCode: string) {
     return this.service.getPaymentByLink(linkCode);
+  }
+
+  /************************************************** */
+  /******************** PATCH *********************** */
+  /************************************************** */
+
+  @Patch('group/:groupId')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({ summary: 'Update a group' })
+  @ApiResponse({ status: 200, description: 'Group updated successfully' })
+  @ApiParam({ name: 'groupId', description: 'Group ID to update' })
+  async updateGroup(@Param('groupId') groupId: number, @Body() dto: CreateGroupDto, @Req() req: RequestWithWalletAuth) {
+    return this.service.updateGroup(groupId, dto, req.walletAuth.walletAddress);
+  }
+
+  /************************************************** */
+  /******************** DELETE ********************** */
+  /************************************************** */
+
+  @Delete('group/:groupId')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({ summary: 'Delete a group' })
+  @ApiResponse({ status: 200, description: 'Group deleted successfully' })
+  @ApiParam({ name: 'groupId', description: 'Group ID to delete' })
+  async deleteGroup(@Param('groupId') groupId: number, @Req() req: RequestWithWalletAuth) {
+    return this.service.deleteGroup(groupId, req.walletAuth.walletAddress);
   }
 }
