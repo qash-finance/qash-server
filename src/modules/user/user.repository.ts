@@ -1,65 +1,80 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import {
-  FindOptionsWhere,
-  FindManyOptions,
-  FindOneOptions,
-  Repository,
-} from 'typeorm';
-
-import { UserEntity } from './user.entity';
-import { UserDto } from './user.dto';
+import { Prisma, PrismaClient, Users } from '@prisma/client';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class UserRepository {
   private readonly logger = new Logger(UserRepository.name);
 
-  constructor(
-    @InjectRepository(UserEntity)
-    private readonly userEntityRepository: Repository<UserEntity>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   public async updateOne(
-    where: FindOptionsWhere<UserEntity>,
-    dto: Partial<UserDto>,
-  ): Promise<UserEntity> {
-    const userEntity = await this.userEntityRepository.findOneBy(where);
-
-    if (!userEntity) {
-      this.logger.log('none');
-      throw new Error();
+    where: Prisma.UsersWhereInput,
+    data: Prisma.UsersUpdateInput,
+    include?: Prisma.UsersInclude,
+  ): Promise<Users> {
+    const existing = await this.prisma.users.findFirst({ where });
+    if (!existing) {
+      this.logger.error('User not found for updateOne');
+      throw new Error('User not found');
     }
-
-    Object.assign(userEntity, dto);
-    return userEntity.save();
+    const row = await this.prisma.users.update({
+      where: { id: existing.id },
+      data: { ...data, updatedAt: new Date() },
+      include,
+    });
+    return row;
   }
 
   public async findOne(
-    where: FindOptionsWhere<UserEntity>,
-    options?: FindOneOptions<UserEntity>,
-  ): Promise<UserEntity | null> {
-    const userEntity = await this.userEntityRepository.findOne({
+    where: Prisma.UsersWhereInput,
+    options?: Prisma.UsersFindFirstArgs,
+  ): Promise<Users | null> {
+    const row = await this.prisma.users.findFirst({
       where,
-      ...options,
+      include: options?.include,
+      orderBy: { createdAt: 'desc' },
     });
-
-    return userEntity;
+    return row ?? null;
   }
 
-  public find(
-    where: FindOptionsWhere<UserEntity>,
-    options?: FindManyOptions<UserEntity>,
-  ): Promise<UserEntity[]> {
-    return this.userEntityRepository.find({
+  public async find(
+    where: Prisma.UsersWhereInput,
+    options?: Prisma.UsersFindManyArgs,
+  ): Promise<Users[]> {
+    const rows = await this.prisma.users.findMany({
       where,
-      order: {
-        createdAt: 'DESC',
+      orderBy: { createdAt: 'desc' },
+      include: options?.include,
+      skip: options?.skip,
+      take: options?.take,
+    });
+    return rows;
+  }
+
+  public async create(
+    data: Omit<Prisma.UsersCreateInput, 'createdAt' | 'updatedAt'>,
+  ): Promise<Users> {
+    const row = await this.prisma.users.create({
+      data: {
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
-      ...options,
     });
+    return row;
   }
 
-  public async create(dto: UserDto): Promise<UserEntity> {
-    return this.userEntityRepository.create(dto).save();
+  public async updateById(
+    id: number,
+    data: Prisma.UsersUpdateInput,
+    include?: Prisma.UsersInclude,
+  ): Promise<Users> {
+    const row = await this.prisma.users.update({
+      where: { id },
+      data: { ...data, updatedAt: new Date() },
+      include,
+    });
+    return row;
   }
 }

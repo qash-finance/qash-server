@@ -1,30 +1,55 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ReferralCodeRepository } from './referral.repository';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ReferralCodeDto } from './referral.dto';
-import { ReferralCodeEntity } from './referral.entity';
-import { UserEntity } from '../user/user.entity';
+import { ReferralCodes } from '@prisma/client';
+import { ErrorReferralCode } from '../../common/constants/errors';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class ReferralCodeService {
   private readonly logger = new Logger(ReferralCodeService.name);
 
   constructor(
-    private readonly referralCodeRepository: ReferralCodeRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   // create referral code for user who verified successfully
-  public async create(dto: ReferralCodeDto): Promise<ReferralCodeEntity> {
-    return await this.referralCodeRepository.create(dto);
+  public async create(dto: ReferralCodeDto): Promise<ReferralCodes> {
+    try {
+      const now = new Date();
+      return await this.prisma.referralCodes.create({
+        data: {
+          code: dto.code,
+          timesUsed: dto.timesUsed ?? 0,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Error creating referral code:', error);
+      throw error;
+    }
   }
 
   public async useReferralCode(
-    referredBy: UserEntity,
-  ): Promise<ReferralCodeEntity> {
-    const referredByReferralCode = await this.referralCodeRepository.findOne({
-      id: referredBy.referralCode.id,
-    });
-    referredByReferralCode.timesUsed += 1;
-    return await referredByReferralCode.save();
+    referredBy: { referralCode: { id: number } | null },
+  ): Promise<ReferralCodes> {
+    const referralCodeId = referredBy?.referralCode?.id;
+    if (!referralCodeId) {
+      throw new NotFoundException(ErrorReferralCode.ReferralCodeNotFound);
+    }
+    
+    try {
+      return await this.prisma.referralCodes.update({
+        where: { id: referralCodeId },
+        data: { 
+          timesUsed: { increment: 1 }, 
+          updatedAt: new Date() 
+        },
+      });
+    } catch (error) {
+      this.logger.error('Error incrementing referral code usage:', error);
+      throw error;
+    }
   }
 
   public generateCode(): string {

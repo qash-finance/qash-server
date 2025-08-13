@@ -3,7 +3,7 @@ import { Matches, IsString, IsEmail, IsBoolean } from 'class-validator';
 import { IsConfirm, IsPassword } from '../../common/validators';
 import { Transform } from 'class-transformer';
 import { TokenType } from '../../common/enums/token';
-import { UserEntity } from '../user/user.entity';
+import { Users } from '@prisma/client';
 import { Role } from '../../common/enums/role';
 export class ValidatePasswordDto {
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/, {
@@ -28,7 +28,7 @@ export class ForgotPasswordDto {
 
 export class TokenCreateDto {
   public tokenType: TokenType;
-  public user: UserEntity;
+  public user: Users  ;
 }
 export class VerifyEmailDto {
   @ApiProperty()
@@ -78,7 +78,7 @@ export class AuthDto {
 }
 
 export class AuthCreateDto {
-  public user: UserEntity;
+  public user: Users;
   public refreshToken: string;
   public accessToken: string;
 }

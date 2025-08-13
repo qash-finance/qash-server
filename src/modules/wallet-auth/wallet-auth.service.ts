@@ -4,14 +4,9 @@ import {
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, In, LessThan } from 'typeorm';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 import {
-  WalletAuthKeyEntity,
-  WalletAuthSessionEntity,
-  WalletAuthChallengeEntity,
   WalletAuthStatus,
 } from './wallet-auth.entity';
 import {
@@ -27,6 +22,7 @@ import {
   KeyInfo,
   SessionInfo,
 } from './wallet-auth.dto';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class WalletAuthService {
@@ -38,12 +34,7 @@ export class WalletAuthService {
   private readonly MAX_SESSIONS_PER_KEY = 3;
 
   constructor(
-    @InjectRepository(WalletAuthKeyEntity)
-    private readonly keyRepository: Repository<WalletAuthKeyEntity>,
-    @InjectRepository(WalletAuthSessionEntity)
-    private readonly sessionRepository: Repository<WalletAuthSessionEntity>,
-    @InjectRepository(WalletAuthChallengeEntity)
-    private readonly challengeRepository: Repository<WalletAuthChallengeEntity>,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
@@ -72,21 +63,24 @@ export class WalletAuthService {
       );
 
       // Store challenge
-      const challenge = this.challengeRepository.create({
-        walletAddress: dto.walletAddress,
-        challengeCode,
-        expectedResponse,
-        expiresAt,
-        ipAddress,
-        userAgent,
-        challengeData: {
-          deviceFingerprint: dto.deviceFingerprint,
-          deviceType: dto.deviceType,
-          metadata: dto.metadata,
+      const now = new Date();
+      await this.prisma.walletAuthChallenges.create({
+        data: {
+          walletAddress: dto.walletAddress,
+          challengeCode,
+          expectedResponse,
+          expiresAt,
+          ipAddress,
+          userAgent,
+          challengeData: {
+            deviceFingerprint: dto.deviceFingerprint,
+            deviceType: dto.deviceType,
+            metadata: dto.metadata,
+          } as any,
+          createdAt: now,
+          updatedAt: now,
         },
       });
-
-      await this.challengeRepository.save(challenge);
 
       return {
         challengeCode,
@@ -110,12 +104,12 @@ export class WalletAuthService {
   ): Promise<RegisterKeyResponse> {
     try {
       // Verify challenge
-      const challenge = await this.challengeRepository.findOne({
+      const challenge = await this.prisma.walletAuthChallenges.findFirst({
         where: {
           challengeCode: dto.challengeCode,
           walletAddress: dto.walletAddress,
           isUsed: false,
-          expiresAt: MoreThan(new Date()),
+          expiresAt: { gt: new Date() },
         },
       });
 
@@ -134,7 +128,7 @@ export class WalletAuthService {
       }
 
       // Check if wallet already has too many keys
-      const existingKeysCount = await this.keyRepository.count({
+      const existingKeysCount = await this.prisma.walletAuthKeys.count({
         where: {
           walletAddress: dto.walletAddress,
           status: WalletAuthStatus.ACTIVE,
@@ -148,7 +142,7 @@ export class WalletAuthService {
       }
 
       // Check if public key already exists
-      const existingKey = await this.keyRepository.findOne({
+      const existingKey = await this.prisma.walletAuthKeys.findFirst({
         where: { publicKey: dto.publicKey },
       });
 
@@ -168,42 +162,54 @@ export class WalletAuthService {
       );
 
       // Check if key already exists for this wallet address
-      const existingWalletKey = await this.keyRepository.findOne({
+      const existingWalletKey = await this.prisma.walletAuthKeys.findFirst({
         where: { walletAddress: dto.walletAddress },
       });
 
       if (existingWalletKey) {
-        existingWalletKey.publicKey = dto.publicKey;
-        existingWalletKey.hashedSecretKey = hashedSecretKey;
-        existingWalletKey.keyDerivationSalt = salt;
-        existingWalletKey.expiresAt = expiresAt;
-        existingWalletKey.deviceFingerprint = dto.deviceFingerprint;
-        existingWalletKey.deviceType = dto.deviceType;
-        existingWalletKey.ipAddress = ipAddress;
-        existingWalletKey.userAgent = userAgent;
-        existingWalletKey.metadata = challenge.challengeData;
-        existingWalletKey.status = WalletAuthStatus.ACTIVE;
-
-        await this.keyRepository.save(existingWalletKey);
-      } else {
-        const keyRecord = this.keyRepository.create({
-          walletAddress: dto.walletAddress,
-          publicKey: dto.publicKey,
-          hashedSecretKey,
-          keyDerivationSalt: salt,
-          expiresAt,
-          deviceFingerprint: dto.deviceFingerprint,
-          deviceType: dto.deviceType,
-          ipAddress,
-          userAgent,
-          metadata: challenge.challengeData,
+        const updated = await this.prisma.walletAuthKeys.update({
+          where: { id: existingWalletKey.id },
+          data: {
+            publicKey: dto.publicKey,
+            hashedSecretKey: hashedSecretKey,
+            keyDerivationSalt: salt,
+            expiresAt: expiresAt,
+            deviceFingerprint: dto.deviceFingerprint,
+            deviceType: dto.deviceType,
+            ipAddress: ipAddress,
+            userAgent: userAgent,
+            metadata: challenge.challengeData as any,
+            status: WalletAuthStatus.ACTIVE,
+            updatedAt: new Date(),
+          },
         });
-
-        await this.keyRepository.save(keyRecord);
+      } else {
+        const createTime = new Date();
+        const keyRecord = await this.prisma.walletAuthKeys.create({
+          data: {
+            walletAddress: dto.walletAddress,
+            publicKey: dto.publicKey,
+            hashedSecretKey,
+            keyDerivationSalt: salt,
+            expiresAt,
+            deviceFingerprint: dto.deviceFingerprint,
+            deviceType: dto.deviceType,
+            ipAddress,
+            userAgent,
+            metadata: challenge.challengeData as any,
+            createdAt: createTime,
+            updatedAt: createTime,
+          },
+        });
       }
 
-      challenge.isUsed = true;
-      await this.challengeRepository.save(challenge);
+      await this.prisma.walletAuthChallenges.update({
+        where: { id: challenge.id },
+        data: { 
+          isUsed: true,
+          updatedAt: new Date(),
+        },
+      });
 
       return {
         publicKey: dto.publicKey,
@@ -227,12 +233,12 @@ export class WalletAuthService {
   ): Promise<AuthResponse> {
     try {
       // Find active key
-      const keyRecord = await this.keyRepository.findOne({
+      const keyRecord = await this.prisma.walletAuthKeys.findFirst({
         where: {
           walletAddress: dto.walletAddress,
           publicKey: dto.publicKey,
           status: WalletAuthStatus.ACTIVE,
-          expiresAt: MoreThan(new Date()),
+          expiresAt: { gt: new Date() },
         },
       });
 
@@ -275,25 +281,33 @@ export class WalletAuthService {
         sessionExpiresAt.getHours() + this.SESSION_EXPIRY_HOURS,
       );
 
-      const session = this.sessionRepository.create({
-        sessionToken,
-        walletAddress: dto.walletAddress,
-        authKeyId: keyRecord.id,
-        expiresAt: sessionExpiresAt,
-        lastActivityAt: new Date(),
-        ipAddress,
-        userAgent,
-        sessionData: {
-          deviceFingerprint: dto.deviceFingerprint,
-          loginTime: new Date().toISOString(),
+      const sessionTime = new Date();
+      const session = await this.prisma.walletAuthSessions.create({
+        data: {
+          sessionToken,
+          walletAddress: dto.walletAddress,
+          authKeyId: keyRecord.id,
+          expiresAt: sessionExpiresAt,
+          lastActivityAt: new Date(),
+          ipAddress,
+          userAgent,
+          sessionData: {
+            deviceFingerprint: dto.deviceFingerprint,
+            loginTime: new Date().toISOString(),
+          } as any,
+          createdAt: sessionTime,
+          updatedAt: sessionTime,
         },
       });
 
-      await this.sessionRepository.save(session);
-
       // Update key last used time
-      keyRecord.lastUsedAt = new Date();
-      await this.keyRepository.save(keyRecord);
+      await this.prisma.walletAuthKeys.update({
+        where: { id: keyRecord.id },
+        data: { 
+          lastUsedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
 
       return {
         sessionToken,
@@ -312,12 +326,12 @@ export class WalletAuthService {
    */
   async refreshToken(dto: RefreshTokenDto): Promise<AuthResponse> {
     try {
-      const session = await this.sessionRepository.findOne({
+      const session = await this.prisma.walletAuthSessions.findFirst({
         where: {
           sessionToken: dto.sessionToken,
           walletAddress: dto.walletAddress,
           isActive: true,
-          expiresAt: MoreThan(new Date()),
+          expiresAt: { gt: new Date() },
         },
       });
 
@@ -325,7 +339,7 @@ export class WalletAuthService {
         throw new UnauthorizedException('Invalid or expired session');
       }
 
-      const keyRecord = await this.keyRepository.findOne({
+      const keyRecord = await this.prisma.walletAuthKeys.findFirst({
         where: { id: session.authKeyId },
       });
 
@@ -339,9 +353,14 @@ export class WalletAuthService {
         newExpiresAt.getHours() + this.SESSION_EXPIRY_HOURS,
       );
 
-      session.expiresAt = newExpiresAt;
-      session.lastActivityAt = new Date();
-      await this.sessionRepository.save(session);
+      await this.prisma.walletAuthSessions.update({
+        where: { id: session.id },
+        data: {
+          expiresAt: newExpiresAt,
+          lastActivityAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
 
       return {
         sessionToken: dto.sessionToken,
@@ -362,11 +381,11 @@ export class WalletAuthService {
     sessionToken: string,
   ): Promise<{ walletAddress: string; publicKey: string } | null> {
     try {
-      const session = await this.sessionRepository.findOne({
+      const session = await this.prisma.walletAuthSessions.findFirst({
         where: {
           sessionToken,
           isActive: true,
-          expiresAt: MoreThan(new Date()),
+          expiresAt: { gt: new Date() },
         },
       });
 
@@ -374,7 +393,7 @@ export class WalletAuthService {
         return null;
       }
 
-      const keyRecord = await this.keyRepository.findOne({
+      const keyRecord = await this.prisma.walletAuthKeys.findFirst({
         where: { id: session.authKeyId },
       });
 
@@ -383,8 +402,13 @@ export class WalletAuthService {
       }
 
       // Update last activity
-      session.lastActivityAt = new Date();
-      await this.sessionRepository.save(session);
+      await this.prisma.walletAuthSessions.update({
+        where: { id: session.id },
+        data: {
+          lastActivityAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
 
       return {
         walletAddress: session.walletAddress,
@@ -410,22 +434,31 @@ export class WalletAuthService {
         whereClause.publicKey = dto.publicKey;
       }
 
-      const result = await this.keyRepository.update(whereClause, {
-        status: WalletAuthStatus.REVOKED,
+      const result = await this.prisma.walletAuthKeys.updateMany({
+        where: whereClause,
+        data: {
+          status: WalletAuthStatus.REVOKED,
+          updatedAt: new Date(),
+        },
       });
 
       // Also revoke all sessions for these keys
-      const keys = await this.keyRepository.find({ where: whereClause });
+      const keys = await this.prisma.walletAuthKeys.findMany({ 
+        where: whereClause 
+      });
       const keyIds = keys.map((k) => k.id);
 
       if (keyIds.length > 0) {
-        await this.sessionRepository.update(
-          { authKeyId: In(keyIds) },
-          { isActive: false },
-        );
+        await this.prisma.walletAuthSessions.updateMany({
+          where: { authKeyId: { in: keyIds } },
+          data: { 
+            isActive: false,
+            updatedAt: new Date(),
+          },
+        });
       }
 
-      return { revokedCount: result.affected || 0 };
+      return { revokedCount: result.count };
     } catch (error) {
       this.logger.error('Failed to revoke keys:', error);
       throw new BadRequestException('Failed to revoke keys');
@@ -437,12 +470,15 @@ export class WalletAuthService {
    */
   async revokeSession(dto: RevokeSessionDto): Promise<{ success: boolean }> {
     try {
-      const result = await this.sessionRepository.update(
-        { sessionToken: dto.sessionToken },
-        { isActive: false },
-      );
+      const result = await this.prisma.walletAuthSessions.updateMany({
+        where: { sessionToken: dto.sessionToken },
+        data: { 
+          isActive: false,
+          updatedAt: new Date(),
+        },
+      });
 
-      return { success: (result.affected || 0) > 0 };
+      return { success: result.count > 0 };
     } catch (error) {
       this.logger.error('Failed to revoke session:', error);
       throw new BadRequestException('Failed to revoke session');
@@ -454,9 +490,9 @@ export class WalletAuthService {
    */
   async getKeys(walletAddress: string): Promise<KeyInfo[]> {
     try {
-      const keys = await this.keyRepository.find({
+      const keys = await this.prisma.walletAuthKeys.findMany({
         where: { walletAddress },
-        order: { createdAt: 'DESC' },
+        orderBy: { createdAt: 'desc' },
       });
 
       return keys.map((key) => ({
@@ -465,7 +501,7 @@ export class WalletAuthService {
         createdAt: key.createdAt.toISOString(),
         expiresAt: key.expiresAt.toISOString(),
         lastUsedAt: key.lastUsedAt?.toISOString() || null,
-        deviceType: key.deviceType,
+        deviceType: key.deviceType as any,
         deviceFingerprint: key.deviceFingerprint,
       }));
     } catch (error) {
@@ -485,12 +521,12 @@ export class WalletAuthService {
       const whereClause: any = { walletAddress };
       if (!includeInactive) {
         whereClause.isActive = true;
-        whereClause.expiresAt = MoreThan(new Date());
+        whereClause.expiresAt = { gt: new Date() };
       }
 
-      const sessions = await this.sessionRepository.find({
+      const sessions = await this.prisma.walletAuthSessions.findMany({
         where: whereClause,
-        order: { createdAt: 'DESC' },
+        orderBy: { createdAt: 'desc' },
       });
 
       return sessions.map((session) => ({
@@ -551,15 +587,17 @@ export class WalletAuthService {
   }
 
   private async cleanupExpiredChallenges(): Promise<void> {
-    await this.challengeRepository.delete({
-      expiresAt: LessThan(new Date()),
+    await this.prisma.walletAuthChallenges.deleteMany({
+      where: {
+        expiresAt: { lt: new Date() },
+      },
     });
   }
 
   private async cleanupOldSessions(keyId: number): Promise<void> {
-    const sessions = await this.sessionRepository.find({
+    const sessions = await this.prisma.walletAuthSessions.findMany({
       where: { authKeyId: keyId, isActive: true },
-      order: { createdAt: 'DESC' },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (sessions.length >= this.MAX_SESSIONS_PER_KEY) {
@@ -568,10 +606,13 @@ export class WalletAuthService {
       );
       const sessionIds = sessionsToDeactivate.map((s) => s.id);
 
-      await this.sessionRepository.update(
-        { id: In(sessionIds) },
-        { isActive: false },
-      );
+      await this.prisma.walletAuthSessions.updateMany({
+        where: { id: { in: sessionIds } },
+        data: { 
+          isActive: false,
+          updatedAt: new Date(),
+        },
+      });
     }
   }
 }

@@ -8,6 +8,7 @@ export interface DatabaseConfig {
     rejectUnauthorized: boolean;
     require: boolean;
   };
+  url: string;
 }
 
 export interface MailConfig {

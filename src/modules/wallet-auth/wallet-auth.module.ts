@@ -1,22 +1,13 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import {
-  WalletAuthKeyEntity,
-  WalletAuthSessionEntity,
-  WalletAuthChallengeEntity,
-} from './wallet-auth.entity';
 import { WalletAuthService } from './wallet-auth.service';
 import { WalletAuthController } from './wallet-auth.controller';
 import { WalletAuthGuard } from './wallet-auth.guard';
 import { NotificationModule } from '../notification/notification.module';
+import { PrismaModule } from '../../common/prisma/prisma.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      WalletAuthKeyEntity,
-      WalletAuthSessionEntity,
-      WalletAuthChallengeEntity,
-    ]),
+    PrismaModule,
     NotificationModule,
   ],
   providers: [WalletAuthService, WalletAuthGuard],

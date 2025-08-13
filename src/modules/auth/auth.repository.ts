@@ -1,41 +1,52 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Repository,
-  FindOptionsWhere,
-  FindOneOptions,
-  DeleteResult,
-} from 'typeorm';
-import { AuthEntity } from './auth.entity';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { Auths, Prisma } from '@prisma/client';
 import { AuthCreateDto } from './auth.dto';
 @Injectable()
 export class AuthRepository {
   private readonly logger = new Logger(AuthRepository.name);
 
-  constructor(
-    @InjectRepository(AuthEntity)
-    private readonly authEntityRepository: Repository<AuthEntity>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   public async findOne(
-    where: FindOptionsWhere<AuthEntity>,
-    options?: FindOneOptions<AuthEntity>,
-  ): Promise<AuthEntity | null> {
-    const authEntity = await this.authEntityRepository.findOne({
+    where: Prisma.AuthsWhereInput,
+    options?: Prisma.AuthsFindFirstArgs,
+  ): Promise<Auths> {
+    const row = await this.prisma.auths.findFirst({
       where,
       ...options,
+      orderBy: { createdAt: 'desc' },
     });
-
-    return authEntity;
+    return row;
   }
 
-  public async delete(
-    where: FindOptionsWhere<AuthEntity>,
-  ): Promise<DeleteResult> {
-    return this.authEntityRepository.delete(where);
+  public async delete(where: Prisma.AuthsWhereInput): Promise<number> {
+    const result = await this.prisma.auths.deleteMany({ where });
+    return result.count;
   }
 
-  public async create(dto: AuthCreateDto): Promise<AuthEntity> {
-    return this.authEntityRepository.create(dto).save();
+  public async create(dto: AuthCreateDto): Promise<Auths> {
+    const now = new Date();
+    const row = await this.prisma.auths.create({
+      data: {
+        createdAt: now,
+        updatedAt: now,
+        accessToken: dto.accessToken,
+        refreshToken: dto.refreshToken,
+        userId: dto.user.id,
+      },
+    });
+    return row;
+  }
+
+  public async update(
+    where: Prisma.AuthsWhereUniqueInput,
+    data: Partial<Auths>,
+  ): Promise<Auths> {
+    const row = await this.prisma.auths.update({
+      where,
+      data: { ...data, updatedAt: new Date() },
+    });
+    return row;
   }
 }

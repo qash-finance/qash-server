@@ -1,20 +1,13 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AddressBookEntity } from './address-book.entity';
-import { CategoryEntity } from './category.entity';
-import { AddressBookRepository } from './address-book.repository';
 import { AddressBookService } from './address-book.service';
 import { AddressBookController } from './address-book.controller';
 import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
-import { CategoryRepository } from './category.repository';
+import { PrismaModule } from '../../common/prisma/prisma.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([AddressBookEntity, CategoryEntity]),
-    WalletAuthModule,
-  ],
-  providers: [AddressBookRepository, AddressBookService, CategoryRepository],
+  imports: [PrismaModule, WalletAuthModule],
+  providers: [AddressBookService],
   controllers: [AddressBookController],
-  exports: [AddressBookService, AddressBookRepository],
+  exports: [AddressBookService],
 })
 export class AddressBookModule {}

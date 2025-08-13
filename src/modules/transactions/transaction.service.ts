@@ -1,13 +1,11 @@
 import { BadRequestException, Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
-import { TransactionRepository } from './transaction.repository';
-import { TransactionEntity } from './transaction.entity';
+import { Transactions } from '@prisma/client';
 import {
   SendTransactionDto,
   RecallRequestDto,
   ConsumePublicTransactionDto,
 } from './transaction.dto';
 import { handleError } from '../../common/utils/errors';
-import { In } from 'typeorm';
 import { GiftService } from '../gift/gift.service';
 import { NoteStatus } from '../../common/enums/note';
 import {
@@ -20,19 +18,19 @@ import {
 import { ErrorTransaction } from '../../common/constants/errors';
 import { NotificationService } from '../notification/notification.service';
 import { RequestPaymentService } from '../request-payment/request-payment.service';
-import { RequestPaymentStatus } from '../request-payment/request-payment.entity';
 import { NotificationType } from '../../common/enums/notification';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class TransactionService {
   private readonly logger = new Logger(TransactionService.name);
 
   constructor(
-    private readonly transactionRepository: TransactionRepository,
     private readonly notificationService: NotificationService,
     private readonly giftService: GiftService,
     @Inject(forwardRef(() => RequestPaymentService))
     private readonly requestPaymentService: RequestPaymentService,
+    private readonly prisma: PrismaService,
   ) {}
 
   // *************************************************
@@ -40,23 +38,29 @@ export class TransactionService {
   // *************************************************
 
   async getConsumableTransactions(userId: string): Promise<{
-    consumableTxs: TransactionEntity[];
-    recallableTxs: TransactionEntity[];
+    consumableTxs: Transactions[];
+    recallableTxs: Transactions[];
   }> {
     try {
       validateAddress(userId, 'userId');
       const normalizedUserId = normalizeAddress(userId);
 
       // Fetch all private, recallable, and pending transactions sent to this user
-      const txs = await this.transactionRepository.find({
-        recipient: normalizedUserId,
-        status: NoteStatus.PENDING,
+      const txs = await this.prisma.transactions.findMany({
+        where: {
+          recipient: normalizedUserId,
+          status: NoteStatus.PENDING as any,
+        },
+        orderBy: { createdAt: 'desc' },
       });
 
-      const recallableTxs = await this.transactionRepository.find({
-        sender: normalizedUserId,
-        recallable: true,
-        status: NoteStatus.PENDING,
+      const recallableTxs = await this.prisma.transactions.findMany({
+        where: {
+          sender: normalizedUserId,
+          recallable: true,
+          status: NoteStatus.PENDING as any,
+        },
+        orderBy: { createdAt: 'desc' },
       });
       return {
         consumableTxs: txs,
@@ -73,10 +77,13 @@ export class TransactionService {
       const normalizedUserAddress = normalizeAddress(userAddress);
 
       // Fetch all recallable transactions sent by this user
-      const allRecallable = await this.transactionRepository.find({
-        sender: normalizedUserAddress,
-        recallable: true,
-        status: NoteStatus.PENDING,
+      const allRecallable = await this.prisma.transactions.findMany({
+        where: {
+          sender: normalizedUserAddress,
+          recallable: true,
+          status: NoteStatus.PENDING,
+        },
+        orderBy: { createdAt: 'desc' },
       });
 
       // Split into recallable (pending recall) and waitingToRecall
@@ -143,9 +150,12 @@ export class TransactionService {
       }
 
       // Count all recalled transactions for this user
-      const recalledTxs = await this.transactionRepository.find({
-        sender: normalizedUserAddress,
-        status: NoteStatus.RECALLED,
+      const recalledTxs = await this.prisma.transactions.findMany({
+        where: {
+          sender: normalizedUserAddress,
+          status: NoteStatus.RECALLED,
+        },
+        orderBy: { createdAt: 'desc' },
       });
 
       const recalledGifts = await this.giftService.findRecalledGifts(
@@ -172,7 +182,7 @@ export class TransactionService {
   async sendSingle(
     dto: SendTransactionDto,
     sender: string,
-  ): Promise<TransactionEntity | null> {
+  ): Promise<Transactions | null> {
     try {
       console.log('DID I HIT THIS');
       const entityData = await this.validateTransaction(dto, sender);
@@ -192,7 +202,25 @@ export class TransactionService {
         },
       });
 
-      return await this.transactionRepository.create(entityData);
+      const now = new Date();
+      return await this.prisma.transactions.create({
+        data: {
+          createdAt: now,
+          updatedAt: now,
+          sender: entityData.sender,
+          recipient: entityData.recipient,
+          assets: entityData.assets,
+          private: entityData.private,
+          recallable: entityData.recallable ,
+          recallableTime: entityData.recallableTime,
+          recallableHeight: entityData.recallableHeight,
+          serialNumber: entityData.serialNumber,
+          noteType: entityData.noteType,
+          status: entityData.status,
+          noteId: entityData.noteId,
+          requestPaymentId: entityData.requestPaymentId,
+        },
+      });
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -201,7 +229,7 @@ export class TransactionService {
   async sendBatch(
     dtos: SendTransactionDto[],
     sender: string,
-  ): Promise<TransactionEntity[]> {
+  ): Promise<Transactions[]> {
     try {
       if (!dtos || !Array.isArray(dtos) || dtos.length === 0) {
         throw new BadRequestException(
@@ -215,13 +243,13 @@ export class TransactionService {
         );
       }
 
-      const entities: Partial<TransactionEntity>[] = [];
+      const entities: Partial<Transactions>[] = [];
 
       // validate each dto
       for (const dto of dtos) {
         const entityData = await this.validateTransaction(dto, sender);
         if (entityData) {
-          entities.push(entityData);
+          entities.push(entityData as any);
         }
       }
 
@@ -245,7 +273,30 @@ export class TransactionService {
         });
       }
 
-      return this.transactionRepository.createMany(entities);
+      const now = new Date();
+      const results = await Promise.all(
+        entities.map((entity) =>
+          this.prisma.transactions.create({
+            data: {
+              createdAt: now,
+              updatedAt: now,
+              sender: entity.sender,
+              recipient: entity.recipient,
+              assets: entity.assets,
+              private: entity.private,
+              recallable: entity.recallable,
+              recallableTime: entity.recallableTime,
+              recallableHeight: entity.recallableHeight,
+              serialNumber: entity.serialNumber,
+              noteType: entity.noteType,
+              status: entity.status,
+              noteId: entity.noteId,
+              requestPaymentId: entity.requestPaymentId,
+            },
+          }),
+        ),
+      );
+      return results;
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -264,9 +315,12 @@ export class TransactionService {
       const ids = this.parseAndValidateTransactionIds(noteIds);
 
       // First check if transactions are available and in pending status
-      const transactions = await this.transactionRepository.find({
-        id: In(ids),
-        status: NoteStatus.PENDING,
+      const transactions = await this.prisma.transactions.findMany({
+        where: {
+          id: { in: ids.map((id) => Number(id)) },
+          status: NoteStatus.PENDING as any,
+        },
+        orderBy: { createdAt: 'desc' },
       });
 
       // check if sender is the owner of the transactions
@@ -296,8 +350,8 @@ export class TransactionService {
       for (const tx of transactions) {
         await this.notificationService.createNotification({
           walletAddress: sender,
-          title: 'We’ve refunded',
-          message: 'We’ve refunded',
+          title: 'We\'ve refunded',
+          message: 'We\'ve refunded',
           type: NotificationType.REFUND,
           metadata: {
             recipient: tx.recipient,
@@ -309,11 +363,17 @@ export class TransactionService {
         });
       }
 
-      const affected = await this.transactionRepository.updateMany(
-        { id: In(ids), status: NoteStatus.PENDING },
-        { status: NoteStatus.RECALLED },
-      );
-      return { affected: affected || 0 };
+      const result = await this.prisma.transactions.updateMany({
+        where: { 
+          id: { in: ids.map((id) => Number(id)) }, 
+          status: NoteStatus.PENDING as any 
+        },
+        data: { 
+          status: NoteStatus.RECALLED as any,
+          updatedAt: new Date(),
+        },
+      });
+      return { affected: result.count };
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -329,9 +389,12 @@ export class TransactionService {
       );
 
       // First check if transactions are available and in pending status
-      const transactions = await this.transactionRepository.find({
-        noteId: In(ids),
-        status: NoteStatus.PENDING,
+      const transactions = await this.prisma.transactions.findMany({
+        where: {
+          noteId: { in: ids },
+          status: NoteStatus.PENDING as any,
+        },
+        orderBy: { createdAt: 'desc' },
       });
 
       // check if sender is the recipient of the transactions
@@ -340,17 +403,23 @@ export class TransactionService {
         throw new BadRequestException(ErrorTransaction.NotRecipient);
       }
 
-      const affected = await this.transactionRepository.updateMany(
-        { noteId: In(ids), status: NoteStatus.PENDING },
-        { status: NoteStatus.CONSUMED },
-      );
+      const result = await this.prisma.transactions.updateMany({
+        where: { 
+          noteId: { in: ids }, 
+          status: NoteStatus.PENDING as any 
+        },
+        data: { 
+          status: NoteStatus.CONSUMED as any,
+          updatedAt: new Date(),
+        },
+      });
 
       // loop through transactions and create notification for each transaction
       for (const tx of transactions) {
         await this.notificationService.createNotification({
           walletAddress: sender,
-          title: 'You’ve successfully claimed',
-          message: 'You’ve successfully claimed',
+          title: 'You\'ve successfully claimed',
+          message: 'You\'ve successfully claimed',
           type: NotificationType.CONSUME,
           metadata: {
             recipient: tx.recipient,
@@ -378,7 +447,7 @@ export class TransactionService {
         }
       }
 
-      return { affected: affected || 0 };
+      return { affected: result.count };
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -389,9 +458,12 @@ export class TransactionService {
     caller: string,
   ): Promise<{ affected: number }> {
     try {
-      const transactions = await this.transactionRepository.find({
-        noteId: In(notes.map((note) => note.noteId)),
-        status: NoteStatus.PENDING,
+      const transactions = await this.prisma.transactions.findMany({
+        where: {
+          noteId: { in: notes.map((note) => note.noteId) },
+          status: NoteStatus.PENDING as any,
+        },
+        orderBy: { createdAt: 'desc' },
       });
 
        // check if sender is the recipient of the transactions
@@ -400,16 +472,22 @@ export class TransactionService {
          throw new BadRequestException(ErrorTransaction.NotRecipient);
        }
  
-       const affected = await this.transactionRepository.updateMany(
-         { noteId: In(notes.map((note) => note.noteId)), status: NoteStatus.PENDING },
-         { status: NoteStatus.CONSUMED },
-       );
+       const result = await this.prisma.transactions.updateMany({
+         where: { 
+           noteId: { in: notes.map((note) => note.noteId) }, 
+           status: NoteStatus.PENDING as any 
+         },
+         data: { 
+           status: NoteStatus.CONSUMED as any,
+           updatedAt: new Date(),
+         },
+       });
 
       for (const note of notes) {
         await this.notificationService.createNotification({
           walletAddress: caller,
-          title: 'You’ve successfully claimed',
-          message: 'You’ve successfully claimed',
+          title: 'You\'ve successfully claimed',
+          message: 'You\'ve successfully claimed',
           type: NotificationType.CONSUME,
           metadata: {
             sender: note.sender,
@@ -439,7 +517,7 @@ export class TransactionService {
         }
       }
 
-      return { affected: affected || 0 };
+      return { affected: result.count };
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -502,7 +580,7 @@ export class TransactionService {
   private async validateTransaction(
     dto: SendTransactionDto,
     sender: string,
-  ): Promise<Partial<TransactionEntity> | null> {
+  ): Promise<Partial<Transactions> | null> {
     try {
       // Validate addresses
       validateAddress(sender, 'sender');
@@ -569,7 +647,7 @@ export class TransactionService {
         noteType: dto.noteType,
         noteId: dto.noteId,
         requestPaymentId: dto.requestPaymentId ?? null,
-        status: NoteStatus.PENDING,
+        status: NoteStatus.PENDING as any,
       };
     } catch (error) {
       handleError(error, this.logger);

@@ -6,101 +6,99 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
-import { UserEntity } from './user.entity';
 import { UserStatus } from '../../common/enums/user';
 import { UserSignUpDto } from './user.dto';
-import { UserRepository } from './user.repository';
 import { ErrorAuth, ErrorUser } from '../../common/constants/errors';
-import { In } from 'typeorm';
 import { Role } from '../../common/enums/role';
-import { ReferralCodeRepository } from '../referral/referral.repository';
-import { ReferralCodeEntity } from '../referral/referral.entity';
+import { ReferralCodes } from '@prisma/client';
 import { ReferralCodeService } from '../referral/referral.service';
 import { AppConfigService } from '../../common/config/services/config.service';
 import { UserWithoutSecretDto } from './user.response.dto';
+import { Prisma, Users } from '@prisma/client';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
   private HASH_ROUNDS = 12;
   constructor(
-    private userRepository: UserRepository,
-    private readonly referralCodeRepository: ReferralCodeRepository,
     private readonly referralCodeService: ReferralCodeService,
     private readonly appConfigService: AppConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   public async create(
     dto: UserSignUpDto,
     isSandbox: boolean = false,
-  ): Promise<UserEntity> {
-    let referralCodeEntity: ReferralCodeEntity | null = null;
-    let referralCodeOwner: UserEntity | null = null;
-    // first check if referral code is null
+  ): Promise<Users> {
+    let referralCodeEntity: ReferralCodes | null = null;
+    let referralCodeOwner: Users | null = null;
     const { email, password, referral: referralCode, ...rest } = dto;
     if (referralCode) {
-      referralCodeEntity = await this.referralCodeRepository.findOne({
-        code: referralCode,
+      referralCodeEntity = await this.prisma.referralCodes.findFirst({
+        where: { code: referralCode },
       });
       if (!referralCodeEntity) {
         throw new BadRequestException(ErrorUser.InvalidReferralCode);
       }
-      // check if the referral code is maxed out
       if (
         referralCodeEntity.timesUsed >=
         this.appConfigService.otherConfig.referralCodeMaximumUsage
       ) {
         throw new BadRequestException(ErrorUser.ReferralCodeMaxedOut);
       }
-      // get the owner of the referral code
-      referralCodeOwner = await this.userRepository.findOne(
-        {
-          referralCode: {
-            id: referralCodeEntity.id,
-          },
-        },
-        {
-          relations: ['referralCode'],
-        },
-      );
+      referralCodeOwner = await this.prisma.users.findFirst({
+        where: { referralCodeId: referralCodeEntity.id },
+        include: { referralCodes: true },
+      });
     }
+
     const hashedPassword = bcrypt.hashSync(password, this.HASH_ROUNDS);
     const role =
       this.appConfigService.otherConfig.defaultRole == 'user'
         ? Role.USER
         : null;
 
-    const userPayload = {
-      ...rest,
+    const data: Omit<Prisma.UsersCreateInput, 'createdAt' | 'updatedAt'> = {
       email,
+      name: (rest as any).name,
       password: hashedPassword,
-      role: role,
-      status: isSandbox ? UserStatus.ACTIVE : UserStatus.PENDING,
-      referralCode: null,
-      referredBy: referralCodeOwner,
+      role: (role as unknown) as any,
+      status: ((isSandbox ? UserStatus.ACTIVE : UserStatus.PENDING) as unknown) as any,
+      ...(referralCodeOwner
+        ? { referrer: { connect: { id: referralCodeOwner.id } } }
+        : {}),
     };
 
     if (isSandbox && referralCode) {
-      await this.referralCodeService.useReferralCode(referralCodeOwner);
-
-      const referralCodeEntity = await this.referralCodeRepository.create({
+      await this.referralCodeService.useReferralCode(referralCodeOwner as any);
+      const newReferralCode = await this.referralCodeService.create({
         code: this.referralCodeService.generateCode(),
         timesUsed: 0,
       });
-      userPayload.referralCode = referralCodeEntity;
+      data.referralCodes = { connect: { id: newReferralCode.id } };
     }
-    return await this.userRepository.create(userPayload);
+
+    const now = new Date();
+    const created = await this.prisma.users.create({
+      data: {
+        ...data,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+    return created;
   }
 
-  public async update(dto: UserSignUpDto): Promise<UserEntity> {
+  public async update(dto: UserSignUpDto): Promise<Users> {
     // search for referral code
     const { email, password, referral: referralCode, ...rest } = dto;
-    let referralCodeEntity: ReferralCodeEntity | null = null;
-    let referralCodeOwner: UserEntity | null = null;
+    let referralCodeEntity: ReferralCodes | null = null;
+    let referralCodeOwner: Users | null = null;
     // first check if referral code is null
     if (referralCode) {
-      referralCodeEntity = await this.referralCodeRepository.findOne({
-        code: referralCode,
+      referralCodeEntity = await this.prisma.referralCodes.findFirst({
+        where: { code: referralCode },
       });
       if (!referralCodeEntity) {
         throw new BadRequestException(ErrorUser.InvalidReferralCode);
@@ -113,59 +111,69 @@ export class UserService {
         throw new BadRequestException(ErrorUser.ReferralCodeMaxedOut);
       }
       // get the owner of the referral code
-      referralCodeOwner = await this.userRepository.findOne(
-        {
-          referralCode: {
-            id: referralCodeEntity.id,
-          },
-        },
-        {
-          relations: ['referralCode'],
-        },
-      );
+      referralCodeOwner = await this.prisma.users.findFirst({
+        where: { referralCodeId: referralCodeEntity.id },
+        include: { referralCodes: true },
+      });
     }
-    return await this.userRepository.updateOne(
-      {
-        email: dto.email,
-      },
-      {
-        ...rest,
+    
+    const existing = await this.prisma.users.findFirst({ where: { email: dto.email } });
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+    
+    const updated = await this.prisma.users.update({
+      where: { id: existing.id },
+      data: {
+        name: (rest as any).name,
         password: bcrypt.hashSync(password, this.HASH_ROUNDS),
-        referredBy: referralCodeOwner,
-      },
-    );
+        ...(referralCodeOwner
+          ? { referrer: { connect: { id: referralCodeOwner.id } } }
+          : {}),
+        updatedAt: new Date(),
+      } as unknown as Prisma.UsersUpdateInput,
+      include: { referralCodes: true, otherUsers: { include: { referralCodes: true } } },
+    });
+    return updated;
   }
 
-  public async activate(userEntity: UserEntity): Promise<UserEntity> {
-    userEntity.status = UserStatus.ACTIVE;
+  public async activate(userEntity: Users): Promise<Users> {
+    let data: Prisma.UsersUpdateInput = { status: (UserStatus.ACTIVE as unknown) as any };
     if (this.appConfigService.otherConfig.requireSignupWithReferral) {
-      // create new referral code for this user
-      const referralCodeEntity = await this.referralCodeRepository.create({
+      const newRef = await this.referralCodeService.create({
         code: this.referralCodeService.generateCode(),
         timesUsed: 0,
       });
-      userEntity.referralCode = referralCodeEntity;
-      const referredBy = await this.userRepository.findOne(
-        {
-          id: userEntity.referredBy.id,
-        },
-        {
-          relations: ['referredBy', 'referralCode'],
-        },
-      );
-
-      await this.referralCodeService.useReferralCode(referredBy);
+      data = {
+        ...data,
+        referralCode: { connect: { id: newRef.id } },
+      } as any;
+      if ((userEntity as any)?.referredBy?.id) {
+        const referredBy = await this.prisma.users.findFirst({
+          where: { id: (userEntity as any).referredBy.id },
+          include: { referralCodes: true },
+        });
+        if (referredBy) {
+          await this.referralCodeService.useReferralCode(referredBy as any);
+        }
+      }
     }
-    return userEntity.save();
+    const updated = await this.prisma.users.update({
+      where: { id: userEntity.id },
+      data: { ...data, updatedAt: new Date() },
+      include: {
+        referralCodes: true,
+        otherUsers: { include: { referralCodes: true } },
+      },
+    });
+    return updated;
   }
 
-  public getByEmail(email: string): Promise<UserEntity> {
-    return this.userRepository.findOne(
-      { email },
-      {
-        relations: ['referralCode', 'referredBy', 'referredBy.referralCode'],
-      },
-    );
+  public getByEmail(email: string): Promise<Users> {
+    return this.prisma.users.findFirst({
+      where: { email },
+      include: { referralCodes: true, otherUsers: { include: { referralCodes: true } } },
+    }) as Promise<Users>;
   }
 
   public async getById(
@@ -173,57 +181,67 @@ export class UserService {
     isExtend: boolean,
   ): Promise<UserWithoutSecretDto> {
     isExtend = String(isExtend) == 'true';
-    const userEntity = await this.userRepository.findOne(
-      { id },
-      {
-        relations: ['referralCode', 'referredBy', 'referredBy.referralCode'],
-      },
-    );
-    if (!userEntity) {
+    const user = await this.prisma.users.findFirst({
+      where: { id },
+      include: { referralCodes: true, otherUsers: { include: { referralCodes: true } } },
+    });
+
+    if (!user) {
       throw new NotFoundException(ErrorUser.NotFound);
     }
+
+    const referralCode = user.referralCodeId ? await this.prisma.referralCodes.findFirst({
+      where: { id: user.referralCodeId },
+    }) : null;
+
     return {
-      id: userEntity.id,
-      createdAt: userEntity.createdAt,
-      updatedAt: userEntity.updatedAt,
-      email: userEntity.email,
-      name: userEntity.name,
-      role: userEntity.role,
-      status: userEntity.status,
-      isTwoFactorAuthEnabled: userEntity.isTwoFactorAuthEnabled,
+      id: user.id,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      email: user.email,
+      name: user.name,
+      role: user.role as Role,
+      status: user.status as UserStatus,
+      isTwoFactorAuthEnabled: user.isTwoFactorAuthEnabled,
       referralCode: isExtend
-        ? userEntity.referralCode
-        : userEntity.referralCode
-          ? userEntity.referralCode.id
+        ? referralCode
+        : referralCode
+          ? referralCode.id
           : null,
       referredBy: isExtend
-        ? userEntity.referredBy
+        ? user.referredById
           ? {
-              id: userEntity.referredBy.id,
-              email: userEntity.referredBy.email,
-              name: userEntity.referredBy.name,
-              role: userEntity.referredBy.role,
-              referralCode: userEntity.referredBy.referralCode,
+              id: user.referredById,
+              email: user.email,
+              name: user.name,
+              role: user.role as Role,
+              referralCode: referralCode,
             }
           : null
-        : userEntity.referredBy
-          ? userEntity.referredBy.id
+        : user.referredById
+          ? user.referredById
           : null,
     };
   }
 
-  public updatePassword(
-    userEntity: UserEntity,
+  public async updatePassword(
+    userEntity: Users,
     password: string,
-  ): Promise<UserEntity> {
-    userEntity.password = bcrypt.hashSync(password, this.HASH_ROUNDS);
-    return userEntity.save();
+  ): Promise<Users> {
+    const updated = await this.prisma.users.update({
+      where: { id: userEntity.id },
+      data: { 
+        password: bcrypt.hashSync(password, this.HASH_ROUNDS),
+        updatedAt: new Date(),
+      } as any,
+    });
+    return updated;
   }
 
   public async getByCredentials(
     email: string,
     password: string,
-  ): Promise<UserEntity> {
+  ): Promise<Users> {
     const userEntity = await this.getByEmail(email);
     if (!userEntity) {
       throw new NotFoundException(ErrorUser.NotFound);
@@ -235,7 +253,7 @@ export class UserService {
   }
 
   public async updateRole(
-    callerUser: UserEntity,
+    callerUser: Users,
     id: number,
     role: Role,
     isRemove: boolean,
@@ -244,40 +262,57 @@ export class UserService {
       throw new BadRequestException(ErrorUser.RoleSelfAssign);
     }
 
-    const userEntity = await this.userRepository.findOne({ id });
+    const userEntity = await this.prisma.users.findFirst({ where: { id } });
     if (!userEntity) {
       throw new NotFoundException(ErrorUser.NotFound);
     }
 
-    if (userEntity?.role === Role.ADMIN) {
+    if (userEntity?.role === 'admin') {
       throw new BadRequestException(ErrorUser.AdminRoleCannotBeChanged);
     }
 
     if (
-      userEntity?.role === Role.ADMINONLYVIEW &&
-      callerUser.role !== Role.ADMIN
+      userEntity?.role === 'admin_only_view' &&
+      callerUser.role !== 'admin'
     ) {
       throw new BadRequestException(ErrorUser.RoleCannotBeChanged);
     }
 
-    userEntity.role = isRemove ? null : role;
-    await userEntity.save();
+    await this.prisma.users.update({
+      where: { id },
+      data: {
+        role: (isRemove ? null : (role as unknown)) as any,
+        updatedAt: new Date(),
+      },
+    });
   }
 
   public async updateTwoFactorAuthSecret(
-    userEntity: UserEntity,
+    userEntity: Users,
     secret: string,
-  ): Promise<UserEntity> {
-    userEntity.twoFactorAuthSecret = secret;
-    return userEntity.save();
+  ): Promise<Users> {
+    const updated = await this.prisma.users.update({
+      where: { id: userEntity.id },
+      data: {
+        twoFactorAuthSecret: secret,
+        updatedAt: new Date(),
+      } as any,
+    });
+    return updated;
   }
 
   public async changeTwoFactorAuth(
-    userEntity: UserEntity,
+    userEntity: Users,
     enable: boolean,
-  ): Promise<UserEntity> {
-    userEntity.isTwoFactorAuthEnabled = enable;
-    return userEntity.save();
+  ): Promise<Users> {
+    const updated = await this.prisma.users.update({
+      where: { id: userEntity.id },
+      data: {
+        isTwoFactorAuthEnabled: enable,
+        updatedAt: new Date(),
+      } as any,
+    });
+    return updated;
   }
 
   public async list(
@@ -289,40 +324,34 @@ export class UserService {
   ): Promise<UserWithoutSecretDto[]> {
     isExtend = String(isExtend) == 'true';
     // map ids str to array of ids
-    let userEntities: UserEntity[];
+    let userEntities: any[];
     const ids = idsStr
       ? idsStr.split(',').map((id) => parseInt(id))
       : undefined;
     if (ids) {
-      userEntities = await this.userRepository.find(
-        { id: In(ids) },
-        {
-          skip: page * limit,
-          take: limit,
-          relations: ['referralCode', 'referredBy', 'referredBy.referralCode'],
-        },
-      );
-    }
-    if (onlyActiveUsers) {
-      userEntities = await this.userRepository.find(
-        {
-          status: UserStatus.ACTIVE,
-        },
-        {
-          skip: page * limit,
-          take: limit,
-          relations: ['referralCode', 'referredBy', 'referredBy.referralCode'],
-        },
-      );
-    }
-    userEntities = await this.userRepository.find(
-      {},
-      {
+      userEntities = await this.prisma.users.findMany({
+        where: { id: { in: ids } },
         skip: page * limit,
         take: limit,
-        relations: ['referralCode', 'referredBy', 'referredBy.referralCode'],
-      },
-    );
+        include: { referralCodes: true, otherUsers: { include: { referralCodes: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+    } else if (onlyActiveUsers) {
+      userEntities = await this.prisma.users.findMany({
+        where: { status: (UserStatus.ACTIVE as unknown) as any },
+        skip: page * limit,
+        take: limit,
+        include: { referralCodes: true, otherUsers: { include: { referralCodes: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+    } else {
+      userEntities = await this.prisma.users.findMany({
+        skip: page * limit,
+        take: limit,
+        include: { referralCodes: true, otherUsers: { include: { referralCodes: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
     // return with the same format as getById
     return userEntities.map((userEntity) => ({
       id: userEntity.id,
@@ -339,17 +368,17 @@ export class UserService {
           ? userEntity.referralCode.id
           : null,
       referredBy: isExtend
-        ? userEntity.referredBy
+        ? userEntity.referrer
           ? {
-              id: userEntity.referredBy.id,
-              email: userEntity.referredBy.email,
-              name: userEntity.referredBy.name,
-              role: userEntity.referredBy.role,
-              referralCode: userEntity.referredBy.referralCode,
+              id: userEntity.referrer.id,
+              email: userEntity.referrer.email,
+              name: userEntity.referrer.name,
+              role: userEntity.referrer.role,
+              referralCode: userEntity.referrer.referralCode,
             }
           : null
-        : userEntity.referredBy
-          ? userEntity.referredBy.id
+        : userEntity.referrer
+          ? userEntity.referrer.id
           : null,
     }));
   }

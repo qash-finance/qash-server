@@ -24,6 +24,7 @@ import { AnalyticsModule, AnalyticsMiddleware } from './modules/analytics';
 import { WalletAuthModule } from './modules/wallet-auth/wallet-auth.module';
 import { AppConfigServiceModule } from './common/config/services/config.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { PrismaModule } from './common/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { NotificationModule } from './modules/notification/notification.module';
       isGlobal: true,
     }),
     AppConfigServiceModule,
+    PrismaModule,
     ScheduleModule.forRoot(),
     HealthModule,
     DatabaseModule,

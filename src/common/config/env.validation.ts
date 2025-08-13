@@ -10,7 +10,8 @@ export const envValidator = Joi.object({
   POSTGRES_USER: Joi.string().default('app_user'),
   POSTGRES_PASSWORD: Joi.string().default('app_user_pwd'),
   POSTGRES_DB: Joi.string().default('app'),
-  POSTGRES_PORT: Joi.string().default('3306'),
+  POSTGRES_PORT: Joi.string().default('6500'),
+  DATABASE_URL: Joi.string().optional(),
 
   // @important, default value
   // Auth

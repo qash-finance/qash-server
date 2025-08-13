@@ -1,21 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, FindManyOptions } from 'typeorm';
-import { GiftEntity } from './gift.entity';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { Gift, Prisma } from '@prisma/client';
 
 @Injectable()
 export class GiftRepository {
   private readonly logger = new Logger(GiftRepository.name);
 
-  constructor(
-    @InjectRepository(GiftEntity)
-    private readonly giftRepository: Repository<GiftEntity>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  public async create(dto: Partial<GiftEntity>): Promise<GiftEntity> {
+  public async create(dto: Prisma.GiftCreateInput): Promise<Gift> {
     try {
-      const entity = this.giftRepository.create(dto);
-      return await entity.save();
+      const now = new Date();
+      const row = await this.prisma.gift.create({
+        data: {
+          createdAt: now,
+          updatedAt: now,
+          ...dto,
+        },
+      });
+      return row;
     } catch (error) {
       this.logger.error('Error creating gift:', error);
       throw error;
@@ -23,30 +26,29 @@ export class GiftRepository {
   }
 
   public async updateOne(
-    where: FindOptionsWhere<GiftEntity>,
-    dto: Partial<GiftEntity>,
-  ): Promise<GiftEntity> {
+    where: Prisma.GiftWhereInput,
+    dto: Partial<Gift>,
+  ): Promise<Gift> {
     try {
-      const giftEntity = await this.giftRepository.findOneBy(where);
-
-      if (!giftEntity) {
+      const existing = await this.prisma.gift.findFirst({ where });
+      if (!existing) {
         this.logger.warn('Gift not found for update:', where);
         throw new Error('Gift not found');
       }
-
-      Object.assign(giftEntity, dto);
-      return await giftEntity.save();
+      const row = await this.prisma.gift.update({
+        where: { id: existing.id },
+        data: { ...dto, updatedAt: new Date() },
+      });
+      return row;
     } catch (error) {
       this.logger.error('Error updating gift:', error);
       throw error;
     }
   }
 
-  async findOne(
-    where: FindOptionsWhere<GiftEntity>,
-  ): Promise<GiftEntity | null> {
+  async findOne(where: Prisma.GiftWhereInput): Promise<Gift | null> {
     try {
-      return await this.giftRepository.findOne({ where });
+      return await this.prisma.gift.findFirst({ where });
     } catch (error) {
       this.logger.error('Error finding gift:', error);
       throw error;
@@ -54,16 +56,15 @@ export class GiftRepository {
   }
 
   public find(
-    where: FindOptionsWhere<GiftEntity>,
-    options?: FindManyOptions<GiftEntity>,
-  ): Promise<GiftEntity[]> {
+    where: Prisma.GiftWhereInput,
+    options?: Prisma.GiftFindManyArgs,
+  ): Promise<Gift[]> {
     try {
-      return this.giftRepository.find({
+      return this.prisma.gift.findMany({
         where,
-        order: {
-          createdAt: 'DESC',
-        },
-        ...options,
+        orderBy: { createdAt: 'desc' },
+        skip: options?.skip,
+        take: options?.take,
       });
     } catch (error) {
       this.logger.error('Error finding gifts:', error);

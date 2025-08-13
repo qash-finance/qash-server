@@ -24,6 +24,7 @@ export class NotificationRepository {
   ) {}
 
   public async create(dto: CreateNotificationDto): Promise<NotificationEntity> {
+    //@ts-ignore
     const notification = this.notificationEntityRepository.create(dto);
     return notification.save();
   }

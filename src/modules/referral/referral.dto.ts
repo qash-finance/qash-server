@@ -1,15 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, Length } from 'class-validator';
 
 // create referral code dto
 export class ReferralCodeDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
+  @Length(8, 8)
   public code: string;
 
   @ApiProperty()
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
-  public timesUsed: number;
+  public timesUsed?: number;
 }

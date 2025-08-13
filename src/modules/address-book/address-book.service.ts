@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { AddressBookRepository } from './address-book.repository';
 import {
   AddressBookDto,
   AddressBookNameDuplicateDto,
@@ -14,34 +13,28 @@ import {
   sanitizeString,
 } from '../../common/utils/validation.util';
 import { ErrorAddressBook } from '../../common/constants/errors';
-import { CategoryRepository } from './category.repository';
+import { AddressBook, Categories } from '@prisma/client';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class AddressBookService {
   private readonly logger = new Logger(AddressBookService.name);
 
-  constructor(
-    private readonly addressBookRepository: AddressBookRepository,
-    private readonly categoryRepository: CategoryRepository,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // *************************************************
   // **************** GET METHODS ******************
   // *************************************************
-  async getAllAddressBookEntries(userAddress: string) {
+  async getAllAddressBookEntries(userAddress: string): Promise<AddressBook[]> {
     try {
       // Validate user address
       validateAddress(userAddress, 'userAddress');
 
       const normalizedUserAddress = normalizeAddress(userAddress);
 
-      return this.categoryRepository.find({
-        relations: ['addressBooks'],
-        where: {
-          addressBooks: {
-            userAddress: normalizedUserAddress,
-          },
-        },
+      return this.prisma.addressBook.findMany({
+        where: { userAddress: normalizedUserAddress },
+        include: { categories: true },
       });
     } catch (error) {
       handleError(error, this.logger);
@@ -79,10 +72,12 @@ export class AddressBookService {
       const normalizedUserAddress = normalizeAddress(userAddress);
       const sanitizedCategory = sanitizeString(category);
 
-      const existingCategory = await this.addressBookRepository.findOne({
-        userAddress: normalizedUserAddress,
-        category: {
-          name: sanitizedCategory,
+      const existingCategory = await this.prisma.addressBook.findFirst({
+        where: {
+          userAddress: normalizedUserAddress,
+          categories: {
+            name: sanitizedCategory,
+          },
         },
       });
       return existingCategory !== null;
@@ -148,13 +143,18 @@ export class AddressBookService {
       }
 
       // Find or create category
-      let category =
-        await this.categoryRepository.findByName(sanitizedCategory);
+      let category = await this.prisma.categories.findFirst({
+        where: { name: sanitizedCategory },
+      });
 
       if (!category) {
         // Create new category if it doesn't exist
-        category = await this.categoryRepository.create({
-          name: sanitizedCategory,
+        category = await this.prisma.categories.create({
+          data: { 
+            name: sanitizedCategory,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
         });
       }
 
@@ -163,11 +163,18 @@ export class AddressBookService {
         userAddress: normalizedUserAddress,
         address: normalizedAddress,
         name: sanitizedName,
-        category,
+        categoryId: category.id,
         token: normalizedToken,
       };
 
-      return this.addressBookRepository.create(createDto);
+      return this.prisma.addressBook.create({
+        data: {
+          ...createDto,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        include: { categories: true },
+      });
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -181,13 +188,15 @@ export class AddressBookService {
     name: string,
     category: string,
   ): Promise<boolean> {
-    const existingEntry = await this.addressBookRepository.findOne({
-      userAddress,
-      name,
-      category: {
-        name: category,
-      },
-    });
+          const existingEntry = await this.prisma.addressBook.findFirst({
+        where: {
+          userAddress,
+          name,
+          categories: {
+            name: category,
+          },
+        },
+      });
     return existingEntry !== null;
   }
 
@@ -196,13 +205,15 @@ export class AddressBookService {
     address: string,
     category: string,
   ): Promise<boolean> {
-    const existingEntry = await this.addressBookRepository.findOne({
-      userAddress,
-      address,
-      category: {
-        name: category,
-      },
-    });
+          const existingEntry = await this.prisma.addressBook.findFirst({
+        where: {
+          userAddress,
+          address,
+          categories: {
+            name: category,
+          },
+        },
+      });
     return existingEntry !== null;
   }
 }

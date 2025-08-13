@@ -1,30 +1,41 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
-import { TokenEntity } from './token.entity';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { Prisma, Tokens, Users } from '@prisma/client';
 import { TokenCreateDto } from './auth.dto';
 
 @Injectable()
 export class TokenRepository {
   private readonly logger = new Logger(TokenRepository.name);
 
-  constructor(
-    @InjectRepository(TokenEntity)
-    private readonly tokenEntityRepository: Repository<TokenEntity>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   public async findOne(
-    where: FindOptionsWhere<TokenEntity>,
-  ): Promise<TokenEntity | null> {
-    const tokenEntity = await this.tokenEntityRepository.findOne({
+    where: Prisma.TokensWhereInput,
+    options?: Prisma.TokensFindFirstArgs,
+  ): Promise<(Tokens & { users?: Users }) | null> {
+    const row = await this.prisma.tokens.findFirst({
       where,
-      relations: ['user', 'user.referredBy'],
+      include: options?.include ?? { users: { include: { otherUsers: true } } },
+      orderBy: { createdAt: 'desc' },
     });
-
-    return tokenEntity;
+    return row ?? null;
   }
 
-  public async create(dto: TokenCreateDto): Promise<TokenEntity> {
-    return this.tokenEntityRepository.create(dto).save();
+  public async create(dto: TokenCreateDto): Promise<Tokens> {
+    const now = new Date();
+    const row = await this.prisma.tokens.create({
+      data: {
+        createdAt: now,
+        updatedAt: now,
+        tokenType: dto.tokenType,
+        userId: dto.user.id,
+      },
+    });
+    return row;
+  }
+
+  public async delete(where: Prisma.TokensWhereInput): Promise<number> {
+    const result = await this.prisma.tokens.deleteMany({ where });
+    return result.count;
   }
 }

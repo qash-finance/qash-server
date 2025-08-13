@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { GiftRepository } from './gift.repository';
 import { CreateGiftDto } from './gift.dto';
 import { AppConfigService } from '../../common/config/services/config.service';
 import { NoteStatus, NoteType } from '../../common/enums/note';
@@ -12,15 +11,16 @@ import {
 import { ErrorGift } from '../../common/constants/errors';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from 'src/common/enums/notification';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class GiftService {
   private readonly logger = new Logger(GiftService.name);
 
   constructor(
-    private readonly giftRepository: GiftRepository,
     private readonly notificationService: NotificationService,
     private readonly appConfigService: AppConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   // *************************************************
@@ -29,8 +29,8 @@ export class GiftService {
   public async getGiftBySecret(secretNumber: string) {
     try {
       console.log('FINDING GIFT BY SECRET', secretNumber);
-      const gift = await this.giftRepository.findOne({
-        secretNumber: secretNumber,
+      const gift = await this.prisma.gift.findFirst({
+        where: { secretHash: secretNumber },
       });
 
       if (!gift) {
@@ -49,8 +49,9 @@ export class GiftService {
       const normalizedSenderAddress = normalizeAddress(senderAddress);
 
       // we will get all gifts for the sender
-      const gifts = await this.giftRepository.find({
-        sender: normalizedSenderAddress,
+      const gifts = await this.prisma.gift.findMany({
+        where: { sender: normalizedSenderAddress },
+        orderBy: { createdAt: 'desc' },
       });
 
       // calculate total amount of gifts
@@ -124,8 +125,8 @@ export class GiftService {
       const secretWithPlus = decodedSecret.replace(/ /g, '+');
 
       // Find the gift by secret hash
-      const gift = await this.giftRepository.findOne({
-        secretNumber: secretWithPlus,
+      const gift = await this.prisma.gift.findFirst({
+        where: { secretHash: secretWithPlus },
       });
       if (!gift) {
         throw new BadRequestException(ErrorGift.GiftNotFound);
@@ -169,10 +170,10 @@ export class GiftService {
         },
       });
 
-      return this.giftRepository.updateOne(
-        { secretNumber: secret },
-        { status: NoteStatus.CONSUMED, openedAt: new Date() },
-      );
+      return this.prisma.gift.update({
+        where: { id: gift.id },
+        data: { status: NoteStatus.CONSUMED, openedAt: new Date(), updatedAt: new Date() },
+      });
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -188,10 +189,13 @@ export class GiftService {
       const normalizedSenderAddress = normalizeAddress(senderAddress);
 
       const now = new Date();
-      const gifts = await this.giftRepository.find({
-        sender: normalizedSenderAddress,
-        status: NoteStatus.PENDING,
-        recallable: true,
+      const gifts = await this.prisma.gift.findMany({
+        where: {
+          sender: normalizedSenderAddress,
+          status: NoteStatus.PENDING,
+          recallable: true,
+        },
+        orderBy: { createdAt: 'desc' },
       });
 
       // Filter gifts that are actually recallable (recallableTime has passed)
@@ -208,9 +212,12 @@ export class GiftService {
       validateAddress(senderAddress, 'senderAddress');
       const normalizedSenderAddress = normalizeAddress(senderAddress);
 
-      return this.giftRepository.find({
-        sender: normalizedSenderAddress,
-        status: NoteStatus.RECALLED,
+      return this.prisma.gift.findMany({
+        where: {
+          sender: normalizedSenderAddress,
+          status: NoteStatus.RECALLED,
+        },
+        orderBy: { createdAt: 'desc' },
       });
     } catch (error) {
       handleError(error, this.logger);
@@ -224,7 +231,7 @@ export class GiftService {
       }
 
       // Check if gift exists and is recallable
-      const gift = await this.giftRepository.findOne({ id });
+      const gift = await this.prisma.gift.findFirst({ where: { id } });
       if (!gift) {
         throw new BadRequestException(ErrorGift.GiftNotFound);
       }
@@ -259,10 +266,10 @@ export class GiftService {
         },
       });
 
-      return this.giftRepository.updateOne(
-        { id },
-        { status: NoteStatus.RECALLED, recalledAt: new Date() },
-      );
+      return this.prisma.gift.update({
+        where: { id },
+        data: { status: NoteStatus.RECALLED, recalledAt: new Date(), updatedAt: new Date() },
+      });
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -273,16 +280,25 @@ export class GiftService {
     dto: CreateGiftDto,
     normalizedSenderAddress: string,
   ) {
-    return this.giftRepository.create({
-      sender: normalizedSenderAddress,
-      assets: dto.assets,
-      status: NoteStatus.PENDING,
-      recallableTime: new Date(Date.now()),
-      recallable: true,
-      secretNumber: dto.secretNumber,
-      serialNumber: dto.serialNumber,
-      noteType: NoteType.GIFT,
-      noteId: dto.txId,
+    const now = new Date();
+    return this.prisma.gift.create({
+      data: {
+        sender: normalizedSenderAddress,
+        status: NoteStatus.PENDING,
+        recallableTime: new Date(Date.now()),
+        recallable: true,
+        secretHash: dto.secretNumber,
+        serialNumber: dto.serialNumber,
+        noteType: NoteType.GIFT,
+        noteId: dto.txId,
+        assets: {
+          create: dto.assets.map((asset) => ({
+            ...asset,
+          })),
+        },
+        createdAt: now,
+        updatedAt: now,
+      },
     });
   }
 }

@@ -1,35 +1,36 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Repository,
-  FindOptionsWhere,
-  FindOneOptions,
-  FindManyOptions,
-} from 'typeorm';
-import { AddressBookEntity } from './address-book.entity';
-import { AddressBookDto } from './address-book.dto';
-import { CategoryEntity } from './category.entity';
+// import { AddressBookEntity } from './address-book.entity';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { AddressBook, Categories, Prisma } from '@prisma/client';
 
 @Injectable()
 export class AddressBookRepository {
   private readonly logger = new Logger(AddressBookRepository.name);
 
-  constructor(
-    @InjectRepository(AddressBookEntity)
-    private readonly addressBookRepository: Repository<AddressBookEntity>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   public async create(
-    dto: Omit<Partial<AddressBookDto>, 'category'> & {
-      category: CategoryEntity;
+    dto: Omit<Partial<AddressBook>, 'category'> & {
+      category: Categories;
+      userAddress: string;
     },
-  ): Promise<AddressBookEntity> {
+  ): Promise<AddressBook> {
     try {
-      const entity = this.addressBookRepository.create({
-        ...dto,
-        category: dto.category,
+      const now = new Date();
+      const row = await this.prisma.addressBook.create({
+        data: {
+          createdAt: now,
+          updatedAt: now,
+          userAddress: dto.userAddress,
+          name: dto.name,
+          address: dto.address,
+          token: dto.token ?? null,
+          categoryId: dto.category.id,
+        },
+        include: { categories: true },
       });
-      return await entity.save();
+
+      return row;
     } catch (error) {
       this.logger.error('Error creating address book entry:', error);
       throw error;
@@ -37,16 +38,18 @@ export class AddressBookRepository {
   }
 
   public async findOne(
-    where: FindOptionsWhere<AddressBookEntity>,
-    options?: FindOneOptions<AddressBookEntity>,
-  ): Promise<AddressBookEntity | null> {
+    where: Prisma.AddressBookWhereInput,
+    options?: Prisma.AddressBookFindFirstArgs,
+  ): Promise<AddressBook | null> {
     try {
-      const addressBookEntity = await this.addressBookRepository.findOne({
+      const row = await this.prisma.addressBook.findFirst({
         where,
-        ...options,
+        include: options?.include,
+        orderBy: { createdAt: 'desc' },
       });
 
-      return addressBookEntity;
+      if (!row) return null;
+      return row;
     } catch (error) {
       this.logger.error('Error finding address book entry:', error);
       throw error;
@@ -54,17 +57,18 @@ export class AddressBookRepository {
   }
 
   public async find(
-    where: FindOptionsWhere<AddressBookEntity>,
-    options?: FindManyOptions<AddressBookEntity>,
-  ): Promise<AddressBookEntity[]> {
+    where: Prisma.AddressBookWhereInput,
+    options?: Prisma.AddressBookFindManyArgs,
+  ): Promise<AddressBook[]> {
     try {
-      return await this.addressBookRepository.find({
+      const rows = await this.prisma.addressBook.findMany({
         where,
-        order: {
-          createdAt: 'DESC',
-        },
-        ...options,
+        include: options?.include,
+        orderBy: { createdAt: 'desc' },
+        skip: options?.skip,
+        take: options?.take,
       });
+      return rows;
     } catch (error) {
       this.logger.error('Error finding address book entries:', error);
       throw error;

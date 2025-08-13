@@ -1,45 +1,57 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { CategoryEntity } from './category.entity';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { Categories, Prisma } from '@prisma/client';
 
 @Injectable()
 export class CategoryRepository {
-  constructor(
-    @InjectRepository(CategoryEntity)
-    private readonly repository: Repository<CategoryEntity>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async find(options?: any): Promise<CategoryEntity[]> {
-    return this.repository.find(options);
+  async find(
+    where: Prisma.CategoriesWhereInput,
+    options?: Prisma.CategoriesFindManyArgs,
+  ): Promise<Categories[]> {
+    const rows = await this.prisma.categories.findMany({
+      where,
+      include: options?.include,
+    });
+    return rows;
   }
 
-  async findAll(): Promise<CategoryEntity[]> {
-    return this.repository.find();
+  async findAll(): Promise<Categories[]> {
+    const rows = await this.prisma.categories.findMany();
+    return rows;
   }
 
-  async findById(id: number): Promise<CategoryEntity | null> {
-    return this.repository.findOne({ where: { id } });
+  async findById(id: number): Promise<Categories | null> {
+    const row = await this.prisma.categories.findUnique({ where: { id } });
+    return row;
   }
 
-  async findByName(name: string): Promise<CategoryEntity | null> {
-    return this.repository.findOne({ where: { name } });
+  async findByName(name: string): Promise<Categories | null> {
+    const row = await this.prisma.categories.findUnique({ where: { name } });
+    return row;
   }
 
-  async create(category: Partial<CategoryEntity>): Promise<CategoryEntity> {
-    const newCategory = this.repository.create(category);
-    return this.repository.save(newCategory);
+  async create(category: Partial<Categories>): Promise<Categories> {
+    const now = new Date();
+    const row = await this.prisma.categories.create({
+      data: { name: category.name as string, createdAt: now, updatedAt: now },
+    });
+    return row;
   }
 
   async update(
     id: number,
-    category: Partial<CategoryEntity>,
-  ): Promise<CategoryEntity | null> {
-    await this.repository.update(id, category);
-    return this.findById(id);
+    category: Partial<Categories>,
+  ): Promise<Categories | null> {
+    const row = await this.prisma.categories.update({
+      where: { id },
+      data: { name: category.name as string, updatedAt: new Date() },
+    });
+    return row;
   }
 
   async delete(id: number): Promise<void> {
-    await this.repository.delete(id);
+    await this.prisma.categories.delete({ where: { id } });
   }
 }

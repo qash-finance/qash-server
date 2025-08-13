@@ -4,8 +4,7 @@ import { Transform } from 'class-transformer';
 import { UserStatus } from '../../common/enums/user';
 import { ValidatePasswordDto } from '../auth/auth.dto';
 import { Role } from '../../common/enums/role';
-import { ReferralCodeEntity } from '../referral/referral.entity';
-import { UserEntity } from './user.entity';
+import { ReferralCodes, Users } from '@prisma/client';
 
 export class UserBaseDto extends ValidatePasswordDto {
   @ApiProperty()
@@ -31,6 +30,6 @@ export class UserSignUpSandboxDto extends UserBaseDto {}
 export class UserDto extends UserSignUpDto {
   public role: Role;
   public status: UserStatus;
-  public referralCode?: ReferralCodeEntity | null;
-  public referredBy?: UserEntity | null;
+  public referralCode?: ReferralCodes | null;
+  public referredBy?: Users | null;
 }

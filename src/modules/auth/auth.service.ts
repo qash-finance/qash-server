@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { TokenType } from '../../common/enums/token';
 import { UserSignUpDto } from '../user/user.dto';
-import { UserEntity } from '../user/user.entity';
+import { Users } from '@prisma/client';
 import { UserService } from '../user/user.service';
 import { TokenRepository } from './token.repository';
 import { AuthRepository } from './auth.repository';
@@ -33,6 +33,7 @@ import { UserStatus } from '../../common/enums/user';
 import { createHash } from 'crypto';
 import { AppConfigService } from '../../common/config/services/config.service';
 import { MailType } from '../../common/enums/mail';
+import { Role } from '../../common/enums/role';
 
 @Injectable()
 export class AuthService {
@@ -57,6 +58,7 @@ export class AuthService {
       this.appConfigService.authConfig.jwt.accessTokenExpiresIn,
     );
     this.frontendUrl = this.appConfigService.otherConfig.frontendUrl;
+    this.salt = this.appConfigService.authConfig.jwt.secret;
   }
 
   public async signin(data: SignInDto): Promise<AuthDto> {
@@ -78,7 +80,7 @@ export class AuthService {
 
   public async verifyTwoFaCode(
     code: string,
-    user: UserEntity,
+    user: Users,
   ): Promise<boolean> {
     const userEntity = await this.userService.getByEmail(user.email);
     return authenticator.verify({
@@ -87,18 +89,18 @@ export class AuthService {
     });
   }
 
-  public async activateTwoFactorAuth(user: UserEntity): Promise<UserEntity> {
+  public async activateTwoFactorAuth(user: Users): Promise<Users> {
     return this.userService.changeTwoFactorAuth(user, true);
   }
 
-  public async deactivateTwoFactorAuth(user: UserEntity): Promise<UserEntity> {
+  public async deactivateTwoFactorAuth(user: Users): Promise<Users> {
     // clear the two factor auth secret
     user.twoFactorAuthSecret = null;
     return this.userService.changeTwoFactorAuth(user, false);
   }
 
   public async authenticateTwoFactor(
-    user: UserEntity,
+    user: Users,
     code: string,
   ): Promise<AuthDto> {
     const isTwoFaAuthenticated = await this.verifyTwoFaCode(code, user);
@@ -116,10 +118,12 @@ export class AuthService {
   }
 
   public async auth(
-    userEntity: UserEntity,
+    userEntity: Users,
     isTwoFaAuthenticated: boolean,
   ): Promise<AuthDto> {
-    const authEntity = this.authRepository.findOne({ userId: userEntity.id });
+    const authEntity = await this.authRepository.findOne({
+      userId: userEntity.id,
+    });
 
     const accessToken = await this.jwtService.signAsync(
       {
@@ -159,7 +163,7 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      role: userEntity.role,
+      role: userEntity.role as Role,
       isTwoFactorAuthEnabled: userEntity.isTwoFactorAuthEnabled,
     };
   }
@@ -167,10 +171,9 @@ export class AuthService {
   public async refreshToken(refreshToken: string): Promise<AuthDto> {
     const refreshTokenHashed = this.hashToken(refreshToken);
 
-    const authEntity = await this.authRepository.findOne(
-      { refreshToken: refreshTokenHashed },
-      { relations: ['user'] },
-    );
+    const authEntity = await this.authRepository.findOne({
+      refreshToken: refreshTokenHashed,
+    });
 
     if (!authEntity) {
       throw new UnauthorizedException(ErrorAuth.InvalidRefreshToken);
@@ -209,19 +212,26 @@ export class AuthService {
     const newRefreshTokenHashed = this.hashToken(newRefreshToken);
 
     // Update the auth entity with the new tokens
-    authEntity.accessToken = newAccessTokenHashed;
-    authEntity.refreshToken = newRefreshTokenHashed;
-    await authEntity.save();
+    await this.authRepository.update(
+      { id: authEntity.id },
+      {
+        accessToken: newAccessTokenHashed,
+        refreshToken: newRefreshTokenHashed,
+      },
+    );
+
+    // Fetch full UserEntity for role and 2FA flags
+    const userEntity = await this.userService.getByEmail(email);
 
     return {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
-      role: authEntity.user.role,
-      isTwoFactorAuthEnabled: authEntity.user.isTwoFactorAuthEnabled,
+      role: userEntity.role as Role,
+      isTwoFactorAuthEnabled: userEntity.isTwoFactorAuthEnabled,
     };
   }
 
-  public async logout(user: UserEntity): Promise<void> {
+  public async logout(user: Users): Promise<void> {
     await this.authRepository.delete({ userId: user.id });
   }
 
@@ -231,7 +241,7 @@ export class AuthService {
     return hash.digest('hex');
   }
 
-  public async signupSandbox(data: UserSignUpDto): Promise<UserEntity> {
+  public async signupSandbox(data: UserSignUpDto): Promise<Users> {
     // check if sandbox is enabled
     if (!this.appConfigService.otherConfig.allowsSandbox) {
       throw new BadRequestException(ErrorAuth.SandboxDisabled);
@@ -250,7 +260,7 @@ export class AuthService {
             tokenType: TokenType.EMAIL,
           });
           if (tokenEntity) {
-            await tokenEntity.remove();
+            await this.tokenRepository.delete({ id: tokenEntity.id });
           }
           return existingUser;
         }
@@ -266,7 +276,7 @@ export class AuthService {
     return userEntity;
   }
 
-  public async signup(data: UserSignUpDto): Promise<UserEntity> {
+  public async signup(data: UserSignUpDto): Promise<Users> {
     // search for existing user
     let existingUser = await this.userService.getByEmail(data.email);
 
@@ -301,7 +311,7 @@ export class AuthService {
     }
   }
 
-  public async generateTwoFactorAuthSecret(user: UserEntity) {
+  public async generateTwoFactorAuthSecret(user: Users) {
     const userEntity = await this.userService.getByEmail(user.email);
     if (userEntity) {
       if (userEntity.isTwoFactorAuthEnabled) {
@@ -336,11 +346,12 @@ export class AuthService {
       throw new NotFoundException(ErrorToken.NotFound);
     }
     // if user is already active
-    if (tokenEntity.user.status == UserStatus.ACTIVE) {
+    if (tokenEntity.users.status == UserStatus.ACTIVE) {
       throw new BadRequestException(ErrorUser.UserAlreadyActive);
     }
-    this.userService.activate(tokenEntity.user);
-    await tokenEntity.remove();
+    const userEntity = await this.userService.getByEmail(tokenEntity.users.email);
+    await this.userService.activate(userEntity);
+    await this.tokenRepository.delete({ id: tokenEntity.id });
   }
 
   public async forgotPassword(data: ForgotPasswordDto): Promise<void> {
@@ -373,10 +384,11 @@ export class AuthService {
       throw new NotFoundException(ErrorToken.NotFound);
     }
 
-    this.userService.updatePassword(tokenEntity.user, data.password);
+    const userEntity = await this.userService.getByEmail(tokenEntity.users.email);
+    await this.userService.updatePassword(userEntity, data.password);
 
     // TODO - might consider sending an email to confirm the password change
-    await tokenEntity.remove();
+    await this.tokenRepository.delete({ id: tokenEntity.id });
 
     return true;
   }
@@ -402,7 +414,7 @@ export class AuthService {
   }
 
   public async sendEmailWithMailType(
-    user: UserEntity,
+    user: Users,
     tokenType: TokenType,
     mailType: MailType,
   ): Promise<void> {
@@ -431,7 +443,7 @@ export class AuthService {
       ) {
         throw new BadRequestException(ErrorAuth.ResendInterval);
       }
-      await existingToken.remove();
+      await this.tokenRepository.delete({ id: existingToken.id });
     }
 
     const tokenEntity = await this.tokenRepository.create({

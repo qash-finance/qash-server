@@ -6,8 +6,6 @@ import {
   forwardRef,
 } from '@nestjs/common';
 
-import { NotificationEntity } from './notification.entity';
-import { NotificationRepository } from './notification.repository';
 import {
   CreateNotificationDto,
   NotificationQueryDto,
@@ -18,24 +16,34 @@ import {
   NotificationStatus,
 } from '../../common/enums/notification';
 import { NotificationGateway } from './notification.gateway';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { Notifications, notifications_status_enum, notifications_type_enum } from '@prisma/client';
 
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
 
   constructor(
-    private readonly notificationRepository: NotificationRepository,
+    private readonly prisma: PrismaService,
     @Inject(forwardRef(() => NotificationGateway))
     private readonly notificationGateway?: NotificationGateway,
   ) {}
 
   public async createNotification(
     dto: CreateNotificationDto,
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     this.logger.log(
       `Creating notification for wallet ${dto.walletAddress} of type ${dto.type}`,
     );
-    const notification = await this.notificationRepository.create(dto);
+    
+    const now = new Date();
+    const notification = await this.prisma.notifications.create({
+      data: {
+        ...dto,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
 
     // Emit real-time notification to wallet if gateway is available and wallet is connected
     if (
@@ -76,11 +84,15 @@ export class NotificationService {
     if (type) where.type = type;
     if (status) where.status = status;
 
-    const [notifications, total] =
-      await this.notificationRepository.findAndCount(where, {
+    const [notifications, total] = await Promise.all([
+      this.prisma.notifications.findMany({
+        where,
         skip,
         take: limit,
-      });
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.notifications.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
 
@@ -96,10 +108,12 @@ export class NotificationService {
   public async getNotificationById(
     id: number,
     walletAddress: string,
-  ): Promise<NotificationEntity> {
-    const notification = await this.notificationRepository.findOne({
-      id,
-      walletAddress,
+  ): Promise<Notifications> {
+    const notification = await this.prisma.notifications.findFirst({
+      where: {
+        id,
+        walletAddress,
+      },
     });
 
     if (!notification) {
@@ -112,11 +126,24 @@ export class NotificationService {
   public async markAsRead(
     id: number,
     walletAddress: string,
-  ): Promise<NotificationEntity> {
-    const updatedNotification = await this.notificationRepository.updateOne(
-      { id, walletAddress },
-      { status: NotificationStatus.READ },
-    );
+  ): Promise<Notifications> {
+    const existing = await this.prisma.notifications.findFirst({
+      where: { id, walletAddress },
+    });
+    
+    if (!existing) {
+      this.logger.error('Notification not found for update');
+      throw new Error('Notification not found');
+    }
+
+    const updatedNotification = await this.prisma.notifications.update({
+      where: { id: existing.id },
+      data: { 
+        status: NotificationStatus.READ,
+        readAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
 
     // Emit real-time update if gateway is available and wallet is connected
     if (
@@ -139,15 +166,38 @@ export class NotificationService {
   public async markAsUnread(
     id: number,
     walletAddress: string,
-  ): Promise<NotificationEntity> {
-    return this.notificationRepository.updateOne(
-      { id, walletAddress },
-      { status: NotificationStatus.UNREAD },
-    );
+  ): Promise<Notifications> {
+    const existing = await this.prisma.notifications.findFirst({
+      where: { id, walletAddress },
+    });
+    
+    if (!existing) {
+      this.logger.error('Notification not found for update');
+      throw new Error('Notification not found');
+    }
+
+    return this.prisma.notifications.update({
+      where: { id: existing.id },
+      data: { 
+        status: NotificationStatus.UNREAD,
+        updatedAt: new Date(),
+      },
+    });
   }
 
   public async markAllAsRead(walletAddress: string): Promise<void> {
-    await this.notificationRepository.markAllAsRead(walletAddress);
+    await this.prisma.notifications.updateMany({
+      where: { 
+        walletAddress, 
+        status: NotificationStatus.UNREAD 
+      },
+      data: { 
+        status: NotificationStatus.READ, 
+        readAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    
     this.logger.log(
       `Marked all notifications as read for wallet ${walletAddress}`,
     );
@@ -163,7 +213,12 @@ export class NotificationService {
   }
 
   public async getUnreadCount(walletAddress: string): Promise<number> {
-    return this.notificationRepository.getUnreadCount(walletAddress);
+    return this.prisma.notifications.count({
+      where: {
+        walletAddress,
+        status: NotificationStatus.UNREAD,
+      },
+    });
   }
 
   // These methods are now the primary methods (no longer wallet-specific aliases)
@@ -177,7 +232,7 @@ export class NotificationService {
       assetType: string;
       transactionId?: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
       type: NotificationType.SEND,
@@ -198,7 +253,7 @@ export class NotificationService {
       senderAddress: string;
       transactionId?: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
       type: NotificationType.CONSUME,
@@ -219,7 +274,7 @@ export class NotificationService {
       originalRecipient: string;
       transactionId?: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
       type: NotificationType.REFUND,
@@ -240,7 +295,7 @@ export class NotificationService {
       assetType: string;
       batchId?: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
       type: NotificationType.BATCH_SEND,
@@ -257,7 +312,7 @@ export class NotificationService {
       walletAddress: string;
       walletType?: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
       type: NotificationType.WALLET_CREATE,
@@ -277,10 +332,10 @@ export class NotificationService {
       tokenId: string;
       payee: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.REQUEST_PAYMENT,
+      type: notifications_type_enum.REQUEST_PAYMENT,
       title: 'Payment Request',
       message: data.message,
       metadata: {
@@ -291,8 +346,9 @@ export class NotificationService {
       },
     });
   }
+  
   private mapToResponseDto(
-    notification: NotificationEntity,
+    notification: Notifications,
   ): NotificationResponseDto {
     return {
       id: notification.id,
@@ -300,7 +356,7 @@ export class NotificationService {
       message: notification.message,
       type: notification.type,
       status: notification.status,
-      metadata: notification.metadata,
+      metadata: notification.metadata as Record<string, any>,
       actionUrl: notification.actionUrl,
       walletAddress: notification.walletAddress,
       createdAt: notification.createdAt,

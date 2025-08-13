@@ -1,13 +1,10 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ReferralCodeEntity } from './referral.entity';
-import { ConfigModule } from '@nestjs/config';
-import { ReferralCodeRepository } from './referral.repository';
 import { ReferralCodeService } from './referral.service';
+import { PrismaModule } from '../../common/prisma/prisma.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ReferralCodeEntity]), ConfigModule],
-  providers: [ReferralCodeRepository, ReferralCodeService],
-  exports: [ReferralCodeService, ReferralCodeRepository],
+  imports: [PrismaModule],
+  providers: [ReferralCodeService],
+  exports: [ReferralCodeService],
 })
 export class ReferralModule {}

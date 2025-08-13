@@ -72,9 +72,12 @@ export enum ErrorRequestPayment {
   InvalidAddress = 'Invalid address format',
   InvalidAmount = 'Invalid amount',
   InvalidToken = 'Invalid token address',
+  InvalidTxid = 'Invalid txid',
   InvalidMessage = 'Invalid message',
   SelfRequestNotAllowed = 'Cannot request payment from yourself',
   DuplicateRequest = 'Duplicate request already exists',
+  NotAccepted = 'Request payment is not accepted',
+  NotGroupPayment = 'Request payment is not a group payment',
 }
 
 export enum ErrorGift {
