@@ -1,5 +1,6 @@
 import { BaseEntity } from '../../database/base.entity';
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { FaucetMetadata } from '../transactions/transaction.dto';
 
 export enum GroupPaymentStatus {
   PENDING = 'pending',
@@ -10,6 +11,7 @@ export enum GroupPaymentStatus {
 export enum GroupPaymentMemberStatus {
   PENDING = 'pending',
   PAID = 'paid',
+  DENIED = 'denied',
 }
 
 @Entity({ name: 'group_payment_group' })
@@ -21,7 +23,10 @@ export class GroupPaymentGroupEntity extends BaseEntity {
   ownerAddress: string;
 
   @Column({ type: 'jsonb' })
-  members: string[];
+  members: {
+    address: string;
+    name: string;
+  }[];
 }
 
 @Entity({ name: 'group_payment' })
@@ -33,8 +38,12 @@ export class GroupPaymentEntity extends BaseEntity {
   @Column({ type: 'varchar' })
   ownerAddress: string;
 
-  @Column({ type: 'varchar' })
-  token: string;
+  @Column({ type: 'jsonb' })
+  tokens: {
+    faucetId: string;
+    amount: string;
+    metadata: FaucetMetadata;
+  }[];
 
   @Column({ type: 'varchar' })
   amount: string;

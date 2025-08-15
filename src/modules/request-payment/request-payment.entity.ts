@@ -1,6 +1,7 @@
 import { BaseEntity } from '../../database/base.entity';
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { GroupPaymentEntity } from '../group-payment/group-payment.entity';
+import { FaucetMetadata } from '../transactions/transaction.dto';
 
 export enum RequestPaymentStatus {
   PENDING = 'pending',
@@ -19,8 +20,12 @@ export class RequestPaymentEntity extends BaseEntity {
   @Column({ type: 'varchar' })
   amount: string;
 
-  @Column({ type: 'varchar', nullable: true })
-  token: string;
+  @Column({ type: 'jsonb' })
+  public tokens: {
+    faucetId: string;
+    amount: string;
+    metadata: FaucetMetadata;
+  }[];
 
   @Column({ type: 'varchar' })
   message: string;
@@ -31,6 +36,9 @@ export class RequestPaymentEntity extends BaseEntity {
     default: RequestPaymentStatus.PENDING,
   })
   status: RequestPaymentStatus;
+
+  @Column({ type: 'varchar', nullable: true })
+  txid: string | null;
 
   @Column({ type: 'boolean', default: false })
   isGroupPayment: boolean;

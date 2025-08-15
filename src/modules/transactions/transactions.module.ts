@@ -7,6 +7,7 @@ import { TransactionController } from './transaction.controller';
 import { GiftModule } from '../gift/gift.module';
 import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
 import { NotificationModule } from '../notification/notification.module';
+import { RequestPaymentModule } from '../request-payment/request-payment.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { NotificationModule } from '../notification/notification.module';
     GiftModule,
     WalletAuthModule,
     NotificationModule,
+    RequestPaymentModule,
   ],
   providers: [TransactionRepository, TransactionService],
   controllers: [TransactionController],

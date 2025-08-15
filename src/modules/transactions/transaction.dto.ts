@@ -107,6 +107,15 @@ export class SendTransactionDto {
 
   @IsString()
   transactionId: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Link to request_payment.id if this send fulfills a payment request',
+  })
+  @IsOptional()
+  @IsNumber()
+  requestPaymentId?: number;
 }
 
 export class RecallItem {
@@ -155,4 +164,14 @@ export class ConsumePublicTransactionDto {
 
   @IsNumber()
   txId: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  requestPaymentId?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  noteId?: string;
 }

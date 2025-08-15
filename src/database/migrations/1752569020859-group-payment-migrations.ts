@@ -35,7 +35,7 @@ export class Migrationsts1752569020859 implements MigrationInterface {
             )
         `);
     await queryRunner.query(`
-            CREATE TYPE "public"."group_payment_member_status_status_enum" AS ENUM('pending', 'paid')
+            CREATE TYPE "public"."group_payment_member_status_status_enum" AS ENUM('pending', 'paid', 'denied')
         `);
     await queryRunner.query(`
             CREATE TABLE "group_payment_member_status" (

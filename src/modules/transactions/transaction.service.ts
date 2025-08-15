@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { TransactionRepository } from './transaction.repository';
 import { TransactionEntity } from './transaction.entity';
 import {
@@ -15,11 +21,11 @@ import {
   validateAmount,
   validateSerialNumber,
   validateFutureDate,
-  validateDifferentAddresses,
   normalizeAddress,
 } from '../../common/utils/validation.util';
 import { ErrorTransaction } from '../../common/constants/errors';
 import { NotificationService } from '../notification/notification.service';
+import { RequestPaymentService } from '../request-payment/request-payment.service';
 import { NotificationType } from '../../common/enums/notification';
 
 @Injectable()
@@ -30,6 +36,8 @@ export class TransactionService {
     private readonly transactionRepository: TransactionRepository,
     private readonly notificationService: NotificationService,
     private readonly giftService: GiftService,
+    @Inject(forwardRef(() => RequestPaymentService))
+    private readonly requestPaymentService: RequestPaymentService,
   ) {}
 
   // *************************************************
@@ -357,6 +365,24 @@ export class TransactionService {
             transactionId: notes.find((note) => note.noteId == tx.noteId)?.txId,
           },
         });
+
+        // If this transaction is tied to a request payment, settle it on claim
+        if (tx.requestPaymentId) {
+          try {
+            const consumedTxId = notes.find(
+              (n) => n.noteId === tx.noteId,
+            )?.txId;
+            await this.requestPaymentService.settleOnClaim(
+              tx.requestPaymentId,
+              sender,
+              consumedTxId,
+            );
+          } catch (e) {
+            this.logger.warn(
+              `Failed to settle linked request payment ${tx.requestPaymentId}: ${e?.message}`,
+            );
+          }
+        }
       }
 
       return { affected: affected || 0 };
@@ -368,8 +394,27 @@ export class TransactionService {
   async consumePublicTransactions(
     notes: ConsumePublicTransactionDto[],
     caller: string,
-  ): Promise<void> {
+  ): Promise<{ affected: number }> {
     try {
+      const transactions = await this.transactionRepository.find({
+        noteId: In(notes.map((note) => note.noteId)),
+        status: NoteStatus.PENDING,
+      });
+
+      // check if sender is the recipient of the transactions
+      const isRecipient = transactions.every((tx) => tx.recipient === caller);
+      if (!isRecipient) {
+        throw new BadRequestException(ErrorTransaction.NotRecipient);
+      }
+
+      const affected = await this.transactionRepository.updateMany(
+        {
+          noteId: In(notes.map((note) => note.noteId)),
+          status: NoteStatus.PENDING,
+        },
+        { status: NoteStatus.CONSUMED },
+      );
+
       for (const note of notes) {
         await this.notificationService.createNotification({
           walletAddress: caller,
@@ -385,7 +430,27 @@ export class TransactionService {
             transactionId: note.txId,
           },
         });
+
+        // If this transaction is tied to a request payment, settle it on claim
+        if (note.requestPaymentId) {
+          try {
+            const consumedTxId = notes.find(
+              (n) => n.requestPaymentId === note.requestPaymentId,
+            )?.txId;
+            await this.requestPaymentService.settleOnClaim(
+              note.requestPaymentId,
+              caller,
+              consumedTxId,
+            );
+          } catch (e) {
+            this.logger.warn(
+              `Failed to settle linked request payment ${note.requestPaymentId}: ${e?.message}`,
+            );
+          }
+        }
       }
+
+      return { affected: affected || 0 };
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -423,7 +488,7 @@ export class TransactionService {
           }
         } else if (item.type === 'gift') {
           try {
-            await this.giftService.recallGift(item.id);
+            await this.giftService.recallGift(item.id, dto.txId);
             results.push({ type: 'gift', id: item.id, success: true });
           } catch (e) {
             results.push({
@@ -459,12 +524,12 @@ export class TransactionService {
       const normalizedRecipient = normalizeAddress(dto.recipient);
 
       // Check if sender and recipient are different
-      validateDifferentAddresses(
-        normalizedSender,
-        normalizedRecipient,
-        'sender',
-        'recipient',
-      );
+      // validateDifferentAddresses(
+      //   normalizedSender,
+      //   normalizedRecipient,
+      //   'sender',
+      //   'recipient',
+      // );
 
       // We don't store public transactions that are not recallable
       if (!dto.private && !dto.recallable) {
@@ -514,6 +579,7 @@ export class TransactionService {
         serialNumber: dto.serialNumber,
         noteType: dto.noteType,
         noteId: dto.noteId,
+        requestPaymentId: dto.requestPaymentId ?? null,
         status: NoteStatus.PENDING,
       };
     } catch (error) {

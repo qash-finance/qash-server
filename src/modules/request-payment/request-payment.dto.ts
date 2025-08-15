@@ -5,9 +5,13 @@ import {
   Matches,
   MinLength,
   MaxLength,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { RequestPaymentStatus } from './request-payment.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { AssetDto } from '../transactions/transaction.dto';
 
 export class CreateRequestPaymentDto {
   @ApiProperty({
@@ -16,8 +20,8 @@ export class CreateRequestPaymentDto {
   })
   @IsNotEmpty()
   @IsString()
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    message: 'payer must be a valid hex address starting with 0x',
+  @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
+    message: 'payer must be a valid address starting with mt or mm',
   })
   @MinLength(3, { message: 'payer address is too short' })
   payer: string;
@@ -28,8 +32,8 @@ export class CreateRequestPaymentDto {
   })
   @IsNotEmpty()
   @IsString()
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    message: 'payee must be a valid hex address starting with 0x',
+  @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
+    message: 'payee must be a valid address starting with mt or mm',
   })
   @MinLength(3, { message: 'payee address is too short' })
   payee: string;
@@ -43,16 +47,24 @@ export class CreateRequestPaymentDto {
   amount: string;
 
   @ApiProperty({
-    description: 'The token of the request',
-    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+    description: 'The tokens of the request',
+    example: [
+      {
+        faucetId: '1',
+        amount: '1000',
+        metadata: {
+          symbol: 'MTST',
+          decimals: 18,
+          maxSupply: 1000000000000000000,
+        },
+      },
+    ],
   })
   @IsNotEmpty()
-  @IsString()
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    message: 'token must be a valid hex address starting with 0x',
-  })
-  @MinLength(3, { message: 'token address is too short' })
-  token: string;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AssetDto)
+  tokens: AssetDto[];
 
   @ApiProperty({
     description: 'The message of the request',
