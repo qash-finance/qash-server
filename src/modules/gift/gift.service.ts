@@ -11,7 +11,7 @@ import {
 } from '../../common/utils/validation.util';
 import { ErrorGift } from '../../common/constants/errors';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from 'src/common/enums/notification';
+import { NotificationType } from '../../common/enums/notification';
 
 @Injectable()
 export class GiftService {
