@@ -25,7 +25,6 @@ import {
 } from '../../common/utils/validation.util';
 import { ErrorRequestPayment } from '../../common/constants/errors';
 import { FaucetMetadata } from '../transactions/transaction.dto';
-import { NotificationType } from 'src/common/enums/notification';
 import { NotificationService } from '../notification/notification.service';
 import { AddressBookService } from '../address-book/address-book.service';
 
@@ -43,7 +42,6 @@ export class RequestPaymentService {
   // *************************************************
   // **************** CREATE METHODS ****************
   // *************************************************
-
 
   async createGroupPaymentRequests(
     groupPaymentId: number,
@@ -102,7 +100,7 @@ export class RequestPaymentService {
         payer: member,
         payee: normalizedOwnerAddress,
         amount,
-        tokens: tokens.map(token => ({ ...token })), // Convert to plain objects
+        tokens: tokens.map((token) => ({ ...token })), // Convert to plain objects
         message: sanitizedMessage,
         isGroupPayment: true,
         groupPaymentId,
@@ -173,7 +171,6 @@ export class RequestPaymentService {
       // Sanitize message
       const sanitizedMessage = sanitizeString(dto.message);
 
-
       // Check for duplicate request (same payer, payee, amount, and status pending)
       // Note: We can't easily compare JSONB tokens arrays in the query, so we'll check after creation
       const existingRequests = await this.requestPaymentRepository.find({
@@ -184,8 +181,9 @@ export class RequestPaymentService {
       });
 
       // Check if any existing request has matching tokens
-      const duplicateRequest = existingRequests.find(request => 
-        JSON.stringify(request.tokens) === JSON.stringify(dto.tokens)
+      const duplicateRequest = existingRequests.find(
+        (request) =>
+          JSON.stringify(request.tokens) === JSON.stringify(dto.tokens),
       );
 
       if (duplicateRequest) {
@@ -202,29 +200,38 @@ export class RequestPaymentService {
       };
 
       // Find payee name from address book
-      const payeeName = await this.findPayeeNameFromAddressBook(normalizedPayer, normalizedPayee);
-      
+      const payeeName = await this.findPayeeNameFromAddressBook(
+        normalizedPayer,
+        normalizedPayee,
+      );
+
       // Create notification message with payee name if available
-      const notificationMessage = payeeName 
+      const notificationMessage = payeeName
         ? `${payeeName} has requested you to transfer ${dto.amount} ${dto.tokens[0].metadata.symbol}`
         : `${dto.payee} has requested you to transfer ${dto.amount} ${dto.tokens[0].metadata.symbol}`;
 
-      console.log("🚀 ~ RequestPaymentService ~ createRequest ~ dto.tokens[0].metadata.symbol:", dto.tokens)
+      console.log(
+        '🚀 ~ RequestPaymentService ~ createRequest ~ dto.tokens[0].metadata.symbol:',
+        dto.tokens,
+      );
 
       //create notification for payer
-      await this.notificationService.createRequestPaymentNotification(normalizedPayer, {
-        message: notificationMessage,
-        amount: dto.amount,
-        tokenName: dto.tokens[0].metadata.symbol,
-        tokenId: dto.tokens[0].faucetId,
-        payee: payeeName || normalizedPayee,
-      });
+      await this.notificationService.createRequestPaymentNotification(
+        normalizedPayer,
+        {
+          message: notificationMessage,
+          amount: dto.amount,
+          tokenName: dto.tokens[0].metadata.symbol,
+          tokenId: dto.tokens[0].faucetId,
+          payee: payeeName || normalizedPayee,
+        },
+      );
 
       return this.requestPaymentRepository.create(createDto);
     } catch (error) {
       handleError(error, this.logger);
     }
-  } 
+  }
 
   // *************************************************
   // **************** PUT METHODS ******************
@@ -340,7 +347,9 @@ export class RequestPaymentService {
       validateAddress(claimerAddress, 'claimerAddress');
       const normalizedClaimer = normalizeAddress(claimerAddress);
 
-      const req = await this.requestPaymentRepository.findOne({ id: requestPaymentId });
+      const req = await this.requestPaymentRepository.findOne({
+        id: requestPaymentId,
+      });
       if (!req) {
         throw new BadRequestException(ErrorRequestPayment.NotFound);
       }
@@ -361,7 +370,10 @@ export class RequestPaymentService {
 
       // If group payment, mark member as PAID now (on claim)
       if (req.isGroupPayment && req.groupPaymentId) {
-        await this.updateGroupPaymentMemberStatus(req.groupPaymentId, normalizedClaimer);
+        await this.updateGroupPaymentMemberStatus(
+          req.groupPaymentId,
+          normalizedClaimer,
+        );
       }
     } catch (error) {
       handleError(error, this.logger);
@@ -414,7 +426,6 @@ export class RequestPaymentService {
   // **************** HELPER METHODS ****************
   // *************************************************
 
-
   /**
    * Find the name of a payee from the payer's address book
    * @param payerAddress - The address of the payer
@@ -426,25 +437,28 @@ export class RequestPaymentService {
     payeeAddress: string,
   ): Promise<string | null> {
     try {
-      const addressBookEntries = await this.addressBookService.getAllAddressBookEntries(payerAddress);
-      
+      const addressBookEntries =
+        await this.addressBookService.getAllAddressBookEntries(payerAddress);
+
       if (!addressBookEntries || addressBookEntries.length === 0) {
         return null;
       }
-      
+
       // Flatten all address book entries from all categories
-      const allEntries = addressBookEntries.flatMap(category => 
-        category.addressBooks || []
+      const allEntries = addressBookEntries.flatMap(
+        (category) => category.addressBooks || [],
       );
-      
+
       // Find the entry that matches the payee address (case-insensitive)
-      const payeeEntry = allEntries.find(entry => 
-        entry.address.toLowerCase() === payeeAddress.toLowerCase()
+      const payeeEntry = allEntries.find(
+        (entry) => entry.address.toLowerCase() === payeeAddress.toLowerCase(),
       );
-      
+
       return payeeEntry ? payeeEntry.name : null;
     } catch (error) {
-      this.logger.warn(`Error finding payee name from address book: ${error.message}`);
+      this.logger.warn(
+        `Error finding payee name from address book: ${error.message}`,
+      );
       return null;
     }
   }

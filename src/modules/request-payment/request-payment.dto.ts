@@ -11,7 +11,7 @@ import {
 import { Type } from 'class-transformer';
 import { RequestPaymentStatus } from './request-payment.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { FaucetMetadata, AssetDto } from '../transactions/transaction.dto';
+import { AssetDto } from '../transactions/transaction.dto';
 
 export class CreateRequestPaymentDto {
   @ApiProperty({
@@ -48,15 +48,17 @@ export class CreateRequestPaymentDto {
 
   @ApiProperty({
     description: 'The tokens of the request',
-    example: [{ 
-      faucetId: '1', 
-      amount: '1000', 
-      metadata: { 
-        symbol: 'MTST', 
-        decimals: 18, 
-        maxSupply: 1000000000000000000 
-      } 
-    }],
+    example: [
+      {
+        faucetId: '1',
+        amount: '1000',
+        metadata: {
+          symbol: 'MTST',
+          decimals: 18,
+          maxSupply: 1000000000000000000,
+        },
+      },
+    ],
   })
   @IsNotEmpty()
   @IsArray()

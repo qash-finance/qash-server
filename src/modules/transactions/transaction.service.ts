@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { TransactionRepository } from './transaction.repository';
 import { TransactionEntity } from './transaction.entity';
 import {
@@ -20,7 +26,6 @@ import {
 import { ErrorTransaction } from '../../common/constants/errors';
 import { NotificationService } from '../notification/notification.service';
 import { RequestPaymentService } from '../request-payment/request-payment.service';
-import { RequestPaymentStatus } from '../request-payment/request-payment.entity';
 import { NotificationType } from '../../common/enums/notification';
 
 @Injectable()
@@ -364,7 +369,9 @@ export class TransactionService {
         // If this transaction is tied to a request payment, settle it on claim
         if (tx.requestPaymentId) {
           try {
-            const consumedTxId = notes.find((n) => n.noteId === tx.noteId)?.txId;
+            const consumedTxId = notes.find(
+              (n) => n.noteId === tx.noteId,
+            )?.txId;
             await this.requestPaymentService.settleOnClaim(
               tx.requestPaymentId,
               sender,
@@ -394,16 +401,19 @@ export class TransactionService {
         status: NoteStatus.PENDING,
       });
 
-       // check if sender is the recipient of the transactions
-       const isRecipient = transactions.every((tx) => tx.recipient === caller);
-       if (!isRecipient) {
-         throw new BadRequestException(ErrorTransaction.NotRecipient);
-       }
- 
-       const affected = await this.transactionRepository.updateMany(
-         { noteId: In(notes.map((note) => note.noteId)), status: NoteStatus.PENDING },
-         { status: NoteStatus.CONSUMED },
-       );
+      // check if sender is the recipient of the transactions
+      const isRecipient = transactions.every((tx) => tx.recipient === caller);
+      if (!isRecipient) {
+        throw new BadRequestException(ErrorTransaction.NotRecipient);
+      }
+
+      const affected = await this.transactionRepository.updateMany(
+        {
+          noteId: In(notes.map((note) => note.noteId)),
+          status: NoteStatus.PENDING,
+        },
+        { status: NoteStatus.CONSUMED },
+      );
 
       for (const note of notes) {
         await this.notificationService.createNotification({
@@ -421,11 +431,12 @@ export class TransactionService {
           },
         });
 
-
         // If this transaction is tied to a request payment, settle it on claim
         if (note.requestPaymentId) {
           try {
-            const consumedTxId = notes.find((n) => n.requestPaymentId === note.requestPaymentId)?.txId;
+            const consumedTxId = notes.find(
+              (n) => n.requestPaymentId === note.requestPaymentId,
+            )?.txId;
             await this.requestPaymentService.settleOnClaim(
               note.requestPaymentId,
               caller,

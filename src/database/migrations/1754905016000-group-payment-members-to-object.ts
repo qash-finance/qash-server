@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class GroupPaymentMembersToObject1754905016000 implements MigrationInterface {
+export class GroupPaymentMembersToObject1754905016000
+  implements MigrationInterface
+{
   name = 'GroupPaymentMembersToObject1754905016000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -49,5 +51,3 @@ export class GroupPaymentMembersToObject1754905016000 implements MigrationInterf
     `);
   }
 }
-
-

@@ -15,7 +15,7 @@ import { NotificationModule } from '../notification/notification.module';
     forwardRef(() => GroupPaymentModule),
     WalletAuthModule,
     AddressBookModule,
-    NotificationModule, 
+    NotificationModule,
   ],
   providers: [RequestPaymentRepository, RequestPaymentService],
   controllers: [RequestPaymentController],

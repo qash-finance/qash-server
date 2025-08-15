@@ -39,7 +39,9 @@ export class GroupPaymentRepository {
   ): Promise<GroupPaymentGroupEntity> {
     try {
       await this.groupRepository.update(groupId, update);
-      const updated = await this.groupRepository.findOne({ where: { id: groupId } });
+      const updated = await this.groupRepository.findOne({
+        where: { id: groupId },
+      });
       return updated as GroupPaymentGroupEntity;
     } catch (error) {
       this.logger.error('Error updating group:', error);
@@ -216,7 +218,7 @@ export class GroupPaymentRepository {
         {
           status: GroupPaymentMemberStatus.PAID,
           paidAt: new Date(),
-        }
+        },
       );
     } catch (error) {
       this.logger.error('Error updating member status to paid:', error);
@@ -250,7 +252,7 @@ export class GroupPaymentRepository {
           memberAddress: newMemberAddress,
           status: GroupPaymentMemberStatus.PAID,
           paidAt: new Date(),
-        }
+        },
       );
     } catch (error) {
       this.logger.error('Error updating member status by index:', error);
@@ -271,7 +273,7 @@ export class GroupPaymentRepository {
         {
           status: GroupPaymentMemberStatus.DENIED,
           paidAt: null,
-        }
+        },
       );
     } catch (error) {
       this.logger.error('Error updating member status to denied:', error);

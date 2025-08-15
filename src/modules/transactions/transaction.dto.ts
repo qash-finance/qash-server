@@ -108,7 +108,11 @@ export class SendTransactionDto {
   @IsString()
   transactionId: string;
 
-  @ApiProperty({ required: false, description: 'Link to request_payment.id if this send fulfills a payment request' })
+  @ApiProperty({
+    required: false,
+    description:
+      'Link to request_payment.id if this send fulfills a payment request',
+  })
   @IsOptional()
   @IsNumber()
   requestPaymentId?: number;
