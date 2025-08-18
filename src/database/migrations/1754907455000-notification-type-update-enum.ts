@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class NotificationTypeUpdateEnum1754907455000 implements MigrationInterface {
+export class NotificationTypeUpdateEnum1754907455000
+  implements MigrationInterface
+{
   name = 'NotificationTypeUpdateEnum1754907455000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -61,5 +63,3 @@ export class NotificationTypeUpdateEnum1754907455000 implements MigrationInterfa
         `);
   }
 }
-
-

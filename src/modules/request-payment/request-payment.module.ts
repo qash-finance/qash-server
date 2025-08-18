@@ -13,7 +13,7 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
     forwardRef(() => GroupPaymentModule),
     WalletAuthModule,
     AddressBookModule,
-    NotificationModule, 
+    NotificationModule,
   ],
   providers: [RequestPaymentService],
   controllers: [RequestPaymentController],

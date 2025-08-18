@@ -14,7 +14,7 @@ export class UpdateTokensToJson1754364903000 implements MigrationInterface {
     await queryRunner.query(`
             ALTER TABLE "request_payment" ADD COLUMN "txid" varchar
         `);
-    
+
     // Drop token column and add tokens column for group_payment
     await queryRunner.query(`
             ALTER TABLE "group_payment" DROP COLUMN "token"
@@ -27,7 +27,7 @@ export class UpdateTokensToJson1754364903000 implements MigrationInterface {
         `);
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
+  public async down(_queryRunner: QueryRunner): Promise<void> {
     // No rollback needed since tables are empty
   }
 }

@@ -24,7 +24,6 @@ import {
 } from '../../common/utils/validation.util';
 import { ErrorRequestPayment } from '../../common/constants/errors';
 import { FaucetMetadata } from '../transactions/transaction.dto';
-import { NotificationType } from 'src/common/enums/notification';
 import { NotificationService } from '../notification/notification.service';
 import { AddressBookService } from '../address-book/address-book.service';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -44,7 +43,6 @@ export class RequestPaymentService {
   // *************************************************
   // **************** CREATE METHODS ****************
   // *************************************************
-
 
   async createGroupPaymentRequests(
     groupPaymentId: number,
@@ -104,7 +102,7 @@ export class RequestPaymentService {
         payer: member,
         payee: normalizedOwnerAddress,
         amount,
-        tokens: tokens.map(token => ({ ...token })) as any, // Convert to plain objects and cast to JSON
+        tokens: tokens.map(token => ({ ...token })), // Convert to plain objects and cast to JSON
         message: sanitizedMessage,
         isGroupPayment: true,
         groupPaymentId,
@@ -184,7 +182,6 @@ export class RequestPaymentService {
       // Sanitize message
       const sanitizedMessage = sanitizeString(dto.message);
 
-
       // Check for duplicate request (same payer, payee, amount, and status pending)
       // Note: We can't easily compare JSONB tokens arrays in the query, so we'll check after creation
       const existingRequests = await this.prisma.requestPayment.findMany({
@@ -198,8 +195,9 @@ export class RequestPaymentService {
       });
 
       // Check if any existing request has matching tokens
-      const duplicateRequest = existingRequests.find(request => 
-        JSON.stringify(request.tokens) === JSON.stringify(dto.tokens)
+      const duplicateRequest = existingRequests.find(
+        (request) =>
+          JSON.stringify(request.tokens) === JSON.stringify(dto.tokens),
       );
 
       if (duplicateRequest) {
@@ -207,23 +205,32 @@ export class RequestPaymentService {
       }
 
       // Find payee name from address book
-      const payeeName = await this.findPayeeNameFromAddressBook(normalizedPayer, normalizedPayee);
-      
+      const payeeName = await this.findPayeeNameFromAddressBook(
+        normalizedPayer,
+        normalizedPayee,
+      );
+
       // Create notification message with payee name if available
-      const notificationMessage = payeeName 
+      const notificationMessage = payeeName
         ? `${payeeName} has requested you to transfer ${dto.amount} ${dto.tokens[0].metadata.symbol}`
         : `${dto.payee} has requested you to transfer ${dto.amount} ${dto.tokens[0].metadata.symbol}`;
 
-      console.log("🚀 ~ RequestPaymentService ~ createRequest ~ dto.tokens[0].metadata.symbol:", dto.tokens)
+      console.log(
+        '🚀 ~ RequestPaymentService ~ createRequest ~ dto.tokens[0].metadata.symbol:',
+        dto.tokens,
+      );
 
       //create notification for payer
-      await this.notificationService.createRequestPaymentNotification(normalizedPayer, {
-        message: notificationMessage,
-        amount: dto.amount,
-        tokenName: dto.tokens[0].metadata.symbol,
-        tokenId: dto.tokens[0].faucetId,
-        payee: payeeName || normalizedPayee,
-      });
+      await this.notificationService.createRequestPaymentNotification(
+        normalizedPayer,
+        {
+          message: notificationMessage,
+          amount: dto.amount,
+          tokenName: dto.tokens[0].metadata.symbol,
+          tokenId: dto.tokens[0].faucetId,
+          payee: payeeName || normalizedPayee,
+        },
+      );
 
       const now = new Date();
       const tokens = dto.tokens.map((token) => ({
@@ -243,7 +250,7 @@ export class RequestPaymentService {
     } catch (error) {
       handleError(error, this.logger);
     }
-  } 
+  }
 
   // *************************************************
   // **************** PUT METHODS ******************
@@ -463,7 +470,10 @@ export class RequestPaymentService {
 
       // If group payment, mark member as PAID now (on claim)
       if (req.isGroupPayment && req.groupPaymentId) {
-        await this.updateGroupPaymentMemberStatus(req.groupPaymentId, normalizedClaimer);
+        await this.updateGroupPaymentMemberStatus(
+          req.groupPaymentId,
+          normalizedClaimer,
+        );
       }
     } catch (error) {
       handleError(error, this.logger);
@@ -521,7 +531,6 @@ export class RequestPaymentService {
   // **************** HELPER METHODS ****************
   // *************************************************
 
-
   /**
    * Find the name of a payee from the payer's address book
    * @param payerAddress - The address of the payer
@@ -539,7 +548,9 @@ export class RequestPaymentService {
       );
       return payeeEntry ? payeeEntry.name : null;
     } catch (error) {
-      this.logger.warn(`Error finding payee name from address book: ${error.message}`);
+      this.logger.warn(
+        `Error finding payee name from address book: ${error.message}`,
+      );
       return null;
     }
   }

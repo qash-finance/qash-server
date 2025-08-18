@@ -5,7 +5,13 @@ import {
   forwardRef,
   Logger,
 } from '@nestjs/common';
-import { CreateGroupDto, CreateGroupPaymentDto, CreateDefaultGroupDto, CreateQuickSharePaymentDto } from './group-payment.dto';
+import { GroupPaymentRepository } from './group-payment.repository';
+import {
+  CreateGroupDto,
+  CreateGroupPaymentDto,
+  CreateDefaultGroupDto,
+  CreateQuickSharePaymentDto,
+} from './group-payment.dto';
 import { GroupPaymentStatus } from './group-payment.entity';
 import { RequestPaymentService } from '../request-payment/request-payment.service';
 import { GroupPaymentMemberStatus } from './group-payment.entity';
@@ -46,7 +52,10 @@ export class GroupPaymentService {
       });
 
       // Check for duplicate members by address
-      validateUniqueArray(dto.members.map((m) => m.address), 'members');
+      validateUniqueArray(
+        dto.members.map((m) => m.address),
+        'members',
+      );
 
       // Normalize addresses
       const normalizedOwnerAddress = normalizeAddress(ownerAddress);
@@ -101,7 +110,11 @@ export class GroupPaymentService {
     }
   }
 
-  async updateGroup(groupId: number, dto: CreateGroupDto, ownerAddress: string) {
+  async updateGroup(
+    groupId: number,
+    dto: CreateGroupDto,
+    ownerAddress: string,
+  ) {
     try {
       if (!groupId || groupId <= 0) {
         throw new BadRequestException('groupId must be a positive number');
@@ -112,8 +125,13 @@ export class GroupPaymentService {
       validateNonEmptyArray(dto.members, 'members');
 
       // validate members, duplicates
-      dto.members.forEach((member, index) => validateAddress(member.address, `members[${index}].address`));
-      validateUniqueArray(dto.members.map((m) => m.address), 'members');
+      dto.members.forEach((member, index) =>
+        validateAddress(member.address, `members[${index}].address`),
+      );
+      validateUniqueArray(
+        dto.members.map((m) => m.address),
+        'members',
+      );
 
       const normalizedOwnerAddress = normalizeAddress(ownerAddress);
       const normalizedMembers = dto.members.map((m) => ({
@@ -219,11 +237,17 @@ export class GroupPaymentService {
 
       // Check for duplicate members (only if members exist)
       if (normalizedMembers.length > 0) {
-        validateUniqueArray(normalizedMembers.map((m) => m.address), 'members');
+        validateUniqueArray(
+          normalizedMembers.map((m) => m.address),
+          'members',
+        );
       }
 
       // Check if owner is in members list (only if members exist)
-      if (normalizedMembers.length > 0 && normalizedMembers.some((m) => m.address === normalizedOwnerAddress)) {
+      if (
+        normalizedMembers.length > 0 &&
+        normalizedMembers.some((m) => m.address === normalizedOwnerAddress)
+      ) {
         throw new BadRequestException(ErrorGroupPayment.OwnerInMembersList);
       }
 
@@ -297,7 +321,10 @@ export class GroupPaymentService {
         );
       }
 
-      const members = group.members as unknown as { address: string; name: string }[];
+      const members = group.members as unknown as {
+        address: string;
+        name: string;
+      }[];
 
       // Validate that group has members
       if (!members || members.length === 0) {
@@ -361,7 +388,7 @@ export class GroupPaymentService {
       // Create member statuses
       await this.createMemberStatuses(
         payment.id,
-        members.map((m) => ({ address: m.address, name: m.name }))
+        members.map((m) => ({ address: m.address, name: m.name })),
       );
 
       // Create pending request payments for each member
@@ -503,7 +530,10 @@ export class GroupPaymentService {
   }
 
   // Quick Share specific methods - separate logic from regular group payments
-  async createQuickSharePayment(dto: CreateQuickSharePaymentDto, ownerAddress: string) {
+  async createQuickSharePayment(
+    dto: CreateQuickSharePaymentDto,
+    ownerAddress: string,
+  ) {
     try {
       // Validate all inputs
       validateAddress(ownerAddress, 'ownerAddress');
@@ -549,7 +579,10 @@ export class GroupPaymentService {
       const perMember = parseFloat((total / dto.memberCount).toFixed(6));
 
       // Create placeholder members (represented as "-" for each expected slot)
-      const placeholderMembers = Array(dto.memberCount).fill({ address: '-', name: '-' });
+      const placeholderMembers = Array(dto.memberCount).fill({
+        address: '-',
+        name: '-',
+      });
 
       // Update the group with placeholder members
       await this.updateGroupMembers(group.id, placeholderMembers);
@@ -592,18 +625,22 @@ export class GroupPaymentService {
       await this.createMemberStatuses(payment.id, placeholderMembers);
 
       // Return the code and member info for Quick Share
-      return { 
+      return {
         code: linkCode,
         memberCount: dto.memberCount,
         perMember: perMember,
-        members: placeholderMembers 
+        members: placeholderMembers,
       };
     } catch (error) {
       handleError(error, this.logger);
     }
   }
 
-  async addMemberToQuickShare(code: string, userAddress: string, requestorAddress: string) {
+  async addMemberToQuickShare(
+    code: string,
+    userAddress: string,
+    requestorAddress: string,
+  ) {
     try {
       // Validate inputs
       if (!code || typeof code !== 'string') {
@@ -614,7 +651,6 @@ export class GroupPaymentService {
       validateAddress(requestorAddress, 'requestorAddress');
 
       const normalizedUserAddress = normalizeAddress(userAddress);
-      const normalizedRequestorAddress = normalizeAddress(requestorAddress);
 
       // Find the payment by code
       const payment = await this.prisma.groupPayment.findFirst({
@@ -643,7 +679,9 @@ export class GroupPaymentService {
       // Check if user is already a member (not a placeholder)
       const currentMembers = (payment.groupPaymentGroup.members || []) as unknown as { address: string; name: string }[];
       if (currentMembers.some((m) => m.address === normalizedUserAddress)) {
-        throw new BadRequestException('User is already a member of this Quick Share');
+        throw new BadRequestException(
+          'User is already a member of this Quick Share',
+        );
       }
 
       // Check if user is the owner
@@ -652,15 +690,22 @@ export class GroupPaymentService {
       }
 
       // Find the first available placeholder slot ("-")
-      const placeholderIndex = currentMembers.findIndex(member => member.address === '-');
+      const placeholderIndex = currentMembers.findIndex(
+        (member) => member.address === '-',
+      );
       if (placeholderIndex === -1) {
-        throw new BadRequestException('No available slots in this Quick Share payment');
+        throw new BadRequestException(
+          'No available slots in this Quick Share payment',
+        );
       }
 
       // Replace the placeholder with the actual user address
       const updatedMembers = [...currentMembers];
-      updatedMembers[placeholderIndex] = { address: normalizedUserAddress, name: '-' };
-      
+      updatedMembers[placeholderIndex] = {
+        address: normalizedUserAddress,
+        name: '-',
+      };
+
       // Update the group with new members
       await this.updateGroupMembers(payment.groupId, updatedMembers);
 
@@ -672,7 +717,9 @@ export class GroupPaymentService {
 
       // No payment request needed - user already paid!
 
-      const filledSlots = updatedMembers.filter(member => member.address !== '-').length;
+      const filledSlots = updatedMembers.filter(
+        (member) => member.address !== '-',
+      ).length;
       const totalSlots = updatedMembers.length;
 
       return {

@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class TransactionsRequestPaymentId1754642561000 implements MigrationInterface {
+export class TransactionsRequestPaymentId1754642561000
+  implements MigrationInterface
+{
   name = 'TransactionsRequestPaymentId1754642561000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -16,5 +18,3 @@ export class TransactionsRequestPaymentId1754642561000 implements MigrationInter
     `);
   }
 }
-
-

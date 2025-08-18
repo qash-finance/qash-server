@@ -1,5 +1,13 @@
-import { BadRequestException, Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Transactions } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
+import { TransactionRepository } from './transaction.repository';
+import { TransactionEntity } from './transaction.entity';
 import {
   SendTransactionDto,
   RecallRequestDto,
@@ -433,7 +441,9 @@ export class TransactionService {
         // If this transaction is tied to a request payment, settle it on claim
         if (tx.requestPaymentId) {
           try {
-            const consumedTxId = notes.find((n) => n.noteId === tx.noteId)?.txId;
+            const consumedTxId = notes.find(
+              (n) => n.noteId === tx.noteId,
+            )?.txId;
             await this.requestPaymentService.settleOnClaim(
               tx.requestPaymentId,
               sender,
@@ -499,11 +509,12 @@ export class TransactionService {
           },
         });
 
-
         // If this transaction is tied to a request payment, settle it on claim
         if (note.requestPaymentId) {
           try {
-            const consumedTxId = notes.find((n) => n.requestPaymentId === note.requestPaymentId)?.txId;
+            const consumedTxId = notes.find(
+              (n) => n.requestPaymentId === note.requestPaymentId,
+            )?.txId;
             await this.requestPaymentService.settleOnClaim(
               note.requestPaymentId,
               caller,

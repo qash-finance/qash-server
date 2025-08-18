@@ -19,7 +19,13 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { GroupPaymentService } from './group-payment.service';
-import { CreateGroupDto, CreateGroupPaymentDto, CreateDefaultGroupDto, CreateQuickSharePaymentDto, UpdateQuickShareMemberDto } from './group-payment.dto';
+import {
+  CreateGroupDto,
+  CreateGroupPaymentDto,
+  CreateDefaultGroupDto,
+  CreateQuickSharePaymentDto,
+  UpdateQuickShareMemberDto,
+} from './group-payment.dto';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
 import { RequestWithWalletAuth } from '../../common/interfaces';
 
@@ -47,7 +53,9 @@ export class GroupPaymentController {
 
   @Post('default-group')
   @UseGuards(WalletAuthGuard)
-  @ApiOperation({ summary: 'Create a default group (e.g., Quick Share) with optional members' })
+  @ApiOperation({
+    summary: 'Create a default group (e.g., Quick Share) with optional members',
+  })
   @ApiResponse({ status: 201, description: 'Default group created' })
   @ApiBody({ type: CreateDefaultGroupDto })
   async createDefaultGroup(
@@ -71,20 +79,34 @@ export class GroupPaymentController {
 
   @Post('quick-share/create-payment')
   @UseGuards(WalletAuthGuard)
-  @ApiOperation({ summary: 'Create a Quick Share payment (starts with 0 members)' })
-  @ApiResponse({ status: 201, description: 'Quick Share payment created', schema: { type: 'object', properties: { code: { type: 'string' } } } })
+  @ApiOperation({
+    summary: 'Create a Quick Share payment (starts with 0 members)',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Quick Share payment created',
+    schema: { type: 'object', properties: { code: { type: 'string' } } },
+  })
   @ApiBody({ type: CreateQuickSharePaymentDto })
   async createQuickSharePayment(
     @Body() dto: CreateQuickSharePaymentDto,
     @Req() req: RequestWithWalletAuth,
   ) {
-    return this.service.createQuickSharePayment(dto, req.walletAuth.walletAddress);
+    return this.service.createQuickSharePayment(
+      dto,
+      req.walletAuth.walletAddress,
+    );
   }
 
   @Patch('quick-share/:code/add-member')
   @UseGuards(WalletAuthGuard)
-  @ApiOperation({ summary: 'Add user to Quick Share payment after transaction success' })
-  @ApiResponse({ status: 200, description: 'Member added to Quick Share payment' })
+  @ApiOperation({
+    summary: 'Add user to Quick Share payment after transaction success',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member added to Quick Share payment',
+  })
   @ApiParam({ name: 'code', description: 'Quick Share payment code' })
   @ApiBody({ type: UpdateQuickShareMemberDto })
   async addMemberToQuickShare(
@@ -92,7 +114,11 @@ export class GroupPaymentController {
     @Body() dto: UpdateQuickShareMemberDto,
     @Req() req: RequestWithWalletAuth,
   ) {
-    return this.service.addMemberToQuickShare(code, dto.userAddress, req.walletAuth.walletAddress);
+    return this.service.addMemberToQuickShare(
+      code,
+      dto.userAddress,
+      req.walletAuth.walletAddress,
+    );
   }
 
   /************************************************** */
@@ -149,7 +175,11 @@ export class GroupPaymentController {
   @ApiOperation({ summary: 'Update a group' })
   @ApiResponse({ status: 200, description: 'Group updated successfully' })
   @ApiParam({ name: 'groupId', description: 'Group ID to update' })
-  async updateGroup(@Param('groupId') groupId: number, @Body() dto: CreateGroupDto, @Req() req: RequestWithWalletAuth) {
+  async updateGroup(
+    @Param('groupId') groupId: number,
+    @Body() dto: CreateGroupDto,
+    @Req() req: RequestWithWalletAuth,
+  ) {
     return this.service.updateGroup(groupId, dto, req.walletAuth.walletAddress);
   }
 
@@ -162,7 +192,10 @@ export class GroupPaymentController {
   @ApiOperation({ summary: 'Delete a group' })
   @ApiResponse({ status: 200, description: 'Group deleted successfully' })
   @ApiParam({ name: 'groupId', description: 'Group ID to delete' })
-  async deleteGroup(@Param('groupId') groupId: number, @Req() req: RequestWithWalletAuth) {
+  async deleteGroup(
+    @Param('groupId') groupId: number,
+    @Req() req: RequestWithWalletAuth,
+  ) {
     return this.service.deleteGroup(groupId, req.walletAuth.walletAddress);
   }
 }

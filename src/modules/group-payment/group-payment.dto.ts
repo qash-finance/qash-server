@@ -18,7 +18,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { FaucetMetadata } from '../transactions/transaction.dto';
 
 export class MemberDto {
-  @ApiProperty({ description: 'Member address', example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a' })
+  @ApiProperty({
+    description: 'Member address',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+  })
   @IsString()
   @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
     message: 'address must be a valid address starting with mt or mm',
