@@ -341,15 +341,14 @@ export class GroupPaymentService {
 
       // Create payment
       const now = new Date();
+      const tokens = dto.tokens.map((token) => ({
+        ...token,
+      }));
       const payment = await this.prisma.groupPayment.create({
         data: {
           groupId: group.id,
           ownerAddress: normalizedOwnerAddress,
-          tokens: {
-            create: dto.tokens.map(token => ({
-              ...token,
-            })),
-          },
+          tokens: tokens,
           amount: dto.amount,
           perMember: perMember,
           linkCode,
@@ -572,15 +571,14 @@ export class GroupPaymentService {
 
       // Create payment with placeholder members for Quick Share
       const now = new Date();
+      const tokens = dto.tokens.map((token) => ({
+        ...token,
+      }));
       const payment = await this.prisma.groupPayment.create({
         data: {
           groupId: group.id,
           ownerAddress: normalizedOwnerAddress,
-          tokens: {
-            create: dto.tokens.map(token => ({
-              ...token,
-            })),
-          },
+          tokens: tokens,
           amount: dto.amount,
           perMember: perMember,
           linkCode,
@@ -725,9 +723,32 @@ export class GroupPaymentService {
   private async findMemberStatusesByPayment(
     groupPaymentId: number,
   ) {
-    return await this.prisma.groupPaymentMemberStatus.findMany({
+    // First get the group payment to access the group
+    const groupPayment = await this.prisma.groupPayment.findUnique({
+      where: { id: groupPaymentId },
+      include: { groupPaymentGroup: true }
+    });
+
+    if (!groupPayment?.groupPaymentGroup) {
+      return [];
+    }
+
+    // Get member statuses
+    const memberStatuses = await this.prisma.groupPaymentMemberStatus.findMany({
       where: { groupPaymentId },
       orderBy: { createdAt: 'desc' },
+    });
+
+    // Extract member names from the JSON members field
+    const members = groupPayment.groupPaymentGroup.members as Array<{ name: string; address: string }>;
+    
+    // Map statuses with names
+    return memberStatuses.map(status => {
+      const member = members.find(m => m.address === status.memberAddress);
+      return {
+        ...status,
+        memberName: member?.name || '-'
+      };
     });
   }
 

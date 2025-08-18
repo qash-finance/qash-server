@@ -281,6 +281,9 @@ export class GiftService {
     normalizedSenderAddress: string,
   ) {
     const now = new Date();
+    const assets = dto.assets.map((asset) => ({
+      ...asset,
+    }));
     return this.prisma.gift.create({
       data: {
         sender: normalizedSenderAddress,
@@ -291,11 +294,7 @@ export class GiftService {
         serialNumber: dto.serialNumber,
         noteType: NoteType.GIFT,
         noteId: dto.txId,
-        assets: {
-          create: dto.assets.map((asset) => ({
-            ...asset,
-          })),
-        },
+        assets: assets,
         createdAt: now,
         updatedAt: now,
       },

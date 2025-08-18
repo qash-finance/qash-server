@@ -226,17 +226,15 @@ export class RequestPaymentService {
       });
 
       const now = new Date();
-
+      const tokens = dto.tokens.map((token) => ({
+        ...token,
+      }));
       return this.prisma.requestPayment.create({
         data: {
           payer: normalizedPayer,
           payee: normalizedPayee,
           amount: dto.amount,
-          tokens: {
-            create: dto.tokens.map(token => ({
-              ...token,
-            })),
-          },
+          tokens: tokens,
           message: sanitizedMessage,
           createdAt: now,
           updatedAt: now,
