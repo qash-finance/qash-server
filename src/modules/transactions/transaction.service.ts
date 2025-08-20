@@ -54,10 +54,11 @@ export class TransactionService {
       const normalizedUserId = normalizeAddress(userId);
 
       // Fetch all private, recallable, and pending transactions sent to this user
-      const txs = await this.prisma.transactions.findMany({
+      const consumableTxs = await this.prisma.transactions.findMany({
         where: {
           recipient: normalizedUserId,
           status: NoteStatus.PENDING as any,
+          schedulePaymentId: null,
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -67,11 +68,12 @@ export class TransactionService {
           sender: normalizedUserId,
           recallable: true,
           status: NoteStatus.PENDING as any,
+          schedulePaymentId: null,
         },
         orderBy: { createdAt: 'desc' },
       });
       return {
-        consumableTxs: txs,
+        consumableTxs,
         recallableTxs,
       };
     } catch (error) {

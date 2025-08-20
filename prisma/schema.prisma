@@ -272,6 +272,9 @@ model Transactions {
   requestPaymentId Int?                         @map("request_payment_id")
   requestPayment   RequestPayment?              @relation(fields: [requestPaymentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_request_payment_id")
 
+  schedulePayment   SchedulePayment? @relation(fields: [schedulePaymentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_schedule_payment_id")
+  schedulePaymentId Int?             @map("schedule_payment_id")
+
   @@map("transactions")
 }
 
@@ -359,6 +362,55 @@ model WalletAuthSessions {
   @@index([authKeyId], map: "IDX_90d2b00146d157c4b8a9f8a038")
   @@index([sessionToken], map: "IDX_d4fc33e5a4ff0f44b46745d604")
   @@map("wallet_auth_sessions")
+}
+
+model SchedulePayment {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  // Payment details
+  amount  String  @db.VarChar
+  tokens  Json? // Following your pattern for multi-token support
+  message String? @db.VarChar
+
+  // Scheduling info
+  frequency         SchedulePaymentFrequency? @map("frequency")
+  endDate           DateTime?                 @map("end_date") @db.Timestamp(6)
+  nextExecutionDate DateTime?                 @map("next_execution") @db.Timestamp(6)
+
+  // Participants
+  // We keep here for easier query/analysis later
+  payer String @db.VarChar
+  payee String @db.VarChar
+
+  // Status and execution tracking
+  status         SchedulePaymentStatus @default(ACTIVE)
+  executionCount Int                   @default(0) @map("execution_count") // Number of times the payment has been executed
+  maxExecutions  Int?                  @map("max_executions")
+
+  // Relations to executed transactions
+  transactions Transactions[]
+
+  @@index([status, nextExecutionDate], map: "IDX_schedule_payment_status_next_execution_date")
+  @@index([payer], map: "IDX_schedule_payment_payer")
+  @@index([payee], map: "IDX_schedule_payment_payee")
+  @@index([status], map: "IDX_schedule_payment_status")
+  @@map("schedule_payment")
+}
+
+enum SchedulePaymentFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum SchedulePaymentStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+  FAILED
 }
 
 enum analytics_events_event_type_enum {

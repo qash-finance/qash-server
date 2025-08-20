@@ -25,6 +25,7 @@ import { WalletAuthModule } from './modules/wallet-auth/wallet-auth.module';
 import { AppConfigServiceModule } from './common/config/services/config.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PrismaModule } from './common/prisma/prisma.module';
+import { SchedulePaymentModule } from './modules/schedule-payment/schedule-payment.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
     AnalyticsModule,
     WalletAuthModule,
     NotificationModule,
+    SchedulePaymentModule,
   ],
   controllers: [AppController],
   providers: [
