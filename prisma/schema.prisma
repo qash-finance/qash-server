@@ -143,12 +143,12 @@ model GroupPayment {
   createdAt                DateTime                   @map("created_at") @db.Timestamp(6)
   updatedAt                DateTime                   @map("updated_at") @db.Timestamp(6)
   ownerAddress             String                     @map("owner_address") @db.VarChar
-  tokens                   Json?                    
   amount                   String                     @db.VarChar
   perMember                Float                      @map("per_member")
   linkCode                 String                     @unique(map: "UQ_752feb6e3dfa73076192e02fdd1") @map("link_code") @db.VarChar
   status                   group_payment_status_enum  @default(pending)
   groupId                  Int?                       @map("groupId")
+  tokens                   Json?
   groupPaymentGroup        GroupPaymentGroup?         @relation(fields: [groupId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_2043920d55348e76ec85cc7a697")
   groupPaymentMemberStatus GroupPaymentMemberStatus[]
   requestPayment           RequestPayment[]
@@ -227,7 +227,6 @@ model RequestPayment {
   createdAt       DateTime                    @map("created_at") @db.Timestamp(6)
   updatedAt       DateTime                    @map("updated_at") @db.Timestamp(6)
   amount          String                      @db.VarChar
-  tokens           Json?            
   message         String                      @db.VarChar
   status          request_payment_status_enum @default(pending)
   payer           String                      @db.VarChar
@@ -235,8 +234,9 @@ model RequestPayment {
   isGroupPayment  Boolean                     @default(false) @map("is_group_payment")
   groupPaymentId  Int?                        @map("group_payment_id")
   groupPaymentId2 Int?                        @map("groupPaymentId")
-  groupPayment    GroupPayment?               @relation(fields: [groupPaymentId2], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_e1233322d02cfe645f877ee0042")
   txid            String?                     @map("txid") @db.VarChar
+  tokens          Json?
+  groupPayment    GroupPayment?               @relation(fields: [groupPaymentId2], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_e1233322d02cfe645f877ee0042")
   transactions    Transactions[]
 
   @@map("request_payment")
