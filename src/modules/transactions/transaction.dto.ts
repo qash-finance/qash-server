@@ -116,11 +116,16 @@ export class SendTransactionDto {
   @IsOptional()
   @IsNumber()
   requestPaymentId?: number;
+
+  @ApiProperty({ example: 1000 })
+  @IsOptional()
+  @IsNumber()
+  timelockHeight?: number;
 }
 
 export class RecallItem {
-  @IsIn(['transaction', 'gift'])
-  type: 'transaction' | 'gift';
+  @IsIn(['transaction', 'gift', 'schedule_payment'])
+  type: 'transaction' | 'gift' | 'schedule_payment';
 
   @IsOptional()
   @IsNumber()

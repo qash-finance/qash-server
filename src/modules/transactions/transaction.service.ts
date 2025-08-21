@@ -28,6 +28,7 @@ import { NotificationService } from '../notification/notification.service';
 import { RequestPaymentService } from '../request-payment/request-payment.service';
 import { NotificationType } from '../../common/enums/notification';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { SchedulePaymentService } from '../schedule-payment/schedule-payment.service';
 
 @Injectable()
 export class TransactionService {
@@ -38,6 +39,7 @@ export class TransactionService {
     private readonly giftService: GiftService,
     @Inject(forwardRef(() => RequestPaymentService))
     private readonly requestPaymentService: RequestPaymentService,
+    private readonly schedulePaymentService: SchedulePaymentService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -45,7 +47,7 @@ export class TransactionService {
   // **************** GET METHODS ********************
   // *************************************************
 
-  async getConsumableTransactions(userId: string): Promise<{
+  async getConsumableTransactions(userId: string, latestBlockHeight: number): Promise<{
     consumableTxs: Transactions[];
     recallableTxs: Transactions[];
   }> {
@@ -59,6 +61,9 @@ export class TransactionService {
           recipient: normalizedUserId,
           status: NoteStatus.PENDING as any,
           schedulePaymentId: null,
+          timelockHeight: {
+            lte: latestBlockHeight,
+          },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -69,6 +74,9 @@ export class TransactionService {
           recallable: true,
           status: NoteStatus.PENDING as any,
           schedulePaymentId: null,
+          timelockHeight: {
+            lte: latestBlockHeight,
+          },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -194,7 +202,6 @@ export class TransactionService {
     sender: string,
   ): Promise<Transactions | null> {
     try {
-      console.log('DID I HIT THIS');
       const entityData = await this.validateTransaction(dto, sender);
       if (!entityData) return null;
 
@@ -229,6 +236,7 @@ export class TransactionService {
           status: entityData.status,
           noteId: entityData.noteId,
           requestPaymentId: entityData.requestPaymentId,
+          timelockHeight: entityData.timelockHeight,
         },
       });
     } catch (error) {
@@ -302,6 +310,7 @@ export class TransactionService {
               status: entity.status,
               noteId: entity.noteId,
               requestPaymentId: entity.requestPaymentId,
+              timelockHeight: entity.timelockHeight,
             },
           }),
         ),
@@ -543,41 +552,65 @@ export class TransactionService {
           'Items array is required and cannot be empty',
         );
       }
+      
 
       const results = [];
       for (const item of dto.items) {
-        if (item.type === 'transaction') {
-          try {
-            const affected = await this.recallTransactions(
-              [item.id.toString()],
-              sender,
-              dto.txId,
-            );
-            results.push({
-              type: 'transaction',
-              id: item.id,
-              success: !!affected.affected,
-            });
-          } catch (e) {
-            results.push({
-              type: 'transaction',
-              id: item.id,
-              success: false,
-              error: e.message,
-            });
-          }
-        } else if (item.type === 'gift') {
-          try {
-            await this.giftService.recallGift(item.id, dto.txId);
-            results.push({ type: 'gift', id: item.id, success: true });
-          } catch (e) {
-            results.push({
-              type: 'gift',
-              id: item.id,
-              success: false,
-              error: e.message,
-            });
-          }
+        switch (item.type) {
+          case 'transaction':
+            try {
+              const affected = await this.recallTransactions(
+                [item.id.toString()],
+                sender,
+                dto.txId,
+              );
+              results.push({
+                type: 'transaction',
+                id: item.id,
+                success: !!affected.affected,
+              });
+            } catch (e) {
+              results.push({
+                type: 'transaction',
+                id: item.id,
+                success: false,
+                error: e.message,
+              });
+            }
+            break;
+          case 'gift':
+            try {
+              await this.giftService.recallGift(item.id, dto.txId);
+              results.push({ type: 'gift', id: item.id, success: true });
+            } catch (e) {
+              results.push({
+                type: 'gift',
+                id: item.id,
+                success: false,
+                error: e.message,
+              });
+            }
+            break;
+          case 'schedule_payment':
+            try {
+              // Update the transaction first
+              await this.recallTransactions(
+                [item.id.toString()],
+                sender,
+                dto.txId,
+              );
+              // Then update the schedule payment
+              await this.schedulePaymentService.recallPayment(item.id);
+              results.push({ type: 'schedule_payment', id: item.id, success: true });
+            } catch (e) {
+              results.push({
+                type: 'schedule_payment',
+                id: item.id,
+                success: false,
+                error: e.message,
+              });
+            }
+            break;
         }
       }
       return { results };
@@ -661,6 +694,7 @@ export class TransactionService {
         noteId: dto.noteId,
         requestPaymentId: dto.requestPaymentId ?? null,
         status: NoteStatus.PENDING as any,
+        timelockHeight: dto.timelockHeight,
       };
     } catch (error) {
       handleError(error, this.logger);

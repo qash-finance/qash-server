@@ -6,6 +6,7 @@ import {
   Put,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import {
@@ -64,9 +65,18 @@ export class TransactionController {
     status: 200,
     description: 'Consumable transactions fetched successfully',
   })
-  async getConsumable(@Req() req: RequestWithWalletAuth) {
+  @ApiQuery({
+    name: 'latestBlockHeight',
+    type: Number,
+    description: 'The latest block height',
+  })
+  async getConsumable(
+    @Req() req: RequestWithWalletAuth,
+    @Query('latestBlockHeight') latestBlockHeight: number,
+  ) {
     return this.transactionService.getConsumableTransactions(
       req.walletAuth.walletAddress,
+      latestBlockHeight,
     );
   }
 

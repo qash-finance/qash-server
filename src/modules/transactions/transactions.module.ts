@@ -6,6 +6,7 @@ import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
 import { NotificationModule } from '../notification/notification.module';
 import { RequestPaymentModule } from '../request-payment/request-payment.module';
 import { PrismaModule } from '../../common/prisma/prisma.module';
+import { SchedulePaymentModule } from '../schedule-payment/schedule-payment.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
     WalletAuthModule,
     NotificationModule,
     RequestPaymentModule,
+    SchedulePaymentModule,
   ],
   providers: [TransactionService],
   controllers: [TransactionController],

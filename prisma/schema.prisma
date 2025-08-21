@@ -268,6 +268,7 @@ model Transactions {
   noteType         transactions_note_type_enum? @map("note_type")
   status           transactions_status_enum     @default(pending)
   recallableHeight Int?                         @map("recallable_height")
+  timelockHeight   Int?                         @map("timelock_height")
   noteId           String?                      @map("note_id") @db.VarChar
   requestPaymentId Int?                         @map("request_payment_id")
   requestPayment   RequestPayment?              @relation(fields: [requestPaymentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_request_payment_id")

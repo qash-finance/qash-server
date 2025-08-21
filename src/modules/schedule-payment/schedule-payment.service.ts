@@ -312,6 +312,55 @@ export class SchedulePaymentService {
     }
   }
 
+  async recallPayment(transactionId: number) {
+    try {
+      const schedulePayment = await this.prisma.schedulePayment.findFirst({
+        where: {
+          transactions: {
+            some: {
+              id: transactionId,
+            },
+          },
+        }
+      });
+
+      if (!schedulePayment) {
+        throw new NotFoundException('Schedule payment not found');
+      }
+
+      const newExecutionCount = schedulePayment.executionCount + 1;
+
+      if(newExecutionCount === schedulePayment.maxExecutions ) {
+        return await this.prisma.schedulePayment.update({
+          where: { id: schedulePayment.id },
+          data: {
+            updatedAt: new Date(),
+            nextExecutionDate: null,
+            executionCount: newExecutionCount,
+            status: SchedulePaymentStatus.COMPLETED,
+          },
+        });
+      }
+
+      const nextExecutionDate = this.calculateNextExecutionDate(
+        schedulePayment.nextExecutionDate!,
+        schedulePayment.frequency!,
+      );
+
+      return await this.prisma.schedulePayment.update({
+        where: { id: schedulePayment.id },
+        data: {
+          updatedAt: new Date(),
+          executionCount: newExecutionCount,
+          nextExecutionDate: nextExecutionDate,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Error recalling payment:', error);
+      handleError(error, this.logger);
+    }
+  }
+
   // *************************************************
   // **************** EXECUTION METHODS **************
   // *************************************************
