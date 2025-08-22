@@ -231,7 +231,6 @@ export class WalletAuthService {
           expiresAt: { gt: new Date() },
         },
       });
-      console.log("🚀 ~ WalletAuthService ~ authenticate ~ keyRecord:", keyRecord)
 
       if (!keyRecord) {
         throw new UnauthorizedException('Invalid or expired key');

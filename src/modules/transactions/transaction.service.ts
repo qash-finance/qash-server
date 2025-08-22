@@ -59,11 +59,17 @@ export class TransactionService {
       const consumableTxs = await this.prisma.transactions.findMany({
         where: {
           recipient: normalizedUserId,
-          status: NoteStatus.PENDING as any,
-          schedulePaymentId: null,
-          timelockHeight: {
-            lte: latestBlockHeight,
-          },
+          status: NoteStatus.PENDING,
+          OR: [
+            {
+              timelockHeight: null,
+            },
+            {
+              timelockHeight: {
+                gte: latestBlockHeight,
+              },
+            },
+          ],
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -72,11 +78,17 @@ export class TransactionService {
         where: {
           sender: normalizedUserId,
           recallable: true,
-          status: NoteStatus.PENDING as any,
-          schedulePaymentId: null,
-          timelockHeight: {
-            lte: latestBlockHeight,
-          },
+          status: NoteStatus.PENDING,
+          OR: [
+            {
+              timelockHeight: null,
+            },
+            {
+              timelockHeight: {
+                gte: latestBlockHeight,
+              },
+            },
+          ],
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -353,17 +365,17 @@ export class TransactionService {
       }
 
       // Check if transactions are recallable
-      const now = new Date();
-      const nonRecallable = transactions.filter(
-        (tx) =>
-          !tx.recallable || (tx.recallableTime && tx.recallableTime > now),
-      );
+      // const now = new Date();
+      // const nonRecallable = transactions.filter(
+      //   (tx) =>
+      //     !tx.recallable || (tx.recallableTime && tx.recallableTime > now),
+      // );
 
-      if (nonRecallable.length > 0) {
-        throw new BadRequestException(
-          'Some transactions are not recallable yet',
-        );
-      }
+      // if (nonRecallable.length > 0) {
+      //   throw new BadRequestException(
+      //     'Some transactions are not recallable yet',
+      //   );
+      // }
 
       // loop through transactions and create notification for each transaction
       for (const tx of transactions) {
@@ -466,6 +478,17 @@ export class TransactionService {
             );
           }
         }
+
+        // If this transaction is tied to a schedule payment, update it
+        if (tx.schedulePaymentId) {
+          try {
+            await this.schedulePaymentService.updatePayment(tx.id);
+          } catch (e) {
+            this.logger.warn(
+              `Failed to update linked schedule payment ${tx.schedulePaymentId}: ${e?.message}`,
+            );
+          }
+        }
       }
 
       return { affected: result.count };
@@ -537,6 +560,18 @@ export class TransactionService {
             );
           }
         }
+
+        // If this transaction is tied to a schedule payment, update it
+        const transaction = transactions.find(tx => tx.noteId === note.noteId);
+        if (transaction?.schedulePaymentId) {
+          try {
+            await this.schedulePaymentService.updatePayment(transaction.id);
+          } catch (e) {
+            this.logger.warn(
+              `Failed to update linked schedule payment ${transaction.schedulePaymentId}: ${e?.message}`,
+            );
+          }
+        }
       }
 
       return { affected: result.count };
@@ -600,7 +635,7 @@ export class TransactionService {
                 dto.txId,
               );
               // Then update the schedule payment
-              await this.schedulePaymentService.recallPayment(item.id);
+              await this.schedulePaymentService.updatePayment(item.id);
               results.push({ type: 'schedule_payment', id: item.id, success: true });
             } catch (e) {
               results.push({

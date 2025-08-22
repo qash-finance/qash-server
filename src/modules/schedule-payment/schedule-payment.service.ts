@@ -139,7 +139,7 @@ export class SchedulePaymentService {
         orderBy: { createdAt: 'desc' },
         include: {
           transactions: {
-            orderBy: { createdAt: 'desc' },
+            orderBy: { id: 'desc' },
           },
         },
       });
@@ -312,7 +312,7 @@ export class SchedulePaymentService {
     }
   }
 
-  async recallPayment(transactionId: number) {
+  async updatePayment(transactionId: number) {
     try {
       const schedulePayment = await this.prisma.schedulePayment.findFirst({
         where: {
