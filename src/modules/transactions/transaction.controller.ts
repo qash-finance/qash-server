@@ -80,6 +80,20 @@ export class TransactionController {
     );
   }
 
+  @Get('/top-interacted-wallets')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({
+    summary: 'Get top interacted wallets',
+    description: 'Get top interacted wallets',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Top interacted wallets fetched successfully',
+  })
+  async getTopInteractedWallets() {
+    return this.transactionService.getTopInteractedWallets();
+  }
+
   // *************************************************
   // **************** POST METHODS *******************
   // *************************************************

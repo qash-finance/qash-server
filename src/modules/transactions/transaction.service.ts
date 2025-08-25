@@ -66,7 +66,7 @@ export class TransactionService {
             },
             {
               timelockHeight: {
-                gte: latestBlockHeight,
+                lte: latestBlockHeight,
               },
             },
           ],
@@ -85,7 +85,7 @@ export class TransactionService {
             },
             {
               timelockHeight: {
-                gte: latestBlockHeight,
+                lte: latestBlockHeight,
               },
             },
           ],
@@ -657,6 +657,48 @@ export class TransactionService {
   // *************************************************
   // **************** UTILS METHODS ******************
   // *************************************************
+
+  async getTopInteractedWallets() {
+    try {
+      // Get top 3 senders with transaction count and sum of amounts in one query
+      const topWallets = await this.prisma.$queryRaw<Array<{
+        sender: string;
+        transaction_count: bigint;
+        total_amount: string;
+      }>>`
+        SELECT 
+          sender,
+          COUNT(*)::BIGINT as transaction_count,
+          COALESCE(SUM(
+            CASE 
+              WHEN assets IS NOT NULL AND jsonb_typeof(assets) = 'array' 
+              THEN (
+                SELECT COALESCE(SUM(CAST(value->>'amount' AS NUMERIC)), 0)
+                FROM jsonb_array_elements(assets)
+                WHERE jsonb_typeof(value) = 'object' AND value ? 'amount'
+              )
+              ELSE 0
+            END
+          ), 0)::TEXT as total_amount
+        FROM transactions 
+        GROUP BY sender 
+        ORDER BY transaction_count DESC, total_amount DESC
+        LIMIT 3
+      `;
+
+      // Transform the result to include wallet address, transaction count, and accumulated amount
+      const result = topWallets.map((wallet, index) => ({
+        rank: index + 1,
+        walletAddress: wallet.sender,
+        transactionCount: Number(wallet.transaction_count),
+        accumulatedAmount: parseFloat(wallet.total_amount) || 0,
+      }));
+
+      return result;
+    } catch (error) {
+      handleError(error, this.logger);
+    }
+  }
 
   private async validateTransaction(
     dto: SendTransactionDto,
