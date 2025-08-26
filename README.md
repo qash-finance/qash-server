@@ -4,6 +4,7 @@ This server implementation serves as a Q3x (The end-to-end privacy-first program
 
 - [NestJS](https://nestjs.com/)
 - [PostgreSQL](https://www.postgresql.org/)
+- [Prisma](https://www.prisma.io/) (Database ORM)
 
 
 # Requirements
@@ -75,6 +76,82 @@ npm run migration:generate
 # run migrations
 npm run migration:run
 ```
+
+# [Development] Prisma Database Management
+
+This project uses Prisma as the primary database ORM. Here are the key Prisma commands:
+
+## Prisma CLI Commands
+
+```bash
+# Generate Prisma client from schema
+npm run prisma:generate
+
+# Deploy migrations to database
+npm run prisma:deploy
+
+# Open Prisma Studio (database GUI)
+npx prisma studio
+
+# Reset database (⚠️ destructive - drops all data)
+npx prisma db push --force-reset
+
+# Push schema changes directly to database (for development)
+npx prisma db push
+
+# Pull database schema into Prisma schema
+npx prisma db pull
+
+# Validate Prisma schema
+npx prisma validate
+
+# Format Prisma schema file
+npx prisma format
+```
+
+## Prisma Workflow
+
+### 1. Schema Changes
+Edit `prisma/schema.prisma` to modify your database models, then:
+
+```bash
+# Generate migration file
+npx prisma migrate dev --name descriptive_name
+
+# Or push changes directly (development only)
+npx prisma db push
+```
+
+### 2. After Schema Changes
+```bash
+# Generate updated Prisma client
+npm run prisma:generate
+
+# Deploy migrations to production
+npm run prisma:deploy
+```
+
+### 3. Database Seeding
+```bash
+# Run seed script (if configured)
+npx prisma db seed
+
+# Reset and seed database
+npx prisma migrate reset
+```
+
+## Environment Variables
+Make sure your `.env` files include:
+```bash
+DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
+```
+
+## Prisma Studio
+Access your database through a web interface:
+```bash
+npx prisma studio
+```
+This opens a browser at `http://localhost:5555` where you can view and edit your data.
 
 # [Testing] Running tests
 

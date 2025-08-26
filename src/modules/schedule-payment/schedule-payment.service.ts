@@ -139,7 +139,7 @@ export class SchedulePaymentService {
         orderBy: { createdAt: 'desc' },
         include: {
           transactions: {
-            orderBy: { id: 'desc' },
+            orderBy: { id: 'asc' },
           },
         },
       });
