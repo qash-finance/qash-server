@@ -23,12 +23,13 @@
     "migration:create": "typeorm-ts-node-commonjs migration:create ./src/database/migrations/",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d typeorm.config.ts",
     "migration:generate": "npm run build && typeorm-ts-node-commonjs migration:generate -p -d typeorm.config.ts",
-    "docker:db:up": "docker compose --env-file .env.development up -d && npm run build && sleep 5 && npm run migration:run",
-    "docker:db:down": "docker compose --env-file .env.development down -v",
+    "docker:db:up": "docker compose --env-file .env up -d && npm run build && sleep 5 && prisma migrate deploy --schema ./src/prisma/schema.prisma",
+    "docker:db:down": "docker compose --env-file .env down -v",
     "docker:db:test:up": "docker compose --env-file .env.test up -d && npm run build && sleep 5 && npm run migration:run",
     "docker:db:test:down": "docker compose --env-file .env.test down -v",
-    "prisma:deploy": "prisma migrate deploy",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate --schema ./src/prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema ./src/prisma/schema.prisma",
+    "prisma:migrate:dev": "prisma migrate dev --schema ./src/prisma/schema.prisma"
   },
   "dependencies": {
     "@json2csv/plainjs": "^7.0.4",

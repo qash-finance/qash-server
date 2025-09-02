@@ -5,15 +5,8 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { In } from 'typeorm';
 import { CreateRequestPaymentDto } from './request-payment.dto';
-import { RequestPaymentStatus } from './request-payment.entity';
 import { handleError } from '../../common/utils/errors';
-import { GroupPaymentRepository } from '../group-payment/group-payment.repository';
-import {
-  GroupPaymentMemberStatus,
-  GroupPaymentStatus,
-} from '../group-payment/group-payment.entity';
 import {
   validateAddress,
   validateAmount,
@@ -27,14 +20,16 @@ import { FaucetMetadata } from '../transactions/transaction.dto';
 import { NotificationService } from '../notification/notification.service';
 import { AddressBookService } from '../address-book/address-book.service';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { group_payment_member_status_status_enum, group_payment_status_enum } from '@prisma/client';
+import {
+  GroupPaymentStatusEnum,
+  GroupPaymentMemberStatusEnum,
+  RequestPaymentStatusEnum,
+} from '@prisma/client';
 
 @Injectable()
 export class RequestPaymentService {
   private readonly logger = new Logger(RequestPaymentService.name);
   constructor(
-    @Inject(forwardRef(() => GroupPaymentRepository))
-    private readonly groupPaymentRepository: GroupPaymentRepository,
     private readonly notificationService: NotificationService,
     private readonly addressBookService: AddressBookService,
     private readonly prisma: PrismaService,
@@ -102,11 +97,11 @@ export class RequestPaymentService {
         payer: member,
         payee: normalizedOwnerAddress,
         amount,
-        tokens: tokens.map(token => ({ ...token })), // Convert to plain objects and cast to JSON
+        tokens: tokens.map((token) => ({ ...token })), // Convert to plain objects and cast to JSON
         message: sanitizedMessage,
         isGroupPayment: true,
         groupPaymentId,
-        status: RequestPaymentStatus.PENDING,
+        status: RequestPaymentStatusEnum.PENDING,
         createdAt: now,
         updatedAt: now,
       }));
@@ -134,8 +129,8 @@ export class RequestPaymentService {
           payer: normalizedUserAddress,
           status: {
             in: [
-              RequestPaymentStatus.PENDING,
-              RequestPaymentStatus.ACCEPTED,
+              RequestPaymentStatusEnum.PENDING,
+              RequestPaymentStatusEnum.ACCEPTED,
             ],
           },
         },
@@ -144,10 +139,10 @@ export class RequestPaymentService {
 
       // Separate into pending and accepted
       const pending = result.filter(
-        (item) => item.status === RequestPaymentStatus.PENDING,
+        (item) => item.status === RequestPaymentStatusEnum.PENDING,
       );
       const accepted = result.filter(
-        (item) => item.status === RequestPaymentStatus.ACCEPTED,
+        (item) => item.status === RequestPaymentStatusEnum.ACCEPTED,
       );
       return { pending, accepted };
     } catch (error) {
@@ -189,7 +184,7 @@ export class RequestPaymentService {
           payer: normalizedPayer,
           payee: normalizedPayee,
           amount: dto.amount,
-          status: RequestPaymentStatus.PENDING,
+          status: RequestPaymentStatusEnum.PENDING,
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -276,15 +271,15 @@ export class RequestPaymentService {
         throw new BadRequestException(ErrorRequestPayment.NotFound);
       }
 
-      if (req.status !== RequestPaymentStatus.PENDING) {
+      if (req.status !== RequestPaymentStatusEnum.PENDING) {
         throw new BadRequestException(ErrorRequestPayment.NotPending);
       }
 
       // Update the request payment status
       const updatedRequest = await this.prisma.requestPayment.update({
         where: { id },
-        data: { 
-          status: RequestPaymentStatus.ACCEPTED,
+        data: {
+          status: RequestPaymentStatusEnum.ACCEPTED,
           updatedAt: new Date(),
         },
       });
@@ -300,7 +295,7 @@ export class RequestPaymentService {
       // Update the request payment txid
       await this.prisma.requestPayment.update({
         where: { id },
-        data: { 
+        data: {
           txid,
           updatedAt: new Date(),
         },
@@ -328,18 +323,17 @@ export class RequestPaymentService {
         },
       });
 
-      if(!req.isGroupPayment) {
+      if (!req.isGroupPayment) {
         throw new BadRequestException(ErrorRequestPayment.NotGroupPayment);
-      } 
+      }
 
       if (!req) {
         throw new BadRequestException(ErrorRequestPayment.NotFound);
       }
 
-      if (req.status !== RequestPaymentStatus.ACCEPTED) {
+      if (req.status !== RequestPaymentStatusEnum.ACCEPTED) {
         throw new BadRequestException(ErrorRequestPayment.NotAccepted);
       }
-
 
       // If this is a group payment request, update the group payment member status
       if (req.isGroupPayment && req.groupPaymentId) {
@@ -361,12 +355,13 @@ export class RequestPaymentService {
   ) {
     try {
       // Find the member status record for this group payment and member
-      const memberStatuses = await this.prisma.groupPaymentMemberStatus.findMany({
-        where: {
-          groupPaymentId,
-          memberAddress: normalizeAddress(memberAddress),
-        },
-      });
+      const memberStatuses =
+        await this.prisma.groupPaymentMemberStatus.findMany({
+          where: {
+            groupPaymentId,
+            memberAddress: normalizeAddress(memberAddress),
+          },
+        });
 
       if (!memberStatuses || memberStatuses.length === 0) {
         throw new BadRequestException(ErrorRequestPayment.NotFound);
@@ -383,34 +378,34 @@ export class RequestPaymentService {
         await this.prisma.groupPaymentMemberStatus.update({
           where: { id: memberStatus.id },
           data: {
-            status: group_payment_member_status_status_enum.paid,
+            status: GroupPaymentMemberStatusEnum.PAID,
             paidAt: new Date(),
           },
         });
 
         // Check if all members have paid
-        const allStatuses =
-          await this.prisma.groupPaymentMemberStatus.findMany({
+        const allStatuses = await this.prisma.groupPaymentMemberStatus.findMany(
+          {
             where: {
               groupPaymentId,
             },
-          });
+          },
+        );
         const allPaid = allStatuses.every(
-          (status) => status.status === group_payment_member_status_status_enum.paid,
+          (status) => status.status === GroupPaymentMemberStatusEnum.PAID,
         );
 
         if (allPaid) {
           // Update the group payment status to COMPLETED
-          const groupPayment =
-            await this.prisma.groupPayment.findUnique({
-              where: { id: groupPaymentId },
-            });
+          const groupPayment = await this.prisma.groupPayment.findUnique({
+            where: { id: groupPaymentId },
+          });
 
           if (groupPayment) {
             await this.prisma.groupPayment.update({
               where: { id: groupPaymentId },
               data: {
-                status: group_payment_status_enum.completed,
+                status: GroupPaymentStatusEnum.COMPLETED,
               },
             });
           }
@@ -439,19 +434,19 @@ export class RequestPaymentService {
       validateAddress(claimerAddress, 'claimerAddress');
       const normalizedClaimer = normalizeAddress(claimerAddress);
 
-      const req = await this.prisma.requestPayment.findFirst({ 
-        where: { id: requestPaymentId } 
+      const req = await this.prisma.requestPayment.findFirst({
+        where: { id: requestPaymentId },
       });
       if (!req) {
         throw new BadRequestException(ErrorRequestPayment.NotFound);
       }
 
       // Only transition to ACCEPTED here (paid), if still pending
-      if (req.status === RequestPaymentStatus.PENDING) {
+      if (req.status === RequestPaymentStatusEnum.PENDING) {
         await this.prisma.requestPayment.update({
           where: { id: requestPaymentId },
-          data: { 
-            status: RequestPaymentStatus.ACCEPTED,
+          data: {
+            status: RequestPaymentStatusEnum.ACCEPTED,
             updatedAt: new Date(),
           },
         });
@@ -461,7 +456,7 @@ export class RequestPaymentService {
       if (txid && !req.txid) {
         await this.prisma.requestPayment.update({
           where: { id: requestPaymentId },
-          data: { 
+          data: {
             txid,
             updatedAt: new Date(),
           },
@@ -500,25 +495,38 @@ export class RequestPaymentService {
         throw new BadRequestException(ErrorRequestPayment.NotFound);
       }
 
-      if (req.status !== RequestPaymentStatus.PENDING) {
+      if (req.status !== RequestPaymentStatusEnum.PENDING) {
         throw new BadRequestException(ErrorRequestPayment.NotPending);
       }
 
       // Update the request payment status
       const updatedRequest = await this.prisma.requestPayment.update({
         where: { id },
-        data: { 
-          status: RequestPaymentStatus.DENIED,
+        data: {
+          status: RequestPaymentStatusEnum.DENIED,
           updatedAt: new Date(),
         },
       });
 
-      // If this is a group payment request, mark the member status as DENIED
+      // If this is a group payment request, mark the member status as DENIED via Prisma
       if (req.isGroupPayment && req.groupPaymentId) {
-        await this.groupPaymentRepository.updateMemberStatusToDenied(
-          req.groupPaymentId,
-          normalizedUserAddress,
-        );
+        const memberStatus =
+          await this.prisma.groupPaymentMemberStatus.findFirst({
+            where: {
+              groupPaymentId: req.groupPaymentId,
+              memberAddress: normalizedUserAddress,
+            },
+          });
+
+        if (memberStatus) {
+          await this.prisma.groupPaymentMemberStatus.update({
+            where: { id: memberStatus.id },
+            data: {
+              status: GroupPaymentMemberStatusEnum.DENIED,
+              updatedAt: new Date(),
+            },
+          });
+        }
       }
 
       return updatedRequest;
@@ -542,9 +550,10 @@ export class RequestPaymentService {
     payeeAddress: string,
   ): Promise<string | null> {
     try {
-      const addressBookEntries = await this.addressBookService.getAllAddressBookEntries(payerAddress);
-      const payeeEntry = addressBookEntries.find(entry => 
-        entry.address.toLowerCase() === payeeAddress.toLowerCase()
+      const addressBookEntries =
+        await this.addressBookService.getAllAddressBookEntries(payerAddress);
+      const payeeEntry = addressBookEntries.find(
+        (entry) => entry.address.toLowerCase() === payeeAddress.toLowerCase(),
       );
       return payeeEntry ? payeeEntry.name : null;
     } catch (error) {

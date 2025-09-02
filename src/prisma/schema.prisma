@@ -8,7 +8,7 @@ datasource db {
 }
 
 model AddressBook {
-  id          Int        @id(map: "PK_188a02dee277dd0f9e488fdf06f") @default(autoincrement())
+  id          Int        @id() @default(autoincrement())
   createdAt   DateTime   @map("created_at") @db.Timestamp(6)
   updatedAt   DateTime   @map("updated_at") @db.Timestamp(6)
   userAddress String     @map("user_address") @db.VarChar
@@ -21,88 +21,13 @@ model AddressBook {
   @@map("address_book")
 }
 
-model AnalyticsEndpointStats {
-  id           Int      @id(map: "PK_ba98749eddce2fdd5f3441cb1c8") @default(autoincrement())
-  createdAt    DateTime @map("created_at") @db.Timestamp(6)
-  updatedAt    DateTime @map("updated_at") @db.Timestamp(6)
-  endpoint     String   @db.VarChar
-  method       String   @db.VarChar
-  responseTime Int      @map("response_time")
-  statusCode   Int      @map("status_code")
-  userAddress  String?  @map("user_address") @db.VarChar
-  sessionId    String?  @map("session_id") @db.VarChar
-  ipAddress    String?  @map("ip_address") @db.VarChar
-  errorDetails Json?    @map("error_details")
-
-  @@index([method, createdAt], map: "IDX_74ddc7ba61c26e64094e43aa58")
-  @@index([endpoint, createdAt], map: "IDX_9bbd10a409da8b095a7b58b899")
-  @@map("analytics_endpoint_stats")
-}
-
-model AnalyticsEvents {
-  id          Int                              @id(map: "PK_5d643d67a09b55653e98616f421") @default(autoincrement())
-  createdAt   DateTime                         @map("created_at") @db.Timestamp(6)
-  updatedAt   DateTime                         @map("updated_at") @db.Timestamp(6)
-  eventType   analytics_events_event_type_enum @map("event_type")
-  userAddress String?                          @map("user_address") @db.VarChar
-  sessionId   String?                          @map("session_id") @db.VarChar
-  metadata    Json?
-  ipAddress   String?                          @map("ip_address") @db.VarChar
-  userAgent   String?                          @map("user_agent") @db.VarChar
-  referer     String?                          @db.VarChar
-
-  @@index([userAddress], map: "IDX_06a6a7ed42c37bd636c8b80524")
-  @@index([createdAt], map: "IDX_595cb60b85eacaa61f4c84b00d")
-  @@index([userAddress, createdAt], map: "IDX_b3218ffc81c99b2e6fa3e9616e")
-  @@index([eventType, createdAt], map: "IDX_ca5cf2fce11e3f43c09b2d0077")
-  @@map("analytics_events")
-}
-
-model AnalyticsTransactionStats {
-  id              Int      @id(map: "PK_b578a1a8c8cbebbe2f34b837cbe") @default(autoincrement())
-  createdAt       DateTime @map("created_at") @db.Timestamp(6)
-  updatedAt       DateTime @map("updated_at") @db.Timestamp(6)
-  transactionType String   @map("transaction_type") @db.VarChar
-  token           String   @db.VarChar
-  amount          Decimal  @db.Decimal(20, 6)
-  senderAddress   String   @map("sender_address") @db.VarChar
-  receiverAddress String?  @map("receiver_address") @db.VarChar
-  status          String?  @db.VarChar
-  entityId        Int?     @map("entity_id")
-  additionalData  Json?    @map("additional_data")
-
-  @@index([transactionType, createdAt], map: "IDX_3e18284d03cf60c26c3119de07")
-  @@index([token, createdAt], map: "IDX_bed9bb07ee0ec81ab17ae9a9eb")
-  @@map("analytics_transaction_stats")
-}
-
-model AnalyticsUserSessions {
-  id          Int       @id(map: "PK_afca360a12c2e39873b6a373450") @default(autoincrement())
-  createdAt   DateTime  @map("created_at") @db.Timestamp(6)
-  updatedAt   DateTime  @map("updated_at") @db.Timestamp(6)
-  sessionId   String    @unique(map: "UQ_bb90cdc04107d1c92d93fffe502") @map("session_id") @db.VarChar
-  userAddress String?   @map("user_address") @db.VarChar
-  startTime   DateTime  @map("start_time") @db.Timestamp(6)
-  endTime     DateTime? @map("end_time") @db.Timestamp(6)
-  duration    Int       @default(0)
-  pageViews   Int       @default(0) @map("page_views")
-  apiCalls    Int       @default(0) @map("api_calls")
-  ipAddress   String?   @map("ip_address") @db.VarChar
-  userAgent   String?   @map("user_agent") @db.VarChar
-  isActive    Boolean   @default(true) @map("is_active")
-
-  @@index([userAddress, createdAt], map: "IDX_322256cfa53887a1facafb787f")
-  @@index([sessionId], map: "IDX_bb90cdc04107d1c92d93fffe50")
-  @@map("analytics_user_sessions")
-}
-
 model Auths {
-  id           Int      @id(map: "PK_22fc0631a651972ddc9c5a31090") @default(autoincrement())
+  id           Int      @id() @default(autoincrement())
   createdAt    DateTime @map("created_at") @db.Timestamp(6)
   updatedAt    DateTime @map("updated_at") @db.Timestamp(6)
   accessToken  String   @map("access_token") @db.VarChar
   refreshToken String   @map("refresh_token") @db.VarChar
-  userId       Int      @unique(map: "REL_593ea7ee438b323776029d3185") @map("user_id")
+  userId       Int      @unique() @map("user_id")
   users        Users    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_593ea7ee438b323776029d3185f")
 
   @@map("auths")
@@ -119,7 +44,7 @@ model Categories {
 }
 
 model Gift {
-  id             Int                 @id(map: "PK_f91217caddc01a085837ebe0606") @default(autoincrement())
+  id             Int                 @id() @default(autoincrement())
   createdAt      DateTime            @map("created_at") @db.Timestamp(6)
   updatedAt      DateTime            @map("updated_at") @db.Timestamp(6)
   sender         String              @db.VarChar
@@ -128,9 +53,9 @@ model Gift {
   recallable     Boolean             @default(true)
   recallableTime DateTime?           @map("recallable_time") @db.Timestamp(6)
   serialNumber   Json                @map("serial_number")
-  noteType       gift_note_type_enum @default(gift) @map("note_type")
-  status         gift_status_enum    @default(pending)
-  secretHash     String              @unique(map: "UQ_86900efd866b220cc5768ad7a97") @map("secret_hash") @db.VarChar
+  noteType       GiftNoteTypeEnum @default(GIFT) @map("note_type")
+  status         GiftStatusEnum    @default(PENDING)
+  secretHash     String              @unique() @map("secret_hash") @db.VarChar
   recalledAt     DateTime?           @map("recalled_at") @db.Timestamp(6)
   openedAt       DateTime?           @map("opened_at") @db.Timestamp(6)
   noteId         String?             @map("note_id") @db.VarChar
@@ -139,14 +64,14 @@ model Gift {
 }
 
 model GroupPayment {
-  id                       Int                        @id(map: "PK_ea09ef9c3c7a5942a32052f5530") @default(autoincrement())
+  id                       Int                        @id() @default(autoincrement())
   createdAt                DateTime                   @map("created_at") @db.Timestamp(6)
   updatedAt                DateTime                   @map("updated_at") @db.Timestamp(6)
   ownerAddress             String                     @map("owner_address") @db.VarChar
   amount                   String                     @db.VarChar
   perMember                Float                      @map("per_member")
-  linkCode                 String                     @unique(map: "UQ_752feb6e3dfa73076192e02fdd1") @map("link_code") @db.VarChar
-  status                   group_payment_status_enum  @default(pending)
+  linkCode                 String                     @unique() @map("link_code") @db.VarChar
+  status                   GroupPaymentStatusEnum  @default(PENDING)
   groupId                  Int?                       @map("groupId")
   tokens                   Json?
   groupPaymentGroup        GroupPaymentGroup?         @relation(fields: [groupId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_2043920d55348e76ec85cc7a697")
@@ -157,7 +82,7 @@ model GroupPayment {
 }
 
 model GroupPaymentGroup {
-  id           Int            @id(map: "PK_a3156767eace573c78d91539d17") @default(autoincrement())
+  id           Int            @id() @default(autoincrement())
   createdAt    DateTime       @map("created_at") @db.Timestamp(6)
   updatedAt    DateTime       @map("updated_at") @db.Timestamp(6)
   name         String         @db.VarChar
@@ -173,7 +98,7 @@ model GroupPaymentMemberStatus {
   createdAt      DateTime                                @map("created_at") @db.Timestamp(6)
   updatedAt      DateTime                                @map("updated_at") @db.Timestamp(6)
   memberAddress  String                                  @map("member_address") @db.VarChar
-  status         group_payment_member_status_status_enum @default(pending)
+  status         GroupPaymentMemberStatusEnum            @default(PENDING)
   paidAt         DateTime?                               @map("paid_at") @db.Timestamp(6)
   groupPaymentId Int?                                    @map("groupPaymentId")
   groupPayment   GroupPayment?                           @relation(fields: [groupPaymentId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_2b5e0e8e862cc615b7784956138")
@@ -195,8 +120,8 @@ model Notifications {
   updatedAt      DateTime                  @default(now()) @map("updated_at") @db.Timestamp(6)
   title          String
   message        String?
-  type           notifications_type_enum
-  status         notifications_status_enum @default(UNREAD)
+  type           NotificationsTypeEnum
+  status         NotificationsStatusEnum @default(UNREAD)
   metadata       Json?
   actionUrl      String?                   @map("action_url") @db.VarChar
   walletAddress  String                    @map("wallet_address") @db.VarChar
@@ -212,7 +137,7 @@ model Notifications {
 }
 
 model ReferralCodes {
-  id        Int      @id(map: "PK_99f08e2ed9d39d8ce902f5f1f41") @default(autoincrement())
+  id        Int      @id() @default(autoincrement())
   createdAt DateTime @map("created_at") @db.Timestamp(6)
   updatedAt DateTime @map("updated_at") @db.Timestamp(6)
   code      String   @unique(map: "UQ_adda7b9deda346ff710695f4968") @db.VarChar(8)
@@ -223,12 +148,12 @@ model ReferralCodes {
 }
 
 model RequestPayment {
-  id              Int                         @id(map: "PK_9cdfb2a54226ab609bb3770d9c7") @default(autoincrement())
+  id              Int                         @id() @default(autoincrement())
   createdAt       DateTime                    @map("created_at") @db.Timestamp(6)
   updatedAt       DateTime                    @map("updated_at") @db.Timestamp(6)
   amount          String                      @db.VarChar
   message         String                      @db.VarChar
-  status          request_payment_status_enum @default(pending)
+  status          RequestPaymentStatusEnum @default(PENDING)
   payer           String                      @db.VarChar
   payee           String                      @db.VarChar
   isGroupPayment  Boolean                     @default(false) @map("is_group_payment")
@@ -243,11 +168,11 @@ model RequestPayment {
 }
 
 model Tokens {
-  id        Int                    @id(map: "PK_3001e89ada36263dabf1fb6210a") @default(autoincrement())
+  id        Int                    @id() @default(autoincrement())
   createdAt DateTime               @map("created_at") @db.Timestamp(6)
   updatedAt DateTime               @map("updated_at") @db.Timestamp(6)
   uuid      String                 @unique(map: "UQ_57b0dd7af7c6a0b7d4c3fd5c464") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  tokenType tokens_token_type_enum @map("token_type")
+  tokenType TokensTokenTypeEnum @map("token_type")
   userId    Int                    @unique(map: "REL_8769073e38c365f315426554ca") @map("user_id")
   users     Users                  @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_8769073e38c365f315426554ca5")
 
@@ -255,7 +180,7 @@ model Tokens {
 }
 
 model Transactions {
-  id               Int                          @id(map: "PK_a219afd8dd77ed80f5a862f1db9") @default(autoincrement())
+  id               Int                          @id() @default(autoincrement())
   createdAt        DateTime                     @map("created_at") @db.Timestamp(6)
   updatedAt        DateTime                     @map("updated_at") @db.Timestamp(6)
   sender           String                       @db.VarChar
@@ -265,8 +190,8 @@ model Transactions {
   recallable       Boolean                      @default(true)
   recallableTime   DateTime?                    @map("recallable_time") @db.Timestamp(6)
   serialNumber     Json                         @map("serial_number")
-  noteType         transactions_note_type_enum? @map("note_type")
-  status           transactions_status_enum     @default(pending)
+  noteType         TransactionsNoteTypeEnum? @map("note_type")
+  status           TransactionsStatusEnum     @default(PENDING)
   recallableHeight Int?                         @map("recallable_height")
   timelockHeight   Int?                         @map("timelock_height")
   noteId           String?                      @map("note_id") @db.VarChar
@@ -280,18 +205,18 @@ model Transactions {
 }
 
 model Users {
-  id                     Int               @id(map: "PK_a3ffb1c0c8416b9fc6f907b7433") @default(autoincrement())
+  id                     Int               @id() @default(autoincrement())
   createdAt              DateTime          @map("created_at") @db.Timestamp(6)
   updatedAt              DateTime          @map("updated_at") @db.Timestamp(6)
   password               String            @db.VarChar
   name                   String            @db.VarChar
-  email                  String            @unique(map: "UQ_97672ac88f789774dd47f7c8be3") @db.VarChar
+  email                  String            @unique() @db.VarChar
   twoFactorAuthSecret    String?           @map("two_factor_auth_secret") @db.VarChar
   isTwoFactorAuthEnabled Boolean           @default(false) @map("is_two_factor_auth_enabled")
-  role                   users_role_enum?
-  status                 users_status_enum
-  referralCodeId         Int?              @unique(map: "REL_e29dedd79dea4c8cd1ab502107") @map("referral_code_id")
-  referredById           Int?              @unique(map: "UQ_a78a00605c95ca6737389f6360b") @map("referred_by_id")
+  role                   UsersRoleEnum?
+  status                 UsersStatusEnum
+  referralCodeId         Int?              @unique() @map("referral_code_id")
+  referredById           Int?              @unique() @map("referred_by_id")
   auths                  Auths?
   tokens                 Tokens?
   users                  Users?            @relation("usersTousers", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_a78a00605c95ca6737389f6360b")
@@ -302,11 +227,11 @@ model Users {
 }
 
 model WalletAuthChallenges {
-  id               Int      @id(map: "PK_3926d74440fa62e0cc79b74fe01") @default(autoincrement())
+  id               Int      @id() @default(autoincrement())
   createdAt        DateTime @map("created_at") @db.Timestamp(6)
   updatedAt        DateTime @map("updated_at") @db.Timestamp(6)
   walletAddress    String   @map("wallet_address") @db.VarChar
-  challengeCode    String   @unique(map: "UQ_25c1f7c632c9ca51cfed1a7ce14") @map("challenge_code") @db.VarChar
+  challengeCode    String   @unique() @map("challenge_code") @db.VarChar
   expectedResponse String   @map("expected_response") @db.VarChar
   expiresAt        DateTime @map("expires_at") @db.Timestamp(6)
   isUsed           Boolean  @default(false) @map("is_used")
@@ -314,42 +239,42 @@ model WalletAuthChallenges {
   userAgent        String?  @map("user_agent") @db.VarChar
   challengeData    Json?    @map("challenge_data")
 
-  @@index([challengeCode], map: "IDX_25c1f7c632c9ca51cfed1a7ce1")
-  @@index([createdAt], map: "IDX_aa929b5be00a79298d8fa71820")
-  @@index([walletAddress, isUsed], map: "IDX_b9c58636b9387e2f3d41a950d3")
+  @@index([challengeCode])
+  @@index([createdAt])
+  @@index([walletAddress, isUsed])
   @@map("wallet_auth_challenges")
 }
 
 model WalletAuthKeys {
-  id                Int                               @id(map: "PK_862e76e3b48730df6cf750b0dfb") @default(autoincrement())
+  id                Int                               @id() @default(autoincrement())
   createdAt         DateTime                          @map("created_at") @db.Timestamp(6)
   updatedAt         DateTime                          @map("updated_at") @db.Timestamp(6)
-  walletAddress     String                            @unique(map: "UQ_wallet_auth_keys_wallet_address") @map("wallet_address") @db.VarChar
-  publicKey         String                            @unique(map: "UQ_bef196ffd7feeb31b48ffe644f0") @map("public_key") @db.VarChar
+  walletAddress     String                            @unique() @map("wallet_address") @db.VarChar
+  publicKey         String                            @unique() @map("public_key") @db.VarChar
   hashedSecretKey   String                            @map("hashed_secret_key") @db.VarChar
   keyDerivationSalt String?                           @map("key_derivation_salt") @db.VarChar
-  status            wallet_auth_keys_status_enum      @default(active)
+  status            WalletAuthKeysStatusEnum          @default(ACTIVE)
   lastUsedAt        DateTime?                         @map("last_used_at") @db.Timestamp(6)
   expiresAt         DateTime                          @map("expires_at") @db.Timestamp(6)
   deviceFingerprint String?                           @map("device_fingerprint") @db.VarChar
-  deviceType        wallet_auth_keys_device_type_enum @default(unknown) @map("device_type")
+  deviceType        WalletAuthKeysDeviceTypeEnum      @default(UNKNOWN) @map("device_type")
   userAgent         String?                           @map("user_agent") @db.VarChar
   ipAddress         String?                           @map("ip_address") @db.VarChar
   metadata          Json?
   notifications     Notifications[]
 
-  @@index([walletAddress], map: "IDX_64f608d78b3d85a67287f77298")
-  @@index([walletAddress, status], map: "IDX_82f27d8cc4c2b2d2c7f1c977fa")
-  @@index([publicKey], map: "IDX_bef196ffd7feeb31b48ffe644f")
-  @@index([createdAt], map: "IDX_dd314e6fba34f5ffa1f2ff9f92")
+  @@index([walletAddress])
+  @@index([walletAddress, status])
+  @@index([publicKey])
+  @@index([createdAt])
   @@map("wallet_auth_keys")
 }
 
 model WalletAuthSessions {
-  id             Int       @id(map: "PK_619bd16f69a9477f9c236e95fda") @default(autoincrement())
+  id             Int       @id() @default(autoincrement())
   createdAt      DateTime  @map("created_at") @db.Timestamp(6)
   updatedAt      DateTime  @map("updated_at") @db.Timestamp(6)
-  sessionToken   String    @unique(map: "UQ_d4fc33e5a4ff0f44b46745d6044") @map("session_token") @db.VarChar
+  sessionToken   String    @unique() @map("session_token") @db.VarChar
   walletAddress  String    @map("wallet_address") @db.VarChar
   authKeyId      Int       @map("auth_key_id")
   expiresAt      DateTime  @map("expires_at") @db.Timestamp(6)
@@ -359,9 +284,9 @@ model WalletAuthSessions {
   userAgent      String?   @map("user_agent") @db.VarChar
   sessionData    Json?     @map("session_data")
 
-  @@index([walletAddress, isActive], map: "IDX_718711db1f248f3dcfe7062255")
-  @@index([authKeyId], map: "IDX_90d2b00146d157c4b8a9f8a038")
-  @@index([sessionToken], map: "IDX_d4fc33e5a4ff0f44b46745d604")
+  @@index([walletAddress, isActive])
+  @@index([authKeyId])
+  @@index([sessionToken])
   @@map("wallet_auth_sessions")
 }
 
@@ -414,45 +339,42 @@ enum SchedulePaymentStatus {
   FAILED
 }
 
-enum analytics_events_event_type_enum {
-  page_view
-  endpoint_call
-  user_session
-  transaction
-  gift
-  group_payment
-  request_payment
+
+
+enum GiftNoteTypeEnum {
+  P2ID
+  P2IDR
+  GIFT
+  @@map("gift_note_type_enum")
 }
 
-enum gift_note_type_enum {
-  p2id
-  p2idr
-  gift
+enum GiftStatusEnum {
+  PENDING
+  RECALLED
+  CONSUMED
+  @@map("gift_status_enum")
 }
 
-enum gift_status_enum {
-  pending
-  recalled
-  consumed
+enum GroupPaymentMemberStatusEnum {
+  PENDING
+  PAID
+  DENIED
 }
 
-enum group_payment_member_status_status_enum {
-  pending
-  paid
+enum GroupPaymentStatusEnum {
+  PENDING
+  COMPLETED
+  EXPIRED
+  @@map("group_payment_status_enum")
 }
 
-enum group_payment_status_enum {
-  pending
-  completed
-  expired
-}
-
-enum notifications_status_enum {
+enum NotificationsStatusEnum {
   UNREAD
   READ
+  @@map("notifications_status_enum")
 }
 
-enum notifications_type_enum {
+enum NotificationsTypeEnum {
   SEND
   CLAIM
   REFUND
@@ -464,52 +386,62 @@ enum notifications_type_enum {
   GIFT_SEND
   GIFT_OPEN
   GIFT_CLAIM
+  @@map("notifications_type_enum")
 }
 
-enum request_payment_status_enum {
-  pending
-  accepted
-  denied
+enum RequestPaymentStatusEnum {
+  PENDING
+  ACCEPTED
+  DENIED
+  @@map("request_payment_status_enum")
 }
 
-enum tokens_token_type_enum {
+enum TokensTokenTypeEnum {
   EMAIL
   PASSWORD
+  @@map("tokens_token_type_enum")
 }
 
-enum transactions_note_type_enum {
-  p2id
-  p2idr
-  gift
+enum TransactionsNoteTypeEnum {
+  P2ID
+  P2IDR
+  GIFT
+  @@map("transactions_note_type_enum")
 }
 
-enum transactions_status_enum {
-  pending
-  recalled
-  consumed
+enum TransactionsStatusEnum {
+  PENDING
+  RECALLED
+  CONSUMED
+  @@map("transactions_status_enum")
 }
 
-enum users_role_enum {
-  admin
-  admin_only_view @map("admin-only-view")
-  user
+enum UsersRoleEnum {
+  ADMIN
+  ADMIN_ONLY_VIEW @map("admin-only-view")
+  USER
+  @@map("users_role_enum")
 }
 
-enum users_status_enum {
+enum UsersStatusEnum {
   ACTIVE
   INACTIVE
   PENDING
+  @@map("users_status_enum")
 }
 
-enum wallet_auth_keys_device_type_enum {
-  desktop
-  mobile
-  tablet
-  unknown
+enum WalletAuthKeysDeviceTypeEnum {
+  DESKTOP
+  MOBILE
+  TABLET
+  UNKNOWN
+  @@map("wallet_auth_keys_device_type_enum")
 }
 
-enum wallet_auth_keys_status_enum {
-  active
-  revoked
-  expired
+
+enum WalletAuthKeysStatusEnum {
+  ACTIVE
+  REVOKED
+  EXPIRED
+  @@map("wallet_auth_keys_status_enum")
 }

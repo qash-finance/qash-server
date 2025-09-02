@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CreateGiftDto } from './gift.dto';
 import { AppConfigService } from '../../common/config/services/config.service';
-import { NoteStatus, NoteType } from '../../common/enums/note';
 import { handleError } from '../../common/utils/errors';
 import {
   validateAddress,
@@ -12,6 +11,7 @@ import { ErrorGift } from '../../common/constants/errors';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from 'src/common/enums/notification';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { GiftNoteTypeEnum, GiftStatusEnum } from '@prisma/client';
 
 @Injectable()
 export class GiftService {
@@ -61,7 +61,7 @@ export class GiftService {
 
       // total opened gifts
       const totalOpenedGifts = gifts.filter(
-        (gift) => gift.status === NoteStatus.CONSUMED,
+        (gift) => gift.status === GiftStatusEnum.CONSUMED,
       ).length;
 
       return {
@@ -133,12 +133,12 @@ export class GiftService {
       }
 
       // Check if gift is already opened
-      if (gift.status === NoteStatus.CONSUMED) {
+      if (gift.status === GiftStatusEnum.CONSUMED) {
         throw new BadRequestException(ErrorGift.GiftAlreadyOpened);
       }
 
       // Check if gift is recalled
-      if (gift.status === NoteStatus.RECALLED) {
+      if (gift.status === GiftStatusEnum.RECALLED) {
         throw new BadRequestException('Gift has been recalled by sender');
       }
 
@@ -172,7 +172,11 @@ export class GiftService {
 
       return this.prisma.gift.update({
         where: { id: gift.id },
-        data: { status: NoteStatus.CONSUMED, openedAt: new Date(), updatedAt: new Date() },
+        data: {
+          status: GiftStatusEnum.CONSUMED,
+          openedAt: new Date(),
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       handleError(error, this.logger);
@@ -192,7 +196,7 @@ export class GiftService {
       const gifts = await this.prisma.gift.findMany({
         where: {
           sender: normalizedSenderAddress,
-          status: NoteStatus.PENDING,
+          status: GiftStatusEnum.PENDING,
           recallable: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -215,7 +219,7 @@ export class GiftService {
       return this.prisma.gift.findMany({
         where: {
           sender: normalizedSenderAddress,
-          status: NoteStatus.RECALLED,
+          status: GiftStatusEnum.RECALLED,
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -236,7 +240,7 @@ export class GiftService {
         throw new BadRequestException(ErrorGift.GiftNotFound);
       }
 
-      if (gift.status !== NoteStatus.PENDING) {
+      if (gift.status !== GiftStatusEnum.PENDING) {
         throw new BadRequestException(
           'Gift cannot be recalled - it has already been processed',
         );
@@ -268,7 +272,11 @@ export class GiftService {
 
       return this.prisma.gift.update({
         where: { id },
-        data: { status: NoteStatus.RECALLED, recalledAt: new Date(), updatedAt: new Date() },
+        data: {
+          status: GiftStatusEnum.RECALLED,
+          recalledAt: new Date(),
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       handleError(error, this.logger);
@@ -287,12 +295,12 @@ export class GiftService {
     return this.prisma.gift.create({
       data: {
         sender: normalizedSenderAddress,
-        status: NoteStatus.PENDING,
+        status: GiftStatusEnum.PENDING,
         recallableTime: new Date(Date.now()),
         recallable: true,
         secretHash: dto.secretNumber,
         serialNumber: dto.serialNumber,
-        noteType: NoteType.GIFT,
+        noteType: GiftNoteTypeEnum.GIFT,
         noteId: dto.txId,
         assets: assets,
         createdAt: now,

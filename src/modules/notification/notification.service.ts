@@ -17,7 +17,7 @@ import {
 } from '../../common/enums/notification';
 import { NotificationGateway } from './notification.gateway';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { Notifications, notifications_status_enum, notifications_type_enum } from '@prisma/client';
+import { Notifications, NotificationsTypeEnum } from '@prisma/client';
 
 @Injectable()
 export class NotificationService {
@@ -35,7 +35,7 @@ export class NotificationService {
     this.logger.log(
       `Creating notification for wallet ${dto.walletAddress} of type ${dto.type}`,
     );
-    
+
     const now = new Date();
     const notification = await this.prisma.notifications.create({
       data: {
@@ -130,7 +130,7 @@ export class NotificationService {
     const existing = await this.prisma.notifications.findFirst({
       where: { id, walletAddress },
     });
-    
+
     if (!existing) {
       this.logger.error('Notification not found for update');
       throw new Error('Notification not found');
@@ -138,7 +138,7 @@ export class NotificationService {
 
     const updatedNotification = await this.prisma.notifications.update({
       where: { id: existing.id },
-      data: { 
+      data: {
         status: NotificationStatus.READ,
         readAt: new Date(),
         updatedAt: new Date(),
@@ -170,7 +170,7 @@ export class NotificationService {
     const existing = await this.prisma.notifications.findFirst({
       where: { id, walletAddress },
     });
-    
+
     if (!existing) {
       this.logger.error('Notification not found for update');
       throw new Error('Notification not found');
@@ -178,7 +178,7 @@ export class NotificationService {
 
     return this.prisma.notifications.update({
       where: { id: existing.id },
-      data: { 
+      data: {
         status: NotificationStatus.UNREAD,
         updatedAt: new Date(),
       },
@@ -187,17 +187,17 @@ export class NotificationService {
 
   public async markAllAsRead(walletAddress: string): Promise<void> {
     await this.prisma.notifications.updateMany({
-      where: { 
-        walletAddress, 
-        status: NotificationStatus.UNREAD 
+      where: {
+        walletAddress,
+        status: NotificationStatus.UNREAD,
       },
-      data: { 
-        status: NotificationStatus.READ, 
+      data: {
+        status: NotificationStatus.READ,
         readAt: new Date(),
         updatedAt: new Date(),
       },
     });
-    
+
     this.logger.log(
       `Marked all notifications as read for wallet ${walletAddress}`,
     );
@@ -335,7 +335,7 @@ export class NotificationService {
   ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: notifications_type_enum.REQUEST_PAYMENT,
+      type: NotificationsTypeEnum.REQUEST_PAYMENT,
       title: 'Payment Request',
       message: data.message,
       metadata: {
@@ -346,7 +346,7 @@ export class NotificationService {
       },
     });
   }
-  
+
   private mapToResponseDto(
     notification: Notifications,
   ): NotificationResponseDto {

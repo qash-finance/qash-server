@@ -13,7 +13,7 @@ import {
   sanitizeString,
 } from '../../common/utils/validation.util';
 import { ErrorAddressBook } from '../../common/constants/errors';
-import { AddressBook, Categories } from '@prisma/client';
+import { AddressBook } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
@@ -150,7 +150,7 @@ export class AddressBookService {
       if (!category) {
         // Create new category if it doesn't exist
         category = await this.prisma.categories.create({
-          data: { 
+          data: {
             name: sanitizedCategory,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -188,15 +188,15 @@ export class AddressBookService {
     name: string,
     category: string,
   ): Promise<boolean> {
-          const existingEntry = await this.prisma.addressBook.findFirst({
-        where: {
-          userAddress,
-          name,
-          categories: {
-            name: category,
-          },
+    const existingEntry = await this.prisma.addressBook.findFirst({
+      where: {
+        userAddress,
+        name,
+        categories: {
+          name: category,
         },
-      });
+      },
+    });
     return existingEntry !== null;
   }
 
@@ -205,15 +205,15 @@ export class AddressBookService {
     address: string,
     category: string,
   ): Promise<boolean> {
-          const existingEntry = await this.prisma.addressBook.findFirst({
-        where: {
-          userAddress,
-          address,
-          categories: {
-            name: category,
-          },
+    const existingEntry = await this.prisma.addressBook.findFirst({
+      where: {
+        userAddress,
+        address,
+        categories: {
+          name: category,
         },
-      });
+      },
+    });
     return existingEntry !== null;
   }
 }

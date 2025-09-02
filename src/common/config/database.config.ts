@@ -10,9 +10,9 @@ export default registerAs('database', () => ({
     rejectUnauthorized: false,
     require: process.env.POSTGRES_DB_SSL === 'true' ? true : false,
   },
-  url:`postgresql://${encodeURIComponent(process.env.POSTGRES_USER)}:${encodeURIComponent(
-          process.env.POSTGRES_PASSWORD as string,
-        )}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${encodeURIComponent(
-          process.env.POSTGRES_DB as string,
-        )}?schema=public${process.env.POSTGRES_DB_SSL === 'true' ? '&sslmode=require' : ''}`
+  url: `postgresql://${encodeURIComponent(process.env.POSTGRES_USER)}:${encodeURIComponent(
+    process.env.POSTGRES_PASSWORD as string,
+  )}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${encodeURIComponent(
+    process.env.POSTGRES_DB as string,
+  )}?schema=public${process.env.POSTGRES_DB_SSL === 'true' ? '&sslmode=require' : ''}`,
 }));

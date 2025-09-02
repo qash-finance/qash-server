@@ -1,4 +1,4 @@
-import { Transactions } from '@prisma/client';
+import { Transactions, TransactionsStatusEnum } from '@prisma/client';
 import {
   BadRequestException,
   Injectable,
@@ -6,8 +6,6 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { TransactionRepository } from './transaction.repository';
-import { TransactionEntity } from './transaction.entity';
 import {
   SendTransactionDto,
   RecallRequestDto,
@@ -15,7 +13,6 @@ import {
 } from './transaction.dto';
 import { handleError } from '../../common/utils/errors';
 import { GiftService } from '../gift/gift.service';
-import { NoteStatus } from '../../common/enums/note';
 import {
   validateAddress,
   validateAmount,
@@ -47,7 +44,10 @@ export class TransactionService {
   // **************** GET METHODS ********************
   // *************************************************
 
-  async getConsumableTransactions(userId: string, latestBlockHeight: number): Promise<{
+  async getConsumableTransactions(
+    userId: string,
+    latestBlockHeight: number,
+  ): Promise<{
     consumableTxs: Transactions[];
     recallableTxs: Transactions[];
   }> {
@@ -59,7 +59,7 @@ export class TransactionService {
       const consumableTxs = await this.prisma.transactions.findMany({
         where: {
           recipient: normalizedUserId,
-          status: NoteStatus.PENDING,
+          status: TransactionsStatusEnum.PENDING,
           OR: [
             {
               timelockHeight: null,
@@ -78,7 +78,7 @@ export class TransactionService {
         where: {
           sender: normalizedUserId,
           recallable: true,
-          status: NoteStatus.PENDING,
+          status: TransactionsStatusEnum.PENDING,
           OR: [
             {
               timelockHeight: null,
@@ -111,7 +111,7 @@ export class TransactionService {
         where: {
           sender: normalizedUserAddress,
           recallable: true,
-          status: NoteStatus.PENDING,
+          status: TransactionsStatusEnum.PENDING,
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -121,13 +121,13 @@ export class TransactionService {
       const recallable = allRecallable.filter(
         (tx) =>
           (!tx.recallableTime || tx.recallableTime <= now) &&
-          tx.status === NoteStatus.PENDING,
+          tx.status === TransactionsStatusEnum.PENDING,
       );
       const waitingToRecall = allRecallable.filter(
         (tx) =>
           tx.recallableTime &&
           tx.recallableTime > now &&
-          tx.status === NoteStatus.PENDING,
+          tx.status === TransactionsStatusEnum.PENDING,
       );
 
       // Fetch recallable and waiting gifts (red packets)
@@ -183,7 +183,7 @@ export class TransactionService {
       const recalledTxs = await this.prisma.transactions.findMany({
         where: {
           sender: normalizedUserAddress,
-          status: NoteStatus.RECALLED,
+          status: TransactionsStatusEnum.RECALLED,
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -240,7 +240,7 @@ export class TransactionService {
           recipient: entityData.recipient,
           assets: entityData.assets,
           private: entityData.private,
-          recallable: entityData.recallable ,
+          recallable: entityData.recallable,
           recallableTime: entityData.recallableTime,
           recallableHeight: entityData.recallableHeight,
           serialNumber: entityData.serialNumber,
@@ -349,7 +349,7 @@ export class TransactionService {
       const transactions = await this.prisma.transactions.findMany({
         where: {
           id: { in: ids.map((id) => Number(id)) },
-          status: NoteStatus.PENDING as any,
+          status: TransactionsStatusEnum.PENDING as any,
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -381,8 +381,8 @@ export class TransactionService {
       for (const tx of transactions) {
         await this.notificationService.createNotification({
           walletAddress: sender,
-          title: 'We\'ve refunded',
-          message: 'We\'ve refunded',
+          title: "We've refunded",
+          message: "We've refunded",
           type: NotificationType.REFUND,
           metadata: {
             recipient: tx.recipient,
@@ -395,12 +395,12 @@ export class TransactionService {
       }
 
       const result = await this.prisma.transactions.updateMany({
-        where: { 
-          id: { in: ids.map((id) => Number(id)) }, 
-          status: NoteStatus.PENDING as any 
+        where: {
+          id: { in: ids.map((id) => Number(id)) },
+          status: TransactionsStatusEnum.PENDING as any,
         },
-        data: { 
-          status: NoteStatus.RECALLED as any,
+        data: {
+          status: TransactionsStatusEnum.RECALLED as any,
           updatedAt: new Date(),
         },
       });
@@ -423,7 +423,7 @@ export class TransactionService {
       const transactions = await this.prisma.transactions.findMany({
         where: {
           noteId: { in: ids },
-          status: NoteStatus.PENDING as any,
+          status: TransactionsStatusEnum.PENDING as any,
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -435,12 +435,12 @@ export class TransactionService {
       }
 
       const result = await this.prisma.transactions.updateMany({
-        where: { 
-          noteId: { in: ids }, 
-          status: NoteStatus.PENDING as any 
+        where: {
+          noteId: { in: ids },
+          status: TransactionsStatusEnum.PENDING as any,
         },
-        data: { 
-          status: NoteStatus.CONSUMED as any,
+        data: {
+          status: TransactionsStatusEnum.CONSUMED as any,
           updatedAt: new Date(),
         },
       });
@@ -449,8 +449,8 @@ export class TransactionService {
       for (const tx of transactions) {
         await this.notificationService.createNotification({
           walletAddress: sender,
-          title: 'You\'ve successfully claimed',
-          message: 'You\'ve successfully claimed',
+          title: "You've successfully claimed",
+          message: "You've successfully claimed",
           type: NotificationType.CONSUME,
           metadata: {
             recipient: tx.recipient,
@@ -505,33 +505,33 @@ export class TransactionService {
       const transactions = await this.prisma.transactions.findMany({
         where: {
           noteId: { in: notes.map((note) => note.noteId) },
-          status: NoteStatus.PENDING as any,
+          status: TransactionsStatusEnum.PENDING as any,
         },
         orderBy: { createdAt: 'desc' },
       });
 
-       // check if sender is the recipient of the transactions
-       const isRecipient = transactions.every((tx) => tx.recipient === caller);
-       if (!isRecipient) {
-         throw new BadRequestException(ErrorTransaction.NotRecipient);
-       }
- 
-       const result = await this.prisma.transactions.updateMany({
-         where: { 
-           noteId: { in: notes.map((note) => note.noteId) }, 
-           status: NoteStatus.PENDING as any 
-         },
-         data: { 
-           status: NoteStatus.CONSUMED as any,
-           updatedAt: new Date(),
-         },
-       });
+      // check if sender is the recipient of the transactions
+      const isRecipient = transactions.every((tx) => tx.recipient === caller);
+      if (!isRecipient) {
+        throw new BadRequestException(ErrorTransaction.NotRecipient);
+      }
+
+      const result = await this.prisma.transactions.updateMany({
+        where: {
+          noteId: { in: notes.map((note) => note.noteId) },
+          status: TransactionsStatusEnum.PENDING as any,
+        },
+        data: {
+          status: TransactionsStatusEnum.CONSUMED as any,
+          updatedAt: new Date(),
+        },
+      });
 
       for (const note of notes) {
         await this.notificationService.createNotification({
           walletAddress: caller,
-          title: 'You\'ve successfully claimed',
-          message: 'You\'ve successfully claimed',
+          title: "You've successfully claimed",
+          message: "You've successfully claimed",
           type: NotificationType.CONSUME,
           metadata: {
             sender: note.sender,
@@ -562,7 +562,9 @@ export class TransactionService {
         }
 
         // If this transaction is tied to a schedule payment, update it
-        const transaction = transactions.find(tx => tx.noteId === note.noteId);
+        const transaction = transactions.find(
+          (tx) => tx.noteId === note.noteId,
+        );
         if (transaction?.schedulePaymentId) {
           try {
             await this.schedulePaymentService.updatePayment(transaction.id);
@@ -587,7 +589,6 @@ export class TransactionService {
           'Items array is required and cannot be empty',
         );
       }
-      
 
       const results = [];
       for (const item of dto.items) {
@@ -636,7 +637,11 @@ export class TransactionService {
               );
               // Then update the schedule payment
               await this.schedulePaymentService.updatePayment(item.id);
-              results.push({ type: 'schedule_payment', id: item.id, success: true });
+              results.push({
+                type: 'schedule_payment',
+                id: item.id,
+                success: true,
+              });
             } catch (e) {
               results.push({
                 type: 'schedule_payment',
@@ -661,11 +666,13 @@ export class TransactionService {
   async getTopInteractedWallets() {
     try {
       // Get top 3 senders with transaction count and sum of amounts in one query
-      const topWallets = await this.prisma.$queryRaw<Array<{
-        sender: string;
-        transaction_count: bigint;
-        total_amount: string;
-      }>>`
+      const topWallets = await this.prisma.$queryRaw<
+        Array<{
+          sender: string;
+          transaction_count: bigint;
+          total_amount: string;
+        }>
+      >`
         SELECT 
           sender,
           COUNT(*)::BIGINT as transaction_count,
@@ -770,7 +777,7 @@ export class TransactionService {
         noteType: dto.noteType,
         noteId: dto.noteId,
         requestPaymentId: dto.requestPaymentId ?? null,
-        status: NoteStatus.PENDING as any,
+        status: TransactionsStatusEnum.PENDING as any,
         timelockHeight: dto.timelockHeight,
       };
     } catch (error) {

@@ -20,7 +20,7 @@ import {
   SessionInfo,
 } from './wallet-auth.dto';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { wallet_auth_keys_status_enum } from '@prisma/client';
+import { WalletAuthKeysStatusEnum } from '@prisma/client';
 
 @Injectable()
 export class WalletAuthService {
@@ -31,9 +31,7 @@ export class WalletAuthService {
   private readonly MAX_KEYS_PER_WALLET = 5;
   private readonly MAX_SESSIONS_PER_KEY = 3;
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Step 1: Initiate authentication process
@@ -129,7 +127,7 @@ export class WalletAuthService {
       const existingKeysCount = await this.prisma.walletAuthKeys.count({
         where: {
           walletAddress: dto.walletAddress,
-          status: wallet_auth_keys_status_enum.active,
+          status: WalletAuthKeysStatusEnum.ACTIVE,
         },
       });
 
@@ -174,7 +172,7 @@ export class WalletAuthService {
           ipAddress: ipAddress,
           userAgent: userAgent,
           metadata: challenge.challengeData as any,
-          status: wallet_auth_keys_status_enum.active,
+          status: WalletAuthKeysStatusEnum.ACTIVE,
           updatedAt: now,
         },
         create: {
@@ -195,7 +193,7 @@ export class WalletAuthService {
 
       await this.prisma.walletAuthChallenges.update({
         where: { id: challenge.id },
-        data: { 
+        data: {
           isUsed: true,
           updatedAt: new Date(),
         },
@@ -227,7 +225,7 @@ export class WalletAuthService {
         where: {
           walletAddress: dto.walletAddress,
           publicKey: dto.publicKey,
-          status: wallet_auth_keys_status_enum.active,
+          status: WalletAuthKeysStatusEnum.ACTIVE,
           expiresAt: { gt: new Date() },
         },
       });
@@ -293,7 +291,7 @@ export class WalletAuthService {
       // Update key last used time
       await this.prisma.walletAuthKeys.update({
         where: { id: keyRecord.id },
-        data: { 
+        data: {
           lastUsedAt: new Date(),
           updatedAt: new Date(),
         },
@@ -333,7 +331,7 @@ export class WalletAuthService {
         where: { id: session.authKeyId },
       });
 
-      if (!keyRecord || keyRecord.status !== wallet_auth_keys_status_enum.active) {
+      if (!keyRecord || keyRecord.status !== WalletAuthKeysStatusEnum.ACTIVE) {
         throw new UnauthorizedException('Key no longer active');
       }
 
@@ -387,7 +385,7 @@ export class WalletAuthService {
         where: { id: session.authKeyId },
       });
 
-      if (!keyRecord || keyRecord.status !== wallet_auth_keys_status_enum.active) {
+      if (!keyRecord || keyRecord.status !== WalletAuthKeysStatusEnum.ACTIVE) {
         return null;
       }
 
@@ -417,7 +415,7 @@ export class WalletAuthService {
     try {
       const whereClause: any = {
         walletAddress: dto.walletAddress,
-        status: wallet_auth_keys_status_enum.active,
+        status: WalletAuthKeysStatusEnum.ACTIVE,
       };
 
       if (dto.publicKey) {
@@ -427,21 +425,21 @@ export class WalletAuthService {
       const result = await this.prisma.walletAuthKeys.updateMany({
         where: whereClause,
         data: {
-          status: wallet_auth_keys_status_enum.revoked,
+          status: WalletAuthKeysStatusEnum.REVOKED,
           updatedAt: new Date(),
         },
       });
 
       // Also revoke all sessions for these keys
-      const keys = await this.prisma.walletAuthKeys.findMany({ 
-        where: whereClause 
+      const keys = await this.prisma.walletAuthKeys.findMany({
+        where: whereClause,
       });
       const keyIds = keys.map((k) => k.id);
 
       if (keyIds.length > 0) {
         await this.prisma.walletAuthSessions.updateMany({
           where: { authKeyId: { in: keyIds } },
-          data: { 
+          data: {
             isActive: false,
             updatedAt: new Date(),
           },
@@ -462,7 +460,7 @@ export class WalletAuthService {
     try {
       const result = await this.prisma.walletAuthSessions.updateMany({
         where: { sessionToken: dto.sessionToken },
-        data: { 
+        data: {
           isActive: false,
           updatedAt: new Date(),
         },
@@ -598,7 +596,7 @@ export class WalletAuthService {
 
       await this.prisma.walletAuthSessions.updateMany({
         where: { id: { in: sessionIds } },
-        data: { 
+        data: {
           isActive: false,
           updatedAt: new Date(),
         },

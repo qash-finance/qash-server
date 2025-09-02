@@ -9,9 +9,9 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { RequestPaymentStatus } from './request-payment.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { AssetDto } from '../transactions/transaction.dto';
+import { RequestPaymentStatusEnum } from '@prisma/client';
 
 export class CreateRequestPaymentDto {
   @ApiProperty({
@@ -77,6 +77,6 @@ export class CreateRequestPaymentDto {
 }
 
 export class UpdateRequestPaymentStatusDto {
-  @IsEnum(RequestPaymentStatus)
-  status: RequestPaymentStatus;
+  @IsEnum(RequestPaymentStatusEnum)
+  status: RequestPaymentStatusEnum;
 }

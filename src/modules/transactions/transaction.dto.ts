@@ -18,6 +18,7 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { NoteType } from '../../common/enums/note';
+import { TransactionsNoteTypeEnum } from '@prisma/client';
 
 export type FaucetMetadata = {
   symbol: string;
@@ -100,7 +101,7 @@ export class SendTransactionDto {
 
   @ApiProperty({ example: NoteType.P2ID })
   @IsEnum(NoteType)
-  noteType: NoteType;
+  noteType: TransactionsNoteTypeEnum;
 
   @IsString()
   noteId: string;
