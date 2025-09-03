@@ -58,28 +58,28 @@ This project uses Prisma as the primary database ORM. Here are the key Prisma co
 
 ```bash
 # Generate Prisma client from schema
-npm run prisma:generate
+npm run prisma:generate --schema ./src/database/prisma/schema.prisma
 
 # Deploy migrations to database
-npm run prisma:deploy
+npm run prisma:deploy --schema ./src/database/prisma/schema.prisma
 
 # Open Prisma Studio (database GUI)
-npx prisma studio
+npx prisma studio --schema ./src/database/prisma/schema.prisma
 
 # Reset database (⚠️ destructive - drops all data)
-npx prisma db push --force-reset
+npx prisma db push --force-reset --schema ./src/database/prisma/schema.prisma
 
 # Push schema changes directly to database (for development)
-npx prisma db push
+npx prisma db push --schema ./src/database/prisma/schema.prisma
 
 # Pull database schema into Prisma schema
-npx prisma db pull
+npx prisma db pull --schema ./src/database/prisma/schema.prisma
 
 # Validate Prisma schema
-npx prisma validate
+npx prisma validate --schema ./src/database/prisma/schema.prisma
 
 # Format Prisma schema file
-npx prisma format
+npx prisma format --schema ./src/database/prisma/schema.prisma
 ```
 
 ## Prisma Workflow
@@ -97,20 +97,20 @@ npm run prisma:migrate:dev
 
 ```bash
 # Generate updated Prisma client
-npm run prisma:generate
+npm run prisma:generate --schema ./src/database/prisma/schema.prisma
 
 # Deploy migrations to production
-npm run prisma:deploy
+npm run prisma:deploy --schema ./src/database/prisma/schema.prisma
 ```
 
 ### 3. Database Seeding
 
 ```bash
 # Run seed script (if configured)
-npx prisma db seed
+npx prisma db seed --schema ./src/database/prisma/schema.prisma
 
 # Reset and seed database
-npx prisma migrate reset
+npx prisma migrate reset --schema ./src/database/prisma/schema.prisma
 ```
 
 ## Environment Variables

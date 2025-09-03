@@ -6,7 +6,7 @@ import { GroupPaymentModule } from '../group-payment/group-payment.module';
 import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
 import { AddressBookModule } from '../address-book/address-book.module';
 import { NotificationModule } from '../notification/notification.module';
-import { PrismaModule } from '../../common/prisma/prisma.module';
+import { PrismaModule } from '../../database/prisma.module';
 
 @Module({
   imports: [

@@ -14,7 +14,7 @@ import { FaucetMetadata } from '../transactions/transaction.dto';
 import { NotificationService } from '../notification/notification.service';
 import { AddressBookService } from '../address-book/address-book.service';
 import { RequestPaymentRepository } from './request-payment.repository';
-import { PrismaService } from '../../common/prisma/prisma.service';
+import { PrismaService } from '../../database/prisma.service';
 import {
   GroupPaymentStatusEnum,
   GroupPaymentMemberStatusEnum,

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../common/prisma/prisma.service';
+import { PrismaService } from '../../database/prisma.service';
 import { Gift, Prisma, GiftStatusEnum } from '@prisma/client';
-import { BaseRepository } from '../../common/repositories/base.repository';
+import { BaseRepository } from '../../database/base.repository';
 
 @Injectable()
 export class GiftRepository extends BaseRepository<

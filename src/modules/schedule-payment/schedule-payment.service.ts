@@ -13,7 +13,8 @@ import {
   SchedulePaymentStatusEnum,
   SchedulePaymentFrequencyEnum,
 } from '@prisma/client';
-import { PrismaService } from '../../common/prisma/prisma.service';
+import { PrismaService } from '../../database/prisma.service';
+import { SchedulePaymentRepository } from './schedule-payment.repository';
 import { handleError } from '../../common/utils/errors';
 import {
   validateAddress,
@@ -29,7 +30,10 @@ import { ErrorSchedulePayment } from 'src/common/constants/errors';
 export class SchedulePaymentService {
   private readonly logger = new Logger(SchedulePaymentService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly schedulePaymentRepository: SchedulePaymentRepository,
+    private readonly prisma: PrismaService, // Keep for complex operations not yet in repository
+  ) {}
 
   // *************************************************
   // **************** CREATE METHODS ****************
@@ -90,8 +94,8 @@ export class SchedulePaymentService {
 
       const tokens = dto.tokens.map((token) => ({ ...token }));
 
-      return await this.prisma.schedulePayment.create({
-        data: {
+      return await this.schedulePaymentRepository.createWithTransactions(
+        {
           payer: normalizedPayer,
           payee: normalizedPayee,
           amount: dto.amount,
@@ -102,11 +106,9 @@ export class SchedulePaymentService {
           nextExecutionDate: nextExecutionDate,
           maxExecutions: dto.maxExecutions || null,
           executionCount: 0,
-          transactions: {
-            connect: dto.transactionIds.map((id) => ({ id: id })),
-          },
         },
-      });
+        dto.transactionIds,
+      );
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -146,15 +148,15 @@ export class SchedulePaymentService {
         where.payee = normalizeAddress(query.payee);
       }
 
-      return await this.prisma.schedulePayment.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          transactions: {
-            orderBy: { id: 'asc' },
-          },
+      return await this.schedulePaymentRepository.findByUser(
+        normalizedUserAddress,
+        {
+          status: query?.status,
+          payer: query?.payer ? normalizeAddress(query.payer) : undefined,
+          payee: query?.payee ? normalizeAddress(query.payee) : undefined,
+          includeTransactions: true,
         },
-      });
+      );
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -169,20 +171,11 @@ export class SchedulePaymentService {
       validateAddress(userAddress, 'userAddress');
       const normalizedUserAddress = normalizeAddress(userAddress);
 
-      const schedulePayment = await this.prisma.schedulePayment.findFirst({
-        where: {
+      const schedulePayment =
+        await this.schedulePaymentRepository.findByIdAndUserWithTransactions(
           id,
-          OR: [
-            { payer: normalizedUserAddress },
-            { payee: normalizedUserAddress },
-          ],
-        },
-        include: {
-          transactions: {
-            orderBy: { createdAt: 'desc' },
-          },
-        },
-      });
+          normalizedUserAddress,
+        );
 
       if (!schedulePayment) {
         throw new NotFoundException(ErrorSchedulePayment.NotFound);
@@ -198,16 +191,7 @@ export class SchedulePaymentService {
     try {
       const now = new Date();
 
-      return await this.prisma.schedulePayment.findMany({
-        where: {
-          status: SchedulePaymentStatusEnum.ACTIVE,
-          nextExecutionDate: {
-            lte: now,
-          },
-          OR: [{ endDate: null }, { endDate: { gte: now } }],
-        },
-        orderBy: { nextExecutionDate: 'asc' },
-      });
+      return await this.schedulePaymentRepository.findActiveReadyForExecution();
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -230,12 +214,11 @@ export class SchedulePaymentService {
       validateAddress(userAddress, 'userAddress');
       const normalizedUserAddress = normalizeAddress(userAddress);
 
-      const schedulePayment = await this.prisma.schedulePayment.findFirst({
-        where: {
+      const schedulePayment =
+        await this.schedulePaymentRepository.findByIdAndPayer(
           id,
-          payer: normalizedUserAddress, // Only payer can update
-        },
-      });
+          normalizedUserAddress,
+        );
 
       if (!schedulePayment) {
         throw new NotFoundException(ErrorSchedulePayment.NotFound);
@@ -282,10 +265,7 @@ export class SchedulePaymentService {
       if (dto.maxExecutions !== undefined)
         updateData.maxExecutions = dto.maxExecutions;
 
-      return await this.prisma.schedulePayment.update({
-        where: { id },
-        data: updateData,
-      });
+      return await this.schedulePaymentRepository.update({ id }, updateData);
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -323,15 +303,8 @@ export class SchedulePaymentService {
 
   async updatePayment(transactionId: number) {
     try {
-      const schedulePayment = await this.prisma.schedulePayment.findFirst({
-        where: {
-          transactions: {
-            some: {
-              id: transactionId,
-            },
-          },
-        },
-      });
+      const schedulePayment =
+        await this.schedulePaymentRepository.findByTransactionId(transactionId);
 
       if (!schedulePayment) {
         throw new NotFoundException(ErrorSchedulePayment.NotFound);
@@ -340,15 +313,12 @@ export class SchedulePaymentService {
       const newExecutionCount = schedulePayment.executionCount + 1;
 
       if (newExecutionCount === schedulePayment.maxExecutions) {
-        return await this.prisma.schedulePayment.update({
-          where: { id: schedulePayment.id },
-          data: {
-            updatedAt: new Date(),
-            nextExecutionDate: null,
-            executionCount: newExecutionCount,
-            status: SchedulePaymentStatusEnum.COMPLETED,
-          },
-        });
+        return await this.schedulePaymentRepository.updateExecution(
+          schedulePayment.id,
+          newExecutionCount,
+          null,
+          SchedulePaymentStatusEnum.COMPLETED,
+        );
       }
 
       const nextExecutionDate = this.calculateNextExecutionDate(
@@ -356,14 +326,11 @@ export class SchedulePaymentService {
         schedulePayment.frequency!,
       );
 
-      return await this.prisma.schedulePayment.update({
-        where: { id: schedulePayment.id },
-        data: {
-          updatedAt: new Date(),
-          executionCount: newExecutionCount,
-          nextExecutionDate: nextExecutionDate,
-        },
-      });
+      return await this.schedulePaymentRepository.updateExecution(
+        schedulePayment.id,
+        newExecutionCount,
+        nextExecutionDate,
+      );
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -404,15 +371,12 @@ export class SchedulePaymentService {
         finalNextExecutionDate = null;
       }
 
-      return await this.prisma.schedulePayment.update({
-        where: { id: schedulePaymentId },
-        data: {
-          executionCount: newExecutionCount,
-          nextExecutionDate: finalNextExecutionDate,
-          status,
-          updatedAt: new Date(),
-        },
-      });
+      return await this.schedulePaymentRepository.updateExecution(
+        schedulePaymentId,
+        newExecutionCount,
+        finalNextExecutionDate,
+        status,
+      );
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -420,13 +384,7 @@ export class SchedulePaymentService {
 
   async markFailed(schedulePaymentId: number) {
     try {
-      return await this.prisma.schedulePayment.update({
-        where: { id: schedulePaymentId },
-        data: {
-          status: SchedulePaymentStatusEnum.FAILED,
-          updatedAt: new Date(),
-        },
-      });
+      return await this.schedulePaymentRepository.markFailed(schedulePaymentId);
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -445,12 +403,11 @@ export class SchedulePaymentService {
       validateAddress(userAddress, 'userAddress');
       const normalizedUserAddress = normalizeAddress(userAddress);
 
-      const schedulePayment = await this.prisma.schedulePayment.findFirst({
-        where: {
+      const schedulePayment =
+        await this.schedulePaymentRepository.findByIdAndPayer(
           id,
-          payer: normalizedUserAddress, // Only payer can delete
-        },
-      });
+          normalizedUserAddress,
+        );
 
       if (!schedulePayment) {
         throw new NotFoundException(ErrorSchedulePayment.NotFound);
@@ -466,9 +423,7 @@ export class SchedulePaymentService {
         );
       }
 
-      await this.prisma.schedulePayment.delete({
-        where: { id },
-      });
+      await this.schedulePaymentRepository.delete({ id });
 
       return { message: 'Schedule payment deleted successfully' };
     } catch (error) {

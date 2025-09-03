@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" && npx prisma format --schema ./src/database/prisma/schema.prisma",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -20,14 +20,14 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "npm run docker:db:test:up && jest --config ./test/jest-e2e.json --forceExit && npm run docker:db:test:down",
     "test:e2e:ps": "powershell -File ./test/helpers/run-e2e-test.ps1",
-    "docker:db:up": "docker compose --env-file .env up -d && npm run build && sleep 5 && prisma migrate deploy --schema ./src/prisma/schema.prisma",
+    "docker:db:up": "docker compose --env-file .env up -d && npm run build && sleep 5 && prisma migrate deploy --schema ./src/database/prisma/schema.prisma",
     "docker:db:down": "docker compose --env-file .env down -v",
     "docker:db:test:up": "docker compose --env-file .env.test up -d && npm run build && sleep 5 && npm run migration:run",
     "docker:db:test:down": "docker compose --env-file .env.test down -v",
-    "prisma:generate": "prisma generate --schema ./src/prisma/schema.prisma",
-    "prisma:reset": "prisma migrate reset --schema ./src/prisma/schema.prisma",
-    "prisma:migrate:deploy": "prisma migrate deploy --schema ./src/prisma/schema.prisma",
-    "prisma:migrate:dev": "prisma migrate dev --schema ./src/prisma/schema.prisma"
+    "prisma:generate": "prisma generate --schema ./src/database/prisma/schema.prisma",
+    "prisma:reset": "prisma migrate reset --schema ./src/database/prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema ./src/database/prisma/schema.prisma",
+    "prisma:migrate:dev": "prisma migrate dev --schema ./src/database/prisma/schema.prisma"
   },
   "dependencies": {
     "@json2csv/plainjs": "^7.0.4",

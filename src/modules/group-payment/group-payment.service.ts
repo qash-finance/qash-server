@@ -23,7 +23,11 @@ import {
   sanitizeString,
 } from '../../common/utils/validation.util';
 import { ErrorGroupPayment } from '../../common/constants/errors';
-import { PrismaService } from '../../common/prisma/prisma.service';
+import { PrismaService } from '../../database/prisma.service';
+import {
+  GroupPaymentRepository,
+  GroupPaymentGroupRepository,
+} from './group-payment.repository';
 import {
   GroupPaymentMemberStatusEnum,
   GroupPaymentStatusEnum,
@@ -36,7 +40,9 @@ export class GroupPaymentService {
   constructor(
     @Inject(forwardRef(() => RequestPaymentService))
     private readonly requestPaymentService: RequestPaymentService,
-    private readonly prisma: PrismaService,
+    private readonly groupPaymentRepository: GroupPaymentRepository,
+    private readonly groupPaymentGroupRepository: GroupPaymentGroupRepository,
+    private readonly prisma: PrismaService, // Keep for complex operations
   ) {}
 
   async createGroup(dto: CreateGroupDto, ownerAddress: string) {
@@ -82,13 +88,11 @@ export class GroupPaymentService {
       const sanitizedName = sanitizeString(dto.name);
 
       // Check if group name already exists for this owner
-      const existingGroup = await this.prisma.groupPaymentGroup.findMany({
-        where: {
-          name: sanitizedName,
-          ownerAddress: normalizedOwnerAddress,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const existingGroup =
+        await this.groupPaymentGroupRepository.findByNameAndOwner(
+          sanitizedName,
+          normalizedOwnerAddress,
+        );
 
       if (existingGroup.length > 0) {
         throw new BadRequestException(ErrorGroupPayment.GroupNameAlreadyExists);
@@ -96,14 +100,12 @@ export class GroupPaymentService {
 
       // Create group with normalized data
       const now = new Date();
-      return this.prisma.groupPaymentGroup.create({
-        data: {
-          name: sanitizedName,
-          ownerAddress: normalizedOwnerAddress,
-          members: normalizedMembers as any,
-          createdAt: now,
-          updatedAt: now,
-        },
+      return this.groupPaymentGroupRepository.create({
+        name: sanitizedName,
+        ownerAddress: normalizedOwnerAddress,
+        members: normalizedMembers as any,
+        createdAt: now,
+        updatedAt: now,
       });
     } catch (error) {
       handleError(error, this.logger);

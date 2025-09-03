@@ -6,7 +6,7 @@ import { NotificationService } from './notification.service';
 import { NotificationGateway } from './notification.gateway';
 import { NotificationRepository } from './notification.repository';
 import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
-import { PrismaModule } from '../../common/prisma/prisma.module';
+import { PrismaModule } from '../../database/prisma.module';
 
 @Module({
   imports: [PrismaModule, ConfigModule, forwardRef(() => WalletAuthModule)],

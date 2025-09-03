@@ -22,7 +22,7 @@ import { GroupPaymentModule } from './modules/group-payment/group-payment.module
 import { WalletAuthModule } from './modules/wallet-auth/wallet-auth.module';
 import { AppConfigServiceModule } from './common/config/services/config.module';
 import { NotificationModule } from './modules/notification/notification.module';
-import { PrismaModule } from './common/prisma/prisma.module';
+import { PrismaModule } from './database/prisma.module';
 import { SchedulePaymentModule } from './modules/schedule-payment/schedule-payment.module';
 
 @Module({

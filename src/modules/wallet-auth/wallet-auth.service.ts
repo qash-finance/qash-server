@@ -19,7 +19,7 @@ import {
   KeyInfo,
   SessionInfo,
 } from './wallet-auth.dto';
-import { PrismaService } from '../../common/prisma/prisma.service';
+import { PrismaService } from '../../database/prisma.service';
 import { WalletAuthKeysStatusEnum } from '@prisma/client';
 import { handleError } from 'src/common/utils/errors';
 import { ErrorWalletAuth } from 'src/common/constants/errors';

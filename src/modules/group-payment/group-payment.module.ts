@@ -1,7 +1,11 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { GroupPaymentService } from './group-payment.service';
 import { GroupPaymentController } from './group-payment.controller';
-import { PrismaModule } from 'src/common/prisma/prisma.module';
+import {
+  GroupPaymentRepository,
+  GroupPaymentGroupRepository,
+} from './group-payment.repository';
+import { PrismaModule } from 'src/database/prisma.module';
 import { RequestPaymentModule } from '../request-payment/request-payment.module';
 import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
 
@@ -11,8 +15,16 @@ import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
     forwardRef(() => RequestPaymentModule),
     WalletAuthModule,
   ],
-  providers: [GroupPaymentService],
+  providers: [
+    GroupPaymentService,
+    GroupPaymentRepository,
+    GroupPaymentGroupRepository,
+  ],
   controllers: [GroupPaymentController],
-  exports: [GroupPaymentService],
+  exports: [
+    GroupPaymentService,
+    GroupPaymentRepository,
+    GroupPaymentGroupRepository,
+  ],
 })
 export class GroupPaymentModule {}
