@@ -1,138 +1,254 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../common/prisma/prisma.service';
-import {  Prisma, Transactions } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
+import { Transactions, Prisma, TransactionsStatusEnum } from '@prisma/client';
+import { BaseRepository } from '../../database/base.repository';
+import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
-export class TransactionRepository {
-  private readonly logger = new Logger(TransactionRepository.name);
-
-  constructor(private readonly prisma: PrismaService) {}
-
-  public async findOne(
-    where: Prisma.TransactionsWhereInput,
-    options?: Prisma.TransactionsFindFirstArgs,
-  ): Promise<Transactions | null> {
-    try {
-      const row = await this.prisma.transactions.findFirst({
-        where,
-        orderBy: { createdAt: 'desc' },
-        ...options,
-      });
-      return row ?? null;
-    } catch (error) {
-      this.logger.error('Error finding transaction', error);
-      throw error;
-    }
+export class TransactionRepository extends BaseRepository<
+  Transactions,
+  Prisma.TransactionsWhereInput,
+  Prisma.TransactionsCreateInput,
+  Prisma.TransactionsUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
   }
 
-  public async find(
-    where: Prisma.TransactionsWhereInput,
-    options?: Prisma.TransactionsFindManyArgs,
+  protected getModel() {
+    return this.prisma.transactions;
+  }
+
+  /**
+   * Find consumable transactions for a user
+   */
+  async findConsumableTransactions(
+    userId: string,
+    latestBlockHeight: number,
   ): Promise<Transactions[]> {
-    try {
-      const rows = await this.prisma.transactions.findMany({
-        where,
+    return this.findMany(
+      {
+        recipient: userId,
+        status: TransactionsStatusEnum.PENDING,
+        OR: [
+          { timelockHeight: null },
+          { timelockHeight: { lte: latestBlockHeight } },
+        ],
+      },
+      {
         orderBy: { createdAt: 'desc' },
-        ...options,
-      });
-      return rows;
-    } catch (error) {
-      this.logger.error('Error finding transactions', error);
-      throw error;
-    }
+      },
+    );
   }
 
-  public async create(dto: Partial<Transactions>): Promise<Transactions> {
-    try {
-      const now = new Date();
-      const row = await this.prisma.transactions.create({
-        data: {
-          createdAt: now,
-          updatedAt: now,
-          sender: dto.sender as string,
-          recipient: dto.recipient as string,
-          assets: dto.assets as Prisma.InputJsonValue,
-          private: (dto.private as boolean) ?? true,
-          recallable: (dto.recallable as boolean) ?? true,
-          recallableTime: (dto.recallableTime as Date) ?? null,
-          recallableHeight: (dto.recallableHeight as number) ?? null,
-          serialNumber: dto.serialNumber as Prisma.InputJsonValue,
-          noteType: dto.noteType as any,
-          status: dto.status as any,
-          noteId: (dto.noteId as string) ?? null,
-          requestPaymentId: (dto.requestPaymentId as number) ?? null,
-        },
-      });
-      return row;
-    } catch (error) {
-      this.logger.error('Error creating transaction', error);
-      throw error;
-    }
-  }
-
-  public async createMany(
-    dtos: Partial<Transactions>[],
+  /**
+   * Find recallable transactions for a user
+   */
+  async findRecallableTransactions(
+    userId: string,
+    latestBlockHeight: number,
   ): Promise<Transactions[]> {
-    try {
-      const now = new Date();
-      const rows = await Promise.all(
-        dtos.map((dto) =>
-          this.prisma.transactions.create({
-            data: {
-              createdAt: now,
-              updatedAt: now,
-              sender: dto.sender as string,
-              recipient: dto.recipient as string,
-              assets: dto.assets as Prisma.InputJsonValue,
-              private: (dto.private as boolean) ?? true,
-              recallable: (dto.recallable as boolean) ?? true,
-              recallableTime: (dto.recallableTime as Date) ?? null,
-              recallableHeight: (dto.recallableHeight as number) ?? null,
-              serialNumber: dto.serialNumber as Prisma.InputJsonValue,
-              noteType: dto.noteType as any,
-              status: dto.status as any,
-              noteId: (dto.noteId as string) ?? null,
-              requestPaymentId: (dto.requestPaymentId as number) ?? null,
-            },
-          }),
-        ),
-      );
-      return rows;
-    } catch (error) {
-      this.logger.error('Error creating many transactions', error);
-      throw error;
-    }
+    return this.findMany(
+      {
+        sender: userId,
+        recallable: true,
+        status: TransactionsStatusEnum.PENDING,
+        OR: [
+          { timelockHeight: null },
+          { timelockHeight: { lte: latestBlockHeight } },
+        ],
+      },
+      {
+        orderBy: { createdAt: 'desc' },
+      },
+    );
   }
 
-  public async update(
-    where: Prisma.TransactionsWhereUniqueInput,
-    dto: Partial<Transactions>,
-  ): Promise<Transactions | null> {
-    try {
-      await this.prisma.transactions.update({
-        where,
-        data: { ...dto, updatedAt: new Date() },
-      });
-      return this.prisma.transactions.findUnique({ where });
-    } catch (error) {
-      this.logger.error('Error updating transaction', error);
-      throw error;
-    }
+  /**
+   * Find all recallable transactions sent by a user
+   */
+  async findAllRecallableByUser(userAddress: string): Promise<Transactions[]> {
+    return this.findMany(
+      {
+        sender: userAddress,
+        recallable: true,
+        status: TransactionsStatusEnum.PENDING,
+      },
+      {
+        orderBy: { createdAt: 'desc' },
+      },
+    );
   }
 
-  public async updateMany(
-    where: Prisma.TransactionsWhereInput,
-    dto: Partial<Transactions>,
-  ): Promise<number> {
-    try {
-      const result = await this.prisma.transactions.updateMany({
-        where,
-        data: { ...dto, updatedAt: new Date() },
-      });
-      return result.count;
-    } catch (error) {
-      this.logger.error('Error updating many transactions', error);
-      throw error;
-    }
+  /**
+   * Find recalled transactions by user
+   */
+  async findRecalledByUser(userAddress: string): Promise<Transactions[]> {
+    return this.findMany(
+      {
+        sender: userAddress,
+        status: TransactionsStatusEnum.RECALLED,
+      },
+      {
+        orderBy: { createdAt: 'desc' },
+      },
+    );
+  }
+
+  /**
+   * Find transactions by IDs and status
+   */
+  async findByIdsAndStatus(
+    ids: number[],
+    status: TransactionsStatusEnum,
+  ): Promise<Transactions[]> {
+    return this.findMany(
+      {
+        id: { in: ids },
+        status: status as any,
+      },
+      {
+        orderBy: { createdAt: 'desc' },
+      },
+    );
+  }
+
+  /**
+   * Find transactions by note IDs and status
+   */
+  async findByNoteIdsAndStatus(
+    noteIds: string[],
+    status: TransactionsStatusEnum,
+  ): Promise<Transactions[]> {
+    return this.findMany(
+      {
+        noteId: { in: noteIds },
+        status: status as any,
+      },
+      {
+        orderBy: { createdAt: 'desc' },
+      },
+    );
+  }
+
+  /**
+   * Update transaction status by IDs
+   */
+  async updateStatusByIds(
+    ids: number[],
+    status: TransactionsStatusEnum,
+    currentStatus: TransactionsStatusEnum,
+  ): Promise<{ count: number }> {
+    return this.updateMany(
+      {
+        id: { in: ids },
+        status: currentStatus as any,
+      },
+      {
+        status: status as any,
+      },
+    );
+  }
+
+  /**
+   * Update transaction status by note IDs
+   */
+  async updateStatusByNoteIds(
+    noteIds: string[],
+    status: TransactionsStatusEnum,
+    currentStatus: TransactionsStatusEnum,
+  ): Promise<{ count: number }> {
+    return this.updateMany(
+      {
+        noteId: { in: noteIds },
+        status: currentStatus as any,
+      },
+      {
+        status: status as any,
+      },
+    );
+  }
+
+  /**
+   * Get top interacted wallets with raw query
+   */
+  async getTopInteractedWallets(): Promise<
+    Array<{
+      sender: string;
+      transaction_count: bigint;
+      total_amount: string;
+    }>
+  > {
+    return this.prisma.$queryRaw<
+      Array<{
+        sender: string;
+        transaction_count: bigint;
+        total_amount: string;
+      }>
+    >`
+      SELECT 
+        sender,
+        COUNT(*)::BIGINT as transaction_count,
+        COALESCE(SUM(
+          CASE 
+            WHEN assets IS NOT NULL AND jsonb_typeof(assets) = 'array' 
+            THEN (
+              SELECT COALESCE(SUM(CAST(value->>'amount' AS NUMERIC)), 0)
+              FROM jsonb_array_elements(assets)
+              WHERE jsonb_typeof(value) = 'object' AND value ? 'amount'
+            )
+            ELSE 0
+          END
+        ), 0)::TEXT as total_amount
+      FROM transactions 
+      GROUP BY sender 
+      ORDER BY transaction_count DESC, total_amount DESC
+      LIMIT 3
+    `;
+  }
+
+  /**
+   * Create multiple transactions in parallel
+   */
+  async createTransactionsBatch(
+    transactionData: Prisma.TransactionsCreateInput[],
+  ): Promise<Transactions[]> {
+    const now = new Date();
+
+    return Promise.all(
+      transactionData.map((data) =>
+        this.getModel().create({
+          data: {
+            createdAt: now,
+            updatedAt: now,
+            ...data,
+          },
+        }),
+      ),
+    );
+  }
+
+  /**
+   * Find transaction by note ID
+   */
+  async findByNoteId(noteId: string): Promise<Transactions | null> {
+    return this.findOne({ noteId });
+  }
+
+  /**
+   * Find transactions by request payment ID
+   */
+  async findByRequestPaymentId(
+    requestPaymentId: number,
+  ): Promise<Transactions[]> {
+    return this.findMany({ requestPaymentId });
+  }
+
+  /**
+   * Find transactions by schedule payment ID
+   */
+  async findBySchedulePaymentId(
+    schedulePaymentId: number,
+  ): Promise<Transactions[]> {
+    return this.findMany({ schedulePaymentId });
   }
 }

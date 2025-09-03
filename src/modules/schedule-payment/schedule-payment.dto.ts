@@ -14,7 +14,10 @@ import {
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AssetDto } from '../transactions/transaction.dto';
-import { SchedulePaymentFrequency, SchedulePaymentStatus } from '@prisma/client';
+import {
+  SchedulePaymentFrequencyEnum,
+  SchedulePaymentStatusEnum,
+} from '@prisma/client';
 
 export class CreateSchedulePaymentDto {
   @ApiProperty({
@@ -79,11 +82,11 @@ export class CreateSchedulePaymentDto {
 
   @ApiProperty({
     description: 'The frequency of the scheduled payment',
-    enum: SchedulePaymentFrequency,
-    example: SchedulePaymentFrequency.MONTHLY,
+    enum: SchedulePaymentFrequencyEnum,
+    example: SchedulePaymentFrequencyEnum.MONTHLY,
   })
-  @IsEnum(SchedulePaymentFrequency)
-  frequency: SchedulePaymentFrequency;
+  @IsEnum(SchedulePaymentFrequencyEnum)
+  frequency: SchedulePaymentFrequencyEnum;
 
   @ApiPropertyOptional({
     description: 'The end date of the scheduled payment',
@@ -108,7 +111,7 @@ export class CreateSchedulePaymentDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Transform(({ value }) => value === null ? null : parseInt(value))
+  @Transform(({ value }) => (value === null ? null : parseInt(value)))
   maxExecutions?: number;
 
   @ApiPropertyOptional({
@@ -124,19 +127,19 @@ export class CreateSchedulePaymentDto {
 export class UpdateSchedulePaymentDto {
   @ApiPropertyOptional({
     description: 'The status of the scheduled payment',
-    enum: SchedulePaymentStatus,
+    enum: SchedulePaymentStatusEnum,
   })
   @IsOptional()
-  @IsEnum(SchedulePaymentStatus)
-  status?: SchedulePaymentStatus;
+  @IsEnum(SchedulePaymentStatusEnum)
+  status?: SchedulePaymentStatusEnum;
 
   @ApiPropertyOptional({
     description: 'The frequency of the scheduled payment',
-    enum: SchedulePaymentFrequency,
+    enum: SchedulePaymentFrequencyEnum,
   })
   @IsOptional()
-  @IsEnum(SchedulePaymentFrequency)
-  frequency?: SchedulePaymentFrequency;
+  @IsEnum(SchedulePaymentFrequencyEnum)
+  frequency?: SchedulePaymentFrequencyEnum;
 
   @ApiPropertyOptional({
     description: 'The end date of the scheduled payment',
@@ -161,18 +164,18 @@ export class UpdateSchedulePaymentDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Transform(({ value }) => value === null ? null : parseInt(value))
+  @Transform(({ value }) => (value === null ? null : parseInt(value)))
   maxExecutions?: number;
 }
 
 export class SchedulePaymentQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by status',
-    enum: SchedulePaymentStatus,
+    enum: SchedulePaymentStatusEnum,
   })
   @IsOptional()
-  @IsEnum(SchedulePaymentStatus)
-  status?: SchedulePaymentStatus;
+  @IsEnum(SchedulePaymentStatusEnum)
+  status?: SchedulePaymentStatusEnum;
 
   @ApiPropertyOptional({
     description: 'Filter by payer address',

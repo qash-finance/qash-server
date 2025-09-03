@@ -75,7 +75,10 @@ export class RequestPaymentController {
   @ApiOperation({ summary: 'Confirm a pending request' })
   @ApiResponse({ status: 200, description: 'Request confirmed' })
   async confirm(@Param('id') id: number, @Req() req: RequestWithWalletAuth) {
-    return this.service.confirmGroupPaymentRequest(id, req.walletAuth.walletAddress);
+    return this.service.confirmGroupPaymentRequest(
+      id,
+      req.walletAuth.walletAddress,
+    );
   }
 
   @Put(':id/deny')

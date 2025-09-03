@@ -5,16 +5,13 @@ import {
   forwardRef,
   Logger,
 } from '@nestjs/common';
-import { GroupPaymentRepository } from './group-payment.repository';
 import {
   CreateGroupDto,
   CreateGroupPaymentDto,
   CreateDefaultGroupDto,
   CreateQuickSharePaymentDto,
 } from './group-payment.dto';
-import { GroupPaymentStatus } from './group-payment.entity';
 import { RequestPaymentService } from '../request-payment/request-payment.service';
-import { GroupPaymentMemberStatus } from './group-payment.entity';
 import { handleError } from '../../common/utils/errors';
 import {
   validateAddress,
@@ -26,8 +23,15 @@ import {
   sanitizeString,
 } from '../../common/utils/validation.util';
 import { ErrorGroupPayment } from '../../common/constants/errors';
-import { PrismaService } from '../../common/prisma/prisma.service';
-import { group_payment_member_status_status_enum } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import {
+  GroupPaymentRepository,
+  GroupPaymentGroupRepository,
+} from './group-payment.repository';
+import {
+  GroupPaymentMemberStatusEnum,
+  GroupPaymentStatusEnum,
+} from '@prisma/client';
 
 @Injectable()
 export class GroupPaymentService {
@@ -36,7 +40,9 @@ export class GroupPaymentService {
   constructor(
     @Inject(forwardRef(() => RequestPaymentService))
     private readonly requestPaymentService: RequestPaymentService,
-    private readonly prisma: PrismaService,
+    private readonly groupPaymentRepository: GroupPaymentRepository,
+    private readonly groupPaymentGroupRepository: GroupPaymentGroupRepository,
+    private readonly prisma: PrismaService, // Keep for complex operations
   ) {}
 
   async createGroup(dto: CreateGroupDto, ownerAddress: string) {
@@ -82,13 +88,11 @@ export class GroupPaymentService {
       const sanitizedName = sanitizeString(dto.name);
 
       // Check if group name already exists for this owner
-      const existingGroup = await this.prisma.groupPaymentGroup.findMany({
-        where: {
-          name: sanitizedName,
-          ownerAddress: normalizedOwnerAddress,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const existingGroup =
+        await this.groupPaymentGroupRepository.findByNameAndOwner(
+          sanitizedName,
+          normalizedOwnerAddress,
+        );
 
       if (existingGroup.length > 0) {
         throw new BadRequestException(ErrorGroupPayment.GroupNameAlreadyExists);
@@ -96,14 +100,12 @@ export class GroupPaymentService {
 
       // Create group with normalized data
       const now = new Date();
-      return this.prisma.groupPaymentGroup.create({
-        data: {
-          name: sanitizedName,
-          ownerAddress: normalizedOwnerAddress,
-          members: normalizedMembers as any,
-          createdAt: now,
-          updatedAt: now,
-        },
+      return this.groupPaymentGroupRepository.create({
+        name: sanitizedName,
+        ownerAddress: normalizedOwnerAddress,
+        members: normalizedMembers as any,
+        createdAt: now,
+        updatedAt: now,
       });
     } catch (error) {
       handleError(error, this.logger);
@@ -153,8 +155,8 @@ export class GroupPaymentService {
       }
 
       // ensure group exists and owned by caller
-      const existing = await this.prisma.groupPaymentGroup.findFirst({ 
-        where: { id: groupId } 
+      const existing = await this.prisma.groupPaymentGroup.findFirst({
+        where: { id: groupId },
       });
       if (!existing) {
         throw new BadRequestException(ErrorGroupPayment.GroupNotFound);
@@ -198,8 +200,8 @@ export class GroupPaymentService {
       validateAddress(ownerAddress, 'ownerAddress');
       const normalizedOwnerAddress = normalizeAddress(ownerAddress);
 
-      const existing = await this.prisma.groupPaymentGroup.findFirst({ 
-        where: { id: groupId } 
+      const existing = await this.prisma.groupPaymentGroup.findFirst({
+        where: { id: groupId },
       });
       if (!existing) {
         throw new BadRequestException(ErrorGroupPayment.GroupNotFound);
@@ -379,7 +381,7 @@ export class GroupPaymentService {
           amount: dto.amount,
           perMember: perMember,
           linkCode,
-          status: GroupPaymentStatus.PENDING,
+          status: GroupPaymentMemberStatusEnum.PENDING,
           createdAt: now,
           updatedAt: now,
         },
@@ -424,7 +426,7 @@ export class GroupPaymentService {
   async getGroupPayments(groupId: number, ownerAddress: string) {
     try {
       if (!groupId || groupId <= 0) {
-        throw new BadRequestException('groupId must be a positive number');
+        throw new BadRequestException(ErrorGroupPayment.InvalidGroupId);
       }
 
       validateAddress(ownerAddress, 'ownerAddress');
@@ -442,15 +444,15 @@ export class GroupPaymentService {
           (payment) => payment.ownerAddress !== normalizedOwnerAddress,
         )
       ) {
-        throw new BadRequestException(
-          'Only the group owner can view payments for this group',
-        );
+        throw new BadRequestException(ErrorGroupPayment.NotOwner);
       }
 
       // Get member statuses for each payment and categorize by createdAt
       const paymentsWithStatuses = await Promise.all(
         payments.map(async (payment) => {
-          const memberStatuses = await this.findMemberStatusesByPayment(payment.id);
+          const memberStatuses = await this.findMemberStatusesByPayment(
+            payment.id,
+          );
           return {
             ...payment,
             memberStatuses,
@@ -481,9 +483,7 @@ export class GroupPaymentService {
   async getPaymentByLink(linkCode: string) {
     try {
       if (!linkCode || typeof linkCode !== 'string') {
-        throw new BadRequestException(
-          'linkCode is required and must be a string',
-        );
+        throw new BadRequestException(ErrorGroupPayment.InvalidLinkCode);
       }
 
       if (linkCode.length < 10 || linkCode.length > 20) {
@@ -501,7 +501,7 @@ export class GroupPaymentService {
 
       // Check if payment is expired (you can add expiration logic here if needed)
       // For now, we'll just check if it's completed
-      if (payment.status === GroupPaymentStatus.COMPLETED) {
+      if (payment.status === GroupPaymentStatusEnum.COMPLETED) {
         throw new BadRequestException(
           ErrorGroupPayment.PaymentAlreadyCompleted,
         );
@@ -512,7 +512,9 @@ export class GroupPaymentService {
 
       // Calculate per-member amount
       const total = parseFloat(payment.amount);
-      const memberCount = payment.groupPaymentGroup ? Object.keys(payment.groupPaymentGroup.members).length : 1;
+      const memberCount = payment.groupPaymentGroup
+        ? Object.keys(payment.groupPaymentGroup.members).length
+        : 1;
       const perMember = (total / memberCount).toFixed(6);
 
       return {
@@ -521,7 +523,7 @@ export class GroupPaymentService {
         perMember,
         totalMembers: memberCount,
         paidMembers: memberStatuses.filter(
-          (status) => status.status === GroupPaymentMemberStatus.PAID,
+          (status) => status.status === GroupPaymentMemberStatusEnum.PAID,
         ).length,
       };
     } catch (error) {
@@ -566,13 +568,13 @@ export class GroupPaymentService {
 
       // Validate memberCount
       if (dto.memberCount <= 0 || dto.memberCount > 50) {
-        throw new BadRequestException('memberCount must be between 1 and 50');
+        throw new BadRequestException(ErrorGroupPayment.InvalidMemberCount);
       }
 
       // For Quick Share, we create placeholder members based on expected count
       const total = parseFloat(dto.amount);
       if (total <= 0) {
-        throw new BadRequestException('Total amount must be greater than 0');
+        throw new BadRequestException(ErrorGroupPayment.InvalidAmount);
       }
 
       // Calculate perMember based on expected member count
@@ -615,7 +617,7 @@ export class GroupPaymentService {
           amount: dto.amount,
           perMember: perMember,
           linkCode,
-          status: GroupPaymentStatus.PENDING,
+          status: GroupPaymentMemberStatusEnum.PENDING,
           createdAt: now,
           updatedAt: now,
         },
@@ -644,7 +646,7 @@ export class GroupPaymentService {
     try {
       // Validate inputs
       if (!code || typeof code !== 'string') {
-        throw new BadRequestException('code is required and must be a string');
+        throw new BadRequestException(ErrorGroupPayment.InvalidLinkCode);
       }
 
       validateAddress(userAddress, 'userAddress');
@@ -659,34 +661,31 @@ export class GroupPaymentService {
       });
 
       if (!payment) {
-        throw new BadRequestException('Quick Share payment not found');
+        throw new BadRequestException(ErrorGroupPayment.PaymentNotFound);
       }
 
       // Verify this is a Quick Share group
       if (!this.isQuickShareGroup(payment.groupPaymentGroup.name)) {
         throw new BadRequestException(
-          'This endpoint is only for Quick Share payments',
+          ErrorGroupPayment.InvalidQuickSharePayment,
         );
       }
 
       // Check if payment is still pending
-      if (payment.status !== GroupPaymentStatus.PENDING) {
-        throw new BadRequestException(
-          'Cannot add members to a completed or expired payment',
-        );
+      if (payment.status !== GroupPaymentMemberStatusEnum.PENDING) {
+        throw new BadRequestException(ErrorGroupPayment.PaymentNotPending);
       }
 
       // Check if user is already a member (not a placeholder)
-      const currentMembers = (payment.groupPaymentGroup.members || []) as unknown as { address: string; name: string }[];
+      const currentMembers = (payment.groupPaymentGroup.members ||
+        []) as unknown as { address: string; name: string }[];
       if (currentMembers.some((m) => m.address === normalizedUserAddress)) {
-        throw new BadRequestException(
-          'User is already a member of this Quick Share',
-        );
+        throw new BadRequestException(ErrorGroupPayment.UserAlreadyMember);
       }
 
       // Check if user is the owner
       if (normalizedUserAddress === normalizeAddress(payment.ownerAddress)) {
-        throw new BadRequestException('Owner cannot be added as a member');
+        throw new BadRequestException(ErrorGroupPayment.OwnerInMembersList);
       }
 
       // Find the first available placeholder slot ("-")
@@ -694,9 +693,7 @@ export class GroupPaymentService {
         (member) => member.address === '-',
       );
       if (placeholderIndex === -1) {
-        throw new BadRequestException(
-          'No available slots in this Quick Share payment',
-        );
+        throw new BadRequestException(ErrorGroupPayment.NoAvailableSlots);
       }
 
       // Replace the placeholder with the actual user address
@@ -713,7 +710,11 @@ export class GroupPaymentService {
       const perMember = payment.perMember;
 
       // Update the specific member status to PAID for this user (replacing the placeholder status)
-      await this.updateMemberStatusByIndex(payment.id, placeholderIndex, normalizedUserAddress);
+      await this.updateMemberStatusByIndex(
+        payment.id,
+        placeholderIndex,
+        normalizedUserAddress,
+      );
 
       // No payment request needed - user already paid!
 
@@ -756,7 +757,7 @@ export class GroupPaymentService {
       return {
         groupPaymentId,
         memberAddress: address,
-        status: group_payment_member_status_status_enum.pending,
+        status: GroupPaymentMemberStatusEnum.PENDING,
         createdAt: now,
         updatedAt: now,
       };
@@ -767,13 +768,11 @@ export class GroupPaymentService {
     });
   }
 
-  private async findMemberStatusesByPayment(
-    groupPaymentId: number,
-  ) {
+  private async findMemberStatusesByPayment(groupPaymentId: number) {
     // First get the group payment to access the group
     const groupPayment = await this.prisma.groupPayment.findUnique({
       where: { id: groupPaymentId },
-      include: { groupPaymentGroup: true }
+      include: { groupPaymentGroup: true },
     });
 
     if (!groupPayment?.groupPaymentGroup) {
@@ -787,14 +786,17 @@ export class GroupPaymentService {
     });
 
     // Extract member names from the JSON members field
-    const members = groupPayment.groupPaymentGroup.members as Array<{ name: string; address: string }>;
-    
+    const members = groupPayment.groupPaymentGroup.members as Array<{
+      name: string;
+      address: string;
+    }>;
+
     // Map statuses with names
-    return memberStatuses.map(status => {
-      const member = members.find(m => m.address === status.memberAddress);
+    return memberStatuses.map((status) => {
+      const member = members.find((m) => m.address === status.memberAddress);
       return {
         ...status,
-        memberName: member?.name || '-'
+        memberName: member?.name || '-',
       };
     });
   }
@@ -805,7 +807,7 @@ export class GroupPaymentService {
   ) {
     await this.prisma.groupPaymentGroup.update({
       where: { id: groupId },
-      data: { 
+      data: {
         members: members as any,
         updatedAt: new Date(),
       },
@@ -825,7 +827,7 @@ export class GroupPaymentService {
 
     // Find the status at the specific index
     if (memberIndex < 0 || memberIndex >= memberStatuses.length) {
-      throw new Error('Invalid member index');
+      throw new Error(ErrorGroupPayment.InvalidMemberIndex);
     }
 
     const targetStatus = memberStatuses[memberIndex];
@@ -835,7 +837,7 @@ export class GroupPaymentService {
       where: { id: targetStatus.id },
       data: {
         memberAddress: newMemberAddress,
-        status: GroupPaymentMemberStatus.PAID,
+        status: GroupPaymentMemberStatusEnum.PAID,
         paidAt: new Date(),
         updatedAt: new Date(),
       },

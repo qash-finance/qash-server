@@ -11,20 +11,20 @@ import {
   NotificationQueryDto,
   NotificationResponseDto,
 } from './notification.dto';
-import {
-  NotificationType,
-  NotificationStatus,
-} from '../../common/enums/notification';
 import { NotificationGateway } from './notification.gateway';
-import { PrismaService } from '../../common/prisma/prisma.service';
-import { Notifications, notifications_status_enum, notifications_type_enum } from '@prisma/client';
+import { NotificationRepository } from './notification.repository';
+import {
+  Notifications,
+  NotificationsStatusEnum,
+  NotificationsTypeEnum,
+} from '@prisma/client';
 
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly notificationRepository: NotificationRepository,
     @Inject(forwardRef(() => NotificationGateway))
     private readonly notificationGateway?: NotificationGateway,
   ) {}
@@ -35,14 +35,12 @@ export class NotificationService {
     this.logger.log(
       `Creating notification for wallet ${dto.walletAddress} of type ${dto.type}`,
     );
-    
+
     const now = new Date();
-    const notification = await this.prisma.notifications.create({
-      data: {
-        ...dto,
-        createdAt: now,
-        updatedAt: now,
-      },
+    const notification = await this.notificationRepository.create({
+      ...dto,
+      createdAt: now,
+      updatedAt: now,
     });
 
     // Emit real-time notification to wallet if gateway is available and wallet is connected
@@ -85,13 +83,16 @@ export class NotificationService {
     if (status) where.status = status;
 
     const [notifications, total] = await Promise.all([
-      this.prisma.notifications.findMany({
-        where,
+      this.notificationRepository.findByWalletWithPagination(walletAddress, {
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        type,
+        status,
       }),
-      this.prisma.notifications.count({ where }),
+      this.notificationRepository.countByWallet(walletAddress, {
+        type,
+        status,
+      }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -109,12 +110,10 @@ export class NotificationService {
     id: number,
     walletAddress: string,
   ): Promise<Notifications> {
-    const notification = await this.prisma.notifications.findFirst({
-      where: {
-        id,
-        walletAddress,
-      },
-    });
+    const notification = await this.notificationRepository.findByIdAndWallet(
+      id,
+      walletAddress,
+    );
 
     if (!notification) {
       throw new NotFoundException('Notification not found');
@@ -127,23 +126,12 @@ export class NotificationService {
     id: number,
     walletAddress: string,
   ): Promise<Notifications> {
-    const existing = await this.prisma.notifications.findFirst({
-      where: { id, walletAddress },
-    });
-    
-    if (!existing) {
-      this.logger.error('Notification not found for update');
-      throw new Error('Notification not found');
-    }
-
-    const updatedNotification = await this.prisma.notifications.update({
-      where: { id: existing.id },
-      data: { 
-        status: NotificationStatus.READ,
-        readAt: new Date(),
-        updatedAt: new Date(),
-      },
-    });
+    const updatedNotification = await this.notificationRepository.updateStatus(
+      id,
+      walletAddress,
+      NotificationsStatusEnum.READ,
+      { readAt: new Date() },
+    );
 
     // Emit real-time update if gateway is available and wallet is connected
     if (
@@ -167,37 +155,16 @@ export class NotificationService {
     id: number,
     walletAddress: string,
   ): Promise<Notifications> {
-    const existing = await this.prisma.notifications.findFirst({
-      where: { id, walletAddress },
-    });
-    
-    if (!existing) {
-      this.logger.error('Notification not found for update');
-      throw new Error('Notification not found');
-    }
-
-    return this.prisma.notifications.update({
-      where: { id: existing.id },
-      data: { 
-        status: NotificationStatus.UNREAD,
-        updatedAt: new Date(),
-      },
-    });
+    return this.notificationRepository.updateStatus(
+      id,
+      walletAddress,
+      NotificationsStatusEnum.UNREAD,
+    );
   }
 
   public async markAllAsRead(walletAddress: string): Promise<void> {
-    await this.prisma.notifications.updateMany({
-      where: { 
-        walletAddress, 
-        status: NotificationStatus.UNREAD 
-      },
-      data: { 
-        status: NotificationStatus.READ, 
-        readAt: new Date(),
-        updatedAt: new Date(),
-      },
-    });
-    
+    await this.notificationRepository.markAllAsReadForWallet(walletAddress);
+
     this.logger.log(
       `Marked all notifications as read for wallet ${walletAddress}`,
     );
@@ -213,12 +180,7 @@ export class NotificationService {
   }
 
   public async getUnreadCount(walletAddress: string): Promise<number> {
-    return this.prisma.notifications.count({
-      where: {
-        walletAddress,
-        status: NotificationStatus.UNREAD,
-      },
-    });
+    return this.notificationRepository.countUnreadByWallet(walletAddress);
   }
 
   // These methods are now the primary methods (no longer wallet-specific aliases)
@@ -235,7 +197,7 @@ export class NotificationService {
   ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.SEND,
+      type: NotificationsTypeEnum.SEND,
       title: 'Payment Sent',
       message: `You sent ${data.amount} ${data.assetType} to ${data.recipientAddress}`,
       metadata: data,
@@ -256,7 +218,7 @@ export class NotificationService {
   ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.CONSUME,
+      type: NotificationsTypeEnum.CLAIM,
       title: 'Payment Received',
       message: `You received ${data.amount} ${data.assetType} from ${data.senderAddress}`,
       metadata: data,
@@ -277,7 +239,7 @@ export class NotificationService {
   ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.REFUND,
+      type: NotificationsTypeEnum.REFUND,
       title: 'Payment Refunded',
       message: `Your payment of ${data.amount} ${data.assetType} to ${data.originalRecipient} has been refunded`,
       metadata: data,
@@ -298,7 +260,7 @@ export class NotificationService {
   ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.BATCH_SEND,
+      type: NotificationsTypeEnum.BATCH_SEND,
       title: 'Batch Payment Sent',
       message: `You sent ${data.totalAmount} ${data.assetType} to ${data.recipientCount} recipients`,
       metadata: data,
@@ -315,7 +277,7 @@ export class NotificationService {
   ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.WALLET_CREATE,
+      type: NotificationsTypeEnum.WALLET_CREATE,
       title: 'Wallet Created',
       message: `Your new wallet has been created successfully`,
       metadata: data,
@@ -335,7 +297,7 @@ export class NotificationService {
   ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: notifications_type_enum.REQUEST_PAYMENT,
+      type: NotificationsTypeEnum.REQUEST_PAYMENT,
       title: 'Payment Request',
       message: data.message,
       metadata: {
@@ -346,7 +308,7 @@ export class NotificationService {
       },
     });
   }
-  
+
   private mapToResponseDto(
     notification: Notifications,
   ): NotificationResponseDto {

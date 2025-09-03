@@ -1,77 +1,148 @@
-import { Injectable, Logger } from '@nestjs/common';
-// import { AddressBookEntity } from './address-book.entity';
-import { PrismaService } from '../../common/prisma/prisma.service';
-import { AddressBook, Categories, Prisma } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
+import { AddressBook, Prisma } from '@prisma/client';
+import { BaseRepository } from '../../database/base.repository';
 
 @Injectable()
-export class AddressBookRepository {
-  private readonly logger = new Logger(AddressBookRepository.name);
+export class AddressBookRepository extends BaseRepository<
+  AddressBook,
+  Prisma.AddressBookWhereInput,
+  Prisma.AddressBookCreateInput,
+  Prisma.AddressBookUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
+  }
 
-  constructor(private readonly prisma: PrismaService) {}
+  protected getModel() {
+    return this.prisma.addressBook;
+  }
 
-  public async create(
-    dto: Omit<Partial<AddressBook>, 'category'> & {
-      category: Categories;
-      userAddress: string;
+  /**
+   * Find all address book entries for a user with categories
+   */
+  async findByUserWithCategories(userAddress: string): Promise<AddressBook[]> {
+    return this.findMany(
+      { userAddress },
+      {
+        include: { categories: true },
+      },
+    );
+  }
+
+  /**
+   * Find address book entry by user and name
+   */
+  async findByUserAndName(
+    userAddress: string,
+    name: string,
+  ): Promise<AddressBook | null> {
+    return this.findOne({ userAddress, name });
+  }
+
+  /**
+   * Find address book entry by user and address
+   */
+  async findByUserAndAddress(
+    userAddress: string,
+    address: string,
+  ): Promise<AddressBook | null> {
+    return this.findOne({ userAddress, address });
+  }
+
+  /**
+   * Find address book entries by category name
+   */
+  async findByCategoryName(
+    userAddress: string,
+    categoryName: string,
+  ): Promise<AddressBook[]> {
+    return this.findMany({
+      userAddress,
+      categories: {
+        name: categoryName,
+      },
+    });
+  }
+
+  /**
+   * Check if category exists for user
+   */
+  async categoryExistsForUser(
+    userAddress: string,
+    categoryName: string,
+  ): Promise<boolean> {
+    const entry = await this.findOne({
+      userAddress,
+      categories: {
+        name: categoryName,
+      },
+    });
+    return entry !== null;
+  }
+
+  /**
+   * Create address book entry with category connection
+   */
+  async createWithCategory(
+    userAddress: string,
+    name: string,
+    address: string,
+    categoryId: number,
+    token?: string,
+  ): Promise<AddressBook> {
+    const now = new Date();
+    return this.create({
+      userAddress,
+      name,
+      address,
+      token,
+      categories: {
+        connect: { id: categoryId },
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  /**
+   * Update address book entry
+   */
+  async updateEntry(
+    id: number,
+    data: {
+      name?: string;
+      address?: string;
+      token?: string;
+      categoryId?: number;
     },
   ): Promise<AddressBook> {
-    try {
-      const now = new Date();
-      const row = await this.prisma.addressBook.create({
-        data: {
-          createdAt: now,
-          updatedAt: now,
-          userAddress: dto.userAddress,
-          name: dto.name,
-          address: dto.address,
-          token: dto.token ?? null,
-          categoryId: dto.category.id,
-        },
-        include: { categories: true },
-      });
+    const updateData: any = {
+      name: data.name,
+      address: data.address,
+      token: data.token,
+    };
 
-      return row;
-    } catch (error) {
-      this.logger.error('Error creating address book entry:', error);
-      throw error;
+    if (data.categoryId) {
+      updateData.categories = {
+        connect: { id: data.categoryId },
+      };
     }
+
+    return this.update({ id }, updateData);
   }
 
-  public async findOne(
-    where: Prisma.AddressBookWhereInput,
-    options?: Prisma.AddressBookFindFirstArgs,
-  ): Promise<AddressBook | null> {
-    try {
-      const row = await this.prisma.addressBook.findFirst({
-        where,
-        include: options?.include,
-        orderBy: { createdAt: 'desc' },
-      });
-
-      if (!row) return null;
-      return row;
-    } catch (error) {
-      this.logger.error('Error finding address book entry:', error);
-      throw error;
-    }
+  /**
+   * Delete address book entry by ID
+   */
+  async deleteById(id: number): Promise<AddressBook> {
+    return this.delete({ id });
   }
 
-  public async find(
-    where: Prisma.AddressBookWhereInput,
-    options?: Prisma.AddressBookFindManyArgs,
-  ): Promise<AddressBook[]> {
-    try {
-      const rows = await this.prisma.addressBook.findMany({
-        where,
-        include: options?.include,
-        orderBy: { createdAt: 'desc' },
-        skip: options?.skip,
-        take: options?.take,
-      });
-      return rows;
-    } catch (error) {
-      this.logger.error('Error finding address book entries:', error);
-      throw error;
-    }
+  /**
+   * Count entries by user
+   */
+  async countByUser(userAddress: string): Promise<number> {
+    return this.count({ userAddress });
   }
 }

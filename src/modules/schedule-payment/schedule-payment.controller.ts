@@ -47,7 +47,10 @@ export class SchedulePaymentController {
     @Req() req: RequestWithWalletAuth,
     @Query() query?: SchedulePaymentQueryDto,
   ) {
-    return this.service.getSchedulePayments(req.walletAuth.walletAddress, query);
+    return this.service.getSchedulePayments(
+      req.walletAuth.walletAddress,
+      query,
+    );
   }
 
   @Get(':id')
@@ -59,7 +62,10 @@ export class SchedulePaymentController {
     @Param('id', ParseIntPipe) id: number,
     @Req() req: RequestWithWalletAuth,
   ) {
-    return this.service.getSchedulePaymentById(id, req.walletAuth.walletAddress);
+    return this.service.getSchedulePaymentById(
+      id,
+      req.walletAuth.walletAddress,
+    );
   }
 
   // *************************************************
@@ -143,7 +149,10 @@ export class SchedulePaymentController {
   @ApiOperation({ summary: 'Delete schedule payment' })
   @ApiResponse({ status: 200, description: 'Schedule payment deleted' })
   @ApiResponse({ status: 404, description: 'Schedule payment not found' })
-  @ApiResponse({ status: 400, description: 'Cannot delete active schedule payment with executions' })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot delete active schedule payment with executions',
+  })
   async deleteSchedulePayment(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: RequestWithWalletAuth,

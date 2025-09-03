@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { WalletAuthKeysDeviceTypeEnum } from '@prisma/client';
 import {
   IsString,
   IsOptional,
@@ -6,7 +7,6 @@ import {
   IsBoolean,
   IsObject,
 } from 'class-validator';
-import { DeviceType } from './wallet-auth.entity';
 
 export class InitiateAuthDto {
   @ApiProperty({ description: 'Wallet address' })
@@ -18,10 +18,13 @@ export class InitiateAuthDto {
   @IsString()
   deviceFingerprint?: string;
 
-  @ApiPropertyOptional({ enum: DeviceType, description: 'Device type' })
+  @ApiPropertyOptional({
+    enum: WalletAuthKeysDeviceTypeEnum,
+    description: 'Device type',
+  })
   @IsOptional()
-  @IsEnum(DeviceType)
-  deviceType?: DeviceType;
+  @IsEnum(WalletAuthKeysDeviceTypeEnum)
+  deviceType?: WalletAuthKeysDeviceTypeEnum;
 
   @ApiPropertyOptional({ description: 'Additional metadata' })
   @IsOptional()
@@ -53,10 +56,13 @@ export class RegisterKeyDto {
   @IsString()
   deviceFingerprint?: string;
 
-  @ApiPropertyOptional({ enum: DeviceType, description: 'Device type' })
+  @ApiPropertyOptional({
+    enum: WalletAuthKeysDeviceTypeEnum,
+    description: 'Device type',
+  })
   @IsOptional()
-  @IsEnum(DeviceType)
-  deviceType?: DeviceType;
+  @IsEnum(WalletAuthKeysDeviceTypeEnum)
+  deviceType?: WalletAuthKeysDeviceTypeEnum;
 
   @ApiPropertyOptional({
     description: 'Key expiration time in hours (default: 720 = 30 days)',
@@ -144,7 +150,7 @@ export interface KeyInfo {
   createdAt: string;
   expiresAt: string;
   lastUsedAt: string | null;
-  deviceType: DeviceType;
+  deviceType: WalletAuthKeysDeviceTypeEnum;
   deviceFingerprint: string | null;
 }
 
