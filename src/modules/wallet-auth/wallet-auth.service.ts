@@ -21,6 +21,8 @@ import {
 } from './wallet-auth.dto';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { WalletAuthKeysStatusEnum } from '@prisma/client';
+import { handleError } from 'src/common/utils/errors';
+import { ErrorWalletAuth } from 'src/common/constants/errors';
 
 @Injectable()
 export class WalletAuthService {
@@ -84,8 +86,7 @@ export class WalletAuthService {
         instructions: `Sign this challenge with your private key: ${challengeCode}`,
       };
     } catch (error) {
-      this.logger.error('Failed to initiate auth:', error);
-      throw new BadRequestException('Failed to initiate authentication');
+      handleError(error, this.logger);
     }
   }
 
@@ -110,7 +111,7 @@ export class WalletAuthService {
       });
 
       if (!challenge) {
-        throw new BadRequestException('Invalid or expired challenge');
+        throw new BadRequestException(ErrorWalletAuth.InvalidChallenge);
       }
 
       // Verify challenge response
@@ -120,10 +121,10 @@ export class WalletAuthService {
           challenge.expectedResponse,
         )
       ) {
-        throw new BadRequestException('Invalid challenge response');
+        throw new BadRequestException(ErrorWalletAuth.InvalidChallengeResponse);
       }
 
-      // Check if wallet already has too many keys
+      // check if wallet already has too many keys
       const existingKeysCount = await this.prisma.walletAuthKeys.count({
         where: {
           walletAddress: dto.walletAddress,
@@ -132,9 +133,7 @@ export class WalletAuthService {
       });
 
       if (existingKeysCount >= this.MAX_KEYS_PER_WALLET) {
-        throw new BadRequestException(
-          `Maximum ${this.MAX_KEYS_PER_WALLET} keys allowed per wallet`,
-        );
+        throw new BadRequestException(ErrorWalletAuth.MaximumKeysPerWallet);
       }
 
       // Check if public key already exists
@@ -143,7 +142,9 @@ export class WalletAuthService {
       });
 
       if (existingKey) {
-        throw new BadRequestException('Public key already registered');
+        throw new BadRequestException(
+          ErrorWalletAuth.PublicKeyAlreadyRegistered,
+        );
       }
 
       // Generate secret key and hash it
@@ -205,8 +206,7 @@ export class WalletAuthService {
         status: 'registered',
       };
     } catch (error) {
-      this.logger.error('Failed to register key:', error);
-      throw error;
+      handleError(error, this.logger);
     }
   }
 
@@ -231,13 +231,13 @@ export class WalletAuthService {
       });
 
       if (!keyRecord) {
-        throw new UnauthorizedException('Invalid or expired key');
+        throw new UnauthorizedException(ErrorWalletAuth.InvalidKey);
       }
 
       // Verify signature (timestamp-based to prevent replay attacks)
       const message = `${dto.walletAddress}:${dto.timestamp}`;
       if (!this.verifySignature(message, dto.signature, dto.publicKey)) {
-        throw new UnauthorizedException('Invalid signature');
+        throw new UnauthorizedException(ErrorWalletAuth.InvalidSignature);
       }
 
       // Check timestamp (prevent replay attacks - allow 5 minutes tolerance)
@@ -245,7 +245,7 @@ export class WalletAuthService {
       const now = new Date();
       const timeDiff = Math.abs(now.getTime() - signatureTime.getTime());
       if (timeDiff > 60 * 60 * 1000) {
-        throw new UnauthorizedException('Signature timestamp too old');
+        throw new UnauthorizedException(ErrorWalletAuth.InvalidSignature);
       }
 
       // Check device fingerprint if provided
@@ -270,7 +270,7 @@ export class WalletAuthService {
       );
 
       const sessionTime = new Date();
-      const session = await this.prisma.walletAuthSessions.create({
+      await this.prisma.walletAuthSessions.create({
         data: {
           sessionToken,
           walletAddress: dto.walletAddress,
@@ -304,8 +304,7 @@ export class WalletAuthService {
         publicKey: dto.publicKey,
       };
     } catch (error) {
-      this.logger.error('Failed to authenticate:', error);
-      throw error;
+      handleError(error, this.logger);
     }
   }
 
@@ -324,7 +323,7 @@ export class WalletAuthService {
       });
 
       if (!session) {
-        throw new UnauthorizedException('Invalid or expired session');
+        throw new UnauthorizedException(ErrorWalletAuth.InvalidSession);
       }
 
       const keyRecord = await this.prisma.walletAuthKeys.findFirst({
@@ -332,7 +331,7 @@ export class WalletAuthService {
       });
 
       if (!keyRecord || keyRecord.status !== WalletAuthKeysStatusEnum.ACTIVE) {
-        throw new UnauthorizedException('Key no longer active');
+        throw new UnauthorizedException(ErrorWalletAuth.KeyNoLongerActive);
       }
 
       // Extend session
@@ -357,8 +356,7 @@ export class WalletAuthService {
         publicKey: keyRecord.publicKey,
       };
     } catch (error) {
-      this.logger.error('Failed to refresh token:', error);
-      throw error;
+      handleError(error, this.logger);
     }
   }
 
@@ -403,8 +401,7 @@ export class WalletAuthService {
         publicKey: keyRecord.publicKey,
       };
     } catch (error) {
-      this.logger.error('Failed to validate session:', error);
-      return null;
+      handleError(error, this.logger);
     }
   }
 
@@ -448,8 +445,7 @@ export class WalletAuthService {
 
       return { revokedCount: result.count };
     } catch (error) {
-      this.logger.error('Failed to revoke keys:', error);
-      throw new BadRequestException('Failed to revoke keys');
+      handleError(error, this.logger);
     }
   }
 
@@ -468,8 +464,7 @@ export class WalletAuthService {
 
       return { success: result.count > 0 };
     } catch (error) {
-      this.logger.error('Failed to revoke session:', error);
-      throw new BadRequestException('Failed to revoke session');
+      handleError(error, this.logger);
     }
   }
 
@@ -493,8 +488,7 @@ export class WalletAuthService {
         deviceFingerprint: key.deviceFingerprint,
       }));
     } catch (error) {
-      this.logger.error('Failed to get keys:', error);
-      throw new BadRequestException('Failed to get keys');
+      handleError(error, this.logger);
     }
   }
 
@@ -527,8 +521,7 @@ export class WalletAuthService {
         userAgent: session.userAgent,
       }));
     } catch (error) {
-      this.logger.error('Failed to get sessions:', error);
-      throw new BadRequestException('Failed to get sessions');
+      handleError(error, this.logger);
     }
   }
 

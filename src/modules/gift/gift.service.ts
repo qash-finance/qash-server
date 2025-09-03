@@ -9,9 +9,12 @@ import {
 } from '../../common/utils/validation.util';
 import { ErrorGift } from '../../common/constants/errors';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from 'src/common/enums/notification';
-import { PrismaService } from '../../common/prisma/prisma.service';
-import { GiftNoteTypeEnum, GiftStatusEnum } from '@prisma/client';
+import { GiftRepository } from './gift.repository';
+import {
+  GiftNoteTypeEnum,
+  GiftStatusEnum,
+  NotificationsTypeEnum,
+} from '@prisma/client';
 
 @Injectable()
 export class GiftService {
@@ -20,7 +23,7 @@ export class GiftService {
   constructor(
     private readonly notificationService: NotificationService,
     private readonly appConfigService: AppConfigService,
-    private readonly prisma: PrismaService,
+    private readonly giftRepository: GiftRepository,
   ) {}
 
   // *************************************************
@@ -29,9 +32,7 @@ export class GiftService {
   public async getGiftBySecret(secretNumber: string) {
     try {
       console.log('FINDING GIFT BY SECRET', secretNumber);
-      const gift = await this.prisma.gift.findFirst({
-        where: { secretHash: secretNumber },
-      });
+      const gift = await this.giftRepository.findBySecretHash(secretNumber);
 
       if (!gift) {
         throw new BadRequestException(ErrorGift.GiftNotFound);
@@ -49,10 +50,9 @@ export class GiftService {
       const normalizedSenderAddress = normalizeAddress(senderAddress);
 
       // we will get all gifts for the sender
-      const gifts = await this.prisma.gift.findMany({
-        where: { sender: normalizedSenderAddress },
-        orderBy: { createdAt: 'desc' },
-      });
+      const gifts = await this.giftRepository.findBySender(
+        normalizedSenderAddress,
+      );
 
       // calculate total amount of gifts
       const totalAmount = gifts.reduce((acc, gift) => {
@@ -92,7 +92,7 @@ export class GiftService {
         walletAddress: senderAddress,
         title: 'Gift created successfully',
         message: 'Gift created successfully',
-        type: NotificationType.GIFT_SEND,
+        type: NotificationsTypeEnum.GIFT_SEND,
         metadata: {
           tokenId: dto.assets[0].faucetId,
           tokenName: dto.assets[0].metadata.symbol,
@@ -125,9 +125,7 @@ export class GiftService {
       const secretWithPlus = decodedSecret.replace(/ /g, '+');
 
       // Find the gift by secret hash
-      const gift = await this.prisma.gift.findFirst({
-        where: { secretHash: secretWithPlus },
-      });
+      const gift = await this.giftRepository.findBySecretHash(secretWithPlus);
       if (!gift) {
         throw new BadRequestException(ErrorGift.GiftNotFound);
       }
@@ -146,7 +144,7 @@ export class GiftService {
         walletAddress: gift.sender,
         title: 'Gift opened by',
         message: 'Gift opened by',
-        type: NotificationType.GIFT_OPEN,
+        type: NotificationsTypeEnum.GIFT_OPEN,
         metadata: {
           tokenId: gift.assets[0].faucetId,
           tokenName: gift.assets[0].metadata.symbol,
@@ -160,7 +158,7 @@ export class GiftService {
         walletAddress: caller,
         title: 'You claimed a gift!',
         message: 'Gift claimed successfully',
-        type: NotificationType.GIFT_CLAIM,
+        type: NotificationsTypeEnum.GIFT_CLAIM,
         metadata: {
           tokenId: gift.assets[0].faucetId,
           tokenName: gift.assets[0].metadata.symbol,
@@ -170,14 +168,11 @@ export class GiftService {
         },
       });
 
-      return this.prisma.gift.update({
-        where: { id: gift.id },
-        data: {
-          status: GiftStatusEnum.CONSUMED,
-          openedAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
+      return this.giftRepository.updateStatus(
+        { id: gift.id },
+        GiftStatusEnum.CONSUMED,
+        { openedAt: new Date() },
+      );
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -192,19 +187,8 @@ export class GiftService {
       validateAddress(senderAddress, 'senderAddress');
       const normalizedSenderAddress = normalizeAddress(senderAddress);
 
-      const now = new Date();
-      const gifts = await this.prisma.gift.findMany({
-        where: {
-          sender: normalizedSenderAddress,
-          status: GiftStatusEnum.PENDING,
-          recallable: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      // Filter gifts that are actually recallable (recallableTime has passed)
-      return gifts.filter(
-        (gift) => !gift.recallableTime || gift.recallableTime <= now,
+      return this.giftRepository.findRecallableBySender(
+        normalizedSenderAddress,
       );
     } catch (error) {
       handleError(error, this.logger);
@@ -216,13 +200,7 @@ export class GiftService {
       validateAddress(senderAddress, 'senderAddress');
       const normalizedSenderAddress = normalizeAddress(senderAddress);
 
-      return this.prisma.gift.findMany({
-        where: {
-          sender: normalizedSenderAddress,
-          status: GiftStatusEnum.RECALLED,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      return this.giftRepository.findRecalledBySender(normalizedSenderAddress);
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -235,7 +213,7 @@ export class GiftService {
       }
 
       // Check if gift exists and is recallable
-      const gift = await this.prisma.gift.findFirst({ where: { id } });
+      const gift = await this.giftRepository.findOne({ id });
       if (!gift) {
         throw new BadRequestException(ErrorGift.GiftNotFound);
       }
@@ -261,7 +239,7 @@ export class GiftService {
         walletAddress: gift.sender,
         title: 'Gift recalled successfully',
         message: 'Gift recalled successfully',
-        type: NotificationType.REFUND,
+        type: NotificationsTypeEnum.REFUND,
         metadata: {
           tokenId: gift.assets[0].faucetId,
           tokenName: gift.assets[0].metadata.symbol,
@@ -270,13 +248,8 @@ export class GiftService {
         },
       });
 
-      return this.prisma.gift.update({
-        where: { id },
-        data: {
-          status: GiftStatusEnum.RECALLED,
-          recalledAt: new Date(),
-          updatedAt: new Date(),
-        },
+      return this.giftRepository.updateStatus({ id }, GiftStatusEnum.RECALLED, {
+        recalledAt: new Date(),
       });
     } catch (error) {
       handleError(error, this.logger);
@@ -292,20 +265,18 @@ export class GiftService {
     const assets = dto.assets.map((asset) => ({
       ...asset,
     }));
-    return this.prisma.gift.create({
-      data: {
-        sender: normalizedSenderAddress,
-        status: GiftStatusEnum.PENDING,
-        recallableTime: new Date(Date.now()),
-        recallable: true,
-        secretHash: dto.secretNumber,
-        serialNumber: dto.serialNumber,
-        noteType: GiftNoteTypeEnum.GIFT,
-        noteId: dto.txId,
-        assets: assets,
-        createdAt: now,
-        updatedAt: now,
-      },
+    return this.giftRepository.create({
+      sender: normalizedSenderAddress,
+      status: GiftStatusEnum.PENDING,
+      recallableTime: new Date(Date.now()),
+      recallable: true,
+      secretHash: dto.secretNumber,
+      serialNumber: dto.serialNumber,
+      noteType: GiftNoteTypeEnum.GIFT,
+      noteId: dto.txId,
+      assets: assets,
+      createdAt: now,
+      updatedAt: now,
     });
   }
 }

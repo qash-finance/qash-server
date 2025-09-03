@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  Inject,
-  forwardRef,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CreateRequestPaymentDto } from './request-payment.dto';
 import { handleError } from '../../common/utils/errors';
 import {
@@ -19,6 +13,7 @@ import { ErrorRequestPayment } from '../../common/constants/errors';
 import { FaucetMetadata } from '../transactions/transaction.dto';
 import { NotificationService } from '../notification/notification.service';
 import { AddressBookService } from '../address-book/address-book.service';
+import { RequestPaymentRepository } from './request-payment.repository';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import {
   GroupPaymentStatusEnum,
@@ -32,7 +27,8 @@ export class RequestPaymentService {
   constructor(
     private readonly notificationService: NotificationService,
     private readonly addressBookService: AddressBookService,
-    private readonly prisma: PrismaService,
+    private readonly requestPaymentRepository: RequestPaymentRepository,
+    private readonly prisma: PrismaService, // Keep for complex operations not yet in repository
   ) {}
 
   // *************************************************
@@ -62,9 +58,7 @@ export class RequestPaymentService {
       validateMessage(message, 'message');
 
       if (!members || !Array.isArray(members) || members.length === 0) {
-        throw new BadRequestException(
-          'Members array is required and cannot be empty',
-        );
+        throw new BadRequestException(ErrorRequestPayment.MembersArrayRequired);
       }
 
       // Validate each member address
@@ -82,14 +76,12 @@ export class RequestPaymentService {
       // Check for duplicate members
       const uniqueMembers = [...new Set(normalizedMembers)];
       if (uniqueMembers.length !== normalizedMembers.length) {
-        throw new BadRequestException('Duplicate members are not allowed');
+        throw new BadRequestException(ErrorRequestPayment.DuplicateMembers);
       }
 
       // Check if owner is in members list (shouldn't happen in group payments)
       if (normalizedMembers.includes(normalizedOwnerAddress)) {
-        throw new BadRequestException(
-          'Owner cannot be a member in their own group payment',
-        );
+        throw new BadRequestException(ErrorRequestPayment.OwnerInGroupPayment);
       }
 
       const now = new Date();
@@ -106,11 +98,8 @@ export class RequestPaymentService {
         updatedAt: now,
       }));
 
-      return await this.prisma.requestPayment.createMany({
-        data: requests,
-      });
+      return await this.requestPaymentRepository.createMany(requests);
     } catch (error) {
-      this.logger.error('Error creating group payment requests:', error);
       handleError(error, this.logger);
     }
   }
@@ -124,26 +113,15 @@ export class RequestPaymentService {
       validateAddress(userAddress, 'userAddress');
       const normalizedUserAddress = normalizeAddress(userAddress);
 
-      const result = await this.prisma.requestPayment.findMany({
-        where: {
-          payer: normalizedUserAddress,
-          status: {
-            in: [
-              RequestPaymentStatusEnum.PENDING,
-              RequestPaymentStatusEnum.ACCEPTED,
-            ],
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const [pending, accepted] = await Promise.all([
+        this.requestPaymentRepository.findByPayer(normalizedUserAddress, {
+          status: RequestPaymentStatusEnum.PENDING,
+        }),
+        this.requestPaymentRepository.findByPayer(normalizedUserAddress, {
+          status: RequestPaymentStatusEnum.ACCEPTED,
+        }),
+      ]);
 
-      // Separate into pending and accepted
-      const pending = result.filter(
-        (item) => item.status === RequestPaymentStatusEnum.PENDING,
-      );
-      const accepted = result.filter(
-        (item) => item.status === RequestPaymentStatusEnum.ACCEPTED,
-      );
       return { pending, accepted };
     } catch (error) {
       handleError(error, this.logger);
@@ -177,28 +155,6 @@ export class RequestPaymentService {
       // Sanitize message
       const sanitizedMessage = sanitizeString(dto.message);
 
-      // Check for duplicate request (same payer, payee, amount, and status pending)
-      // Note: We can't easily compare JSONB tokens arrays in the query, so we'll check after creation
-      const existingRequests = await this.prisma.requestPayment.findMany({
-        where: {
-          payer: normalizedPayer,
-          payee: normalizedPayee,
-          amount: dto.amount,
-          status: RequestPaymentStatusEnum.PENDING,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      // Check if any existing request has matching tokens
-      const duplicateRequest = existingRequests.find(
-        (request) =>
-          JSON.stringify(request.tokens) === JSON.stringify(dto.tokens),
-      );
-
-      if (duplicateRequest) {
-        throw new BadRequestException(ErrorRequestPayment.DuplicateRequest);
-      }
-
       // Find payee name from address book
       const payeeName = await this.findPayeeNameFromAddressBook(
         normalizedPayer,
@@ -209,11 +165,6 @@ export class RequestPaymentService {
       const notificationMessage = payeeName
         ? `${payeeName} has requested you to transfer ${dto.amount} ${dto.tokens[0].metadata.symbol}`
         : `${dto.payee} has requested you to transfer ${dto.amount} ${dto.tokens[0].metadata.symbol}`;
-
-      console.log(
-        '🚀 ~ RequestPaymentService ~ createRequest ~ dto.tokens[0].metadata.symbol:',
-        dto.tokens,
-      );
 
       //create notification for payer
       await this.notificationService.createRequestPaymentNotification(
@@ -231,16 +182,14 @@ export class RequestPaymentService {
       const tokens = dto.tokens.map((token) => ({
         ...token,
       }));
-      return this.prisma.requestPayment.create({
-        data: {
-          payer: normalizedPayer,
-          payee: normalizedPayee,
-          amount: dto.amount,
-          tokens: tokens,
-          message: sanitizedMessage,
-          createdAt: now,
-          updatedAt: now,
-        },
+      return this.requestPaymentRepository.create({
+        payer: normalizedPayer,
+        payee: normalizedPayee,
+        amount: dto.amount,
+        tokens: tokens,
+        message: sanitizedMessage,
+        createdAt: now,
+        updatedAt: now,
       });
     } catch (error) {
       handleError(error, this.logger);
@@ -260,12 +209,10 @@ export class RequestPaymentService {
       validateAddress(userAddress, 'userAddress');
       const normalizedUserAddress = normalizeAddress(userAddress);
 
-      const req = await this.prisma.requestPayment.findFirst({
-        where: {
-          id,
-          payer: normalizedUserAddress,
-        },
-      });
+      const req = await this.requestPaymentRepository.findByIdAndPayer(
+        id,
+        normalizedUserAddress,
+      );
 
       if (!req) {
         throw new BadRequestException(ErrorRequestPayment.NotFound);
@@ -275,33 +222,12 @@ export class RequestPaymentService {
         throw new BadRequestException(ErrorRequestPayment.NotPending);
       }
 
-      // Update the request payment status
-      const updatedRequest = await this.prisma.requestPayment.update({
-        where: { id },
-        data: {
-          status: RequestPaymentStatusEnum.ACCEPTED,
-          updatedAt: new Date(),
-        },
-      });
-
-      // // If this is a group payment request, update the group payment member status
-      // if (req.isGroupPayment && req.groupPaymentId) {
-      //   await this.updateGroupPaymentMemberStatus(
-      //     req.groupPaymentId,
-      //     normalizedUserAddress,
-      //   );
-      // }
-
-      // Update the request payment txid
-      await this.prisma.requestPayment.update({
-        where: { id },
-        data: {
-          txid,
-          updatedAt: new Date(),
-        },
-      });
-
-      return updatedRequest;
+      // Update the request payment status and txid
+      return await this.requestPaymentRepository.updateStatus(
+        id,
+        RequestPaymentStatusEnum.ACCEPTED,
+        { txid },
+      );
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -310,18 +236,16 @@ export class RequestPaymentService {
   async confirmGroupPaymentRequest(id: number, userAddress: string) {
     try {
       if (!id || id <= 0) {
-        throw new BadRequestException('Invalid request ID');
+        throw new BadRequestException(ErrorRequestPayment.InvalidRequestID);
       }
 
       validateAddress(userAddress, 'userAddress');
       const normalizedUserAddress = normalizeAddress(userAddress);
 
-      const req = await this.prisma.requestPayment.findFirst({
-        where: {
-          id,
-          payee: normalizedUserAddress,
-        },
-      });
+      const req = await this.requestPaymentRepository.findByIdAndPayee(
+        id,
+        normalizedUserAddress,
+      );
 
       if (!req.isGroupPayment) {
         throw new BadRequestException(ErrorRequestPayment.NotGroupPayment);
@@ -428,7 +352,7 @@ export class RequestPaymentService {
   ) {
     try {
       if (!requestPaymentId || requestPaymentId <= 0) {
-        throw new BadRequestException('Invalid requestPaymentId');
+        throw new BadRequestException(ErrorRequestPayment.InvalidRequestID);
       }
 
       validateAddress(claimerAddress, 'claimerAddress');
@@ -438,6 +362,7 @@ export class RequestPaymentService {
         where: { id: requestPaymentId },
       });
       if (!req) {
+        console.log(req);
         throw new BadRequestException(ErrorRequestPayment.NotFound);
       }
 
@@ -478,7 +403,7 @@ export class RequestPaymentService {
   async denyRequest(id: number, userAddress: string) {
     try {
       if (!id || id <= 0) {
-        throw new BadRequestException('Invalid request ID');
+        throw new BadRequestException(ErrorRequestPayment.InvalidRequestID);
       }
 
       validateAddress(userAddress, 'userAddress');

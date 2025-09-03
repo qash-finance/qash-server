@@ -28,7 +28,6 @@ import {
   GroupPaymentMemberStatusEnum,
   GroupPaymentStatusEnum,
 } from '@prisma/client';
-import { GroupPaymentMemberStatus } from 'src/common/enums/group-payment';
 
 @Injectable()
 export class GroupPaymentService {
@@ -425,7 +424,7 @@ export class GroupPaymentService {
   async getGroupPayments(groupId: number, ownerAddress: string) {
     try {
       if (!groupId || groupId <= 0) {
-        throw new BadRequestException('groupId must be a positive number');
+        throw new BadRequestException(ErrorGroupPayment.InvalidGroupId);
       }
 
       validateAddress(ownerAddress, 'ownerAddress');
@@ -443,9 +442,7 @@ export class GroupPaymentService {
           (payment) => payment.ownerAddress !== normalizedOwnerAddress,
         )
       ) {
-        throw new BadRequestException(
-          'Only the group owner can view payments for this group',
-        );
+        throw new BadRequestException(ErrorGroupPayment.NotOwner);
       }
 
       // Get member statuses for each payment and categorize by createdAt
@@ -484,9 +481,7 @@ export class GroupPaymentService {
   async getPaymentByLink(linkCode: string) {
     try {
       if (!linkCode || typeof linkCode !== 'string') {
-        throw new BadRequestException(
-          'linkCode is required and must be a string',
-        );
+        throw new BadRequestException(ErrorGroupPayment.InvalidLinkCode);
       }
 
       if (linkCode.length < 10 || linkCode.length > 20) {
@@ -571,13 +566,13 @@ export class GroupPaymentService {
 
       // Validate memberCount
       if (dto.memberCount <= 0 || dto.memberCount > 50) {
-        throw new BadRequestException('memberCount must be between 1 and 50');
+        throw new BadRequestException(ErrorGroupPayment.InvalidMemberCount);
       }
 
       // For Quick Share, we create placeholder members based on expected count
       const total = parseFloat(dto.amount);
       if (total <= 0) {
-        throw new BadRequestException('Total amount must be greater than 0');
+        throw new BadRequestException(ErrorGroupPayment.InvalidAmount);
       }
 
       // Calculate perMember based on expected member count
@@ -649,7 +644,7 @@ export class GroupPaymentService {
     try {
       // Validate inputs
       if (!code || typeof code !== 'string') {
-        throw new BadRequestException('code is required and must be a string');
+        throw new BadRequestException(ErrorGroupPayment.InvalidLinkCode);
       }
 
       validateAddress(userAddress, 'userAddress');
@@ -664,35 +659,31 @@ export class GroupPaymentService {
       });
 
       if (!payment) {
-        throw new BadRequestException('Quick Share payment not found');
+        throw new BadRequestException(ErrorGroupPayment.PaymentNotFound);
       }
 
       // Verify this is a Quick Share group
       if (!this.isQuickShareGroup(payment.groupPaymentGroup.name)) {
         throw new BadRequestException(
-          'This endpoint is only for Quick Share payments',
+          ErrorGroupPayment.InvalidQuickSharePayment,
         );
       }
 
       // Check if payment is still pending
       if (payment.status !== GroupPaymentMemberStatusEnum.PENDING) {
-        throw new BadRequestException(
-          'Cannot add members to a completed or expired payment',
-        );
+        throw new BadRequestException(ErrorGroupPayment.PaymentNotPending);
       }
 
       // Check if user is already a member (not a placeholder)
       const currentMembers = (payment.groupPaymentGroup.members ||
         []) as unknown as { address: string; name: string }[];
       if (currentMembers.some((m) => m.address === normalizedUserAddress)) {
-        throw new BadRequestException(
-          'User is already a member of this Quick Share',
-        );
+        throw new BadRequestException(ErrorGroupPayment.UserAlreadyMember);
       }
 
       // Check if user is the owner
       if (normalizedUserAddress === normalizeAddress(payment.ownerAddress)) {
-        throw new BadRequestException('Owner cannot be added as a member');
+        throw new BadRequestException(ErrorGroupPayment.OwnerInMembersList);
       }
 
       // Find the first available placeholder slot ("-")
@@ -700,9 +691,7 @@ export class GroupPaymentService {
         (member) => member.address === '-',
       );
       if (placeholderIndex === -1) {
-        throw new BadRequestException(
-          'No available slots in this Quick Share payment',
-        );
+        throw new BadRequestException(ErrorGroupPayment.NoAvailableSlots);
       }
 
       // Replace the placeholder with the actual user address
@@ -836,7 +825,7 @@ export class GroupPaymentService {
 
     // Find the status at the specific index
     if (memberIndex < 0 || memberIndex >= memberStatuses.length) {
-      throw new Error('Invalid member index');
+      throw new Error(ErrorGroupPayment.InvalidMemberIndex);
     }
 
     const targetStatus = memberStatuses[memberIndex];

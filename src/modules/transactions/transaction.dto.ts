@@ -3,7 +3,6 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
-  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -17,7 +16,6 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { NoteType } from '../../common/enums/note';
 import { TransactionsNoteTypeEnum } from '@prisma/client';
 
 export type FaucetMetadata = {
@@ -25,6 +23,12 @@ export type FaucetMetadata = {
   decimals: number;
   maxSupply: number;
 };
+
+export enum RecallItemType {
+  TRANSACTION = 'TRANSACTION',
+  GIFT = 'GIFT',
+  SCHEDULE_PAYMENT = 'SCHEDULE_PAYMENT',
+}
 
 export class AssetDto {
   @ApiProperty({
@@ -99,8 +103,8 @@ export class SendTransactionDto {
   @ArrayMaxSize(4, { message: 'serialNumber must contain exactly 4 elements' })
   serialNumber: string[];
 
-  @ApiProperty({ example: NoteType.P2ID })
-  @IsEnum(NoteType)
+  @ApiProperty({ example: TransactionsNoteTypeEnum.P2ID })
+  @IsEnum(TransactionsNoteTypeEnum)
   noteType: TransactionsNoteTypeEnum;
 
   @IsString()
@@ -125,8 +129,8 @@ export class SendTransactionDto {
 }
 
 export class RecallItem {
-  @IsIn(['transaction', 'gift', 'schedule_payment'])
-  type: 'transaction' | 'gift' | 'schedule_payment';
+  @IsEnum(RecallItemType)
+  type: RecallItemType;
 
   @IsOptional()
   @IsNumber()
@@ -137,8 +141,9 @@ export class RecallItem {
 export class RecallRequestDto {
   @ApiProperty({
     example: [
-      { type: 'transaction', id: 1 },
-      { type: 'gift', id: 1 },
+      { type: 'TRANSACTION', id: 1 },
+      { type: 'GIFT', id: 1 },
+      { type: 'SCHEDULE_PAYMENT', id: 1 },
     ],
   })
   @IsArray()

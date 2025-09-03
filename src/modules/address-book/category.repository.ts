@@ -1,57 +1,67 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { Categories, Prisma } from '@prisma/client';
+import { BaseRepository } from '../../common/repositories/base.repository';
 
 @Injectable()
-export class CategoryRepository {
-  constructor(private readonly prisma: PrismaService) {}
-
-  async find(
-    where: Prisma.CategoriesWhereInput,
-    options?: Prisma.CategoriesFindManyArgs,
-  ): Promise<Categories[]> {
-    const rows = await this.prisma.categories.findMany({
-      where,
-      include: options?.include,
-    });
-    return rows;
+export class CategoryRepository extends BaseRepository<
+  Categories,
+  Prisma.CategoriesWhereInput,
+  Prisma.CategoriesCreateInput,
+  Prisma.CategoriesUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
   }
 
+  protected getModel() {
+    return this.prisma.categories;
+  }
+
+  /**
+   * Find all categories
+   */
   async findAll(): Promise<Categories[]> {
-    const rows = await this.prisma.categories.findMany();
-    return rows;
+    return this.findMany({});
   }
 
+  /**
+   * Find category by ID
+   */
   async findById(id: number): Promise<Categories | null> {
-    const row = await this.prisma.categories.findUnique({ where: { id } });
-    return row;
+    return this.findOne({ id });
   }
 
+  /**
+   * Find category by name
+   */
   async findByName(name: string): Promise<Categories | null> {
-    const row = await this.prisma.categories.findUnique({ where: { name } });
-    return row;
+    return this.findOne({ name });
   }
 
-  async create(category: Partial<Categories>): Promise<Categories> {
+  /**
+   * Create category with name
+   */
+  async createByName(name: string): Promise<Categories> {
     const now = new Date();
-    const row = await this.prisma.categories.create({
-      data: { name: category.name as string, createdAt: now, updatedAt: now },
+    return this.create({
+      name,
+      createdAt: now,
+      updatedAt: now,
     });
-    return row;
   }
 
-  async update(
-    id: number,
-    category: Partial<Categories>,
-  ): Promise<Categories | null> {
-    const row = await this.prisma.categories.update({
-      where: { id },
-      data: { name: category.name as string, updatedAt: new Date() },
-    });
-    return row;
+  /**
+   * Update category name
+   */
+  async updateName(id: number, name: string): Promise<Categories> {
+    return this.update({ id }, { name });
   }
 
-  async delete(id: number): Promise<void> {
-    await this.prisma.categories.delete({ where: { id } });
+  /**
+   * Delete category by ID
+   */
+  async deleteById(id: number): Promise<Categories> {
+    return this.delete({ id });
   }
 }

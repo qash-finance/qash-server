@@ -6,10 +6,7 @@ import { NotificationModule } from '../notification/notification.module';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    NotificationModule,
-  ],
+  imports: [PrismaModule, NotificationModule],
   providers: [WalletAuthService, WalletAuthGuard],
   controllers: [WalletAuthController],
   exports: [WalletAuthService, WalletAuthGuard],

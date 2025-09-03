@@ -9,7 +9,10 @@ import {
   UpdateSchedulePaymentDto,
   SchedulePaymentQueryDto,
 } from './schedule-payment.dto';
-import { SchedulePaymentStatus, SchedulePaymentFrequency } from '@prisma/client';
+import {
+  SchedulePaymentStatusEnum,
+  SchedulePaymentFrequencyEnum,
+} from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { handleError } from '../../common/utils/errors';
 import {
@@ -20,6 +23,7 @@ import {
   normalizeAddress,
   sanitizeString,
 } from '../../common/utils/validation.util';
+import { ErrorSchedulePayment } from 'src/common/constants/errors';
 
 @Injectable()
 export class SchedulePaymentService {
@@ -37,7 +41,7 @@ export class SchedulePaymentService {
       validateAddress(dto.payer, 'payer');
       validateAddress(dto.payee, 'payee');
       validateAmount(dto.amount, 'amount');
-      
+
       if (dto.message) {
         validateMessage(dto.message, 'message');
       }
@@ -62,20 +66,26 @@ export class SchedulePaymentService {
       const endDate = dto.endDate ? new Date(dto.endDate) : null;
 
       if (nextExecutionDate <= new Date()) {
-        throw new BadRequestException('Next execution date must be in the future');
+        throw new BadRequestException(
+          ErrorSchedulePayment.InvalidNextExecutionDate,
+        );
       }
 
-      if (endDate && endDate <= nextExecutionDate) {
-        throw new BadRequestException('End date must be after next execution date');
+      if (endDate && endDate < nextExecutionDate) {
+        throw new BadRequestException(ErrorSchedulePayment.InvalidEndDate);
       }
 
       // Validate max executions
       if (dto.maxExecutions !== undefined && dto.maxExecutions < 1) {
-        throw new BadRequestException('Max executions must be at least 1');
+        throw new BadRequestException(
+          ErrorSchedulePayment.InvalidMaxExecutions,
+        );
       }
-      
-      if(!dto.transactionIds || dto.transactionIds.length === 0) {
-        throw new BadRequestException('Transaction IDs are required');
+
+      if (!dto.transactionIds || dto.transactionIds.length === 0) {
+        throw new BadRequestException(
+          ErrorSchedulePayment.InvalidTransactionIds,
+        );
       }
 
       const tokens = dto.tokens.map((token) => ({ ...token }));
@@ -98,7 +108,6 @@ export class SchedulePaymentService {
         },
       });
     } catch (error) {
-      this.logger.error('Error creating schedule payment:', error);
       handleError(error, this.logger);
     }
   }
@@ -107,7 +116,10 @@ export class SchedulePaymentService {
   // **************** GET METHODS ******************
   // *************************************************
 
-  async getSchedulePayments(userAddress: string, query?: SchedulePaymentQueryDto) {
+  async getSchedulePayments(
+    userAddress: string,
+    query?: SchedulePaymentQueryDto,
+  ) {
     try {
       validateAddress(userAddress, 'userAddress');
       const normalizedUserAddress = normalizeAddress(userAddress);
@@ -144,7 +156,6 @@ export class SchedulePaymentService {
         },
       });
     } catch (error) {
-      this.logger.error('Error getting schedule payments:', error);
       handleError(error, this.logger);
     }
   }
@@ -152,7 +163,7 @@ export class SchedulePaymentService {
   async getSchedulePaymentById(id: number, userAddress: string) {
     try {
       if (!id || id <= 0) {
-        throw new BadRequestException('Invalid schedule payment ID');
+        throw new BadRequestException(ErrorSchedulePayment.InvalidId);
       }
 
       validateAddress(userAddress, 'userAddress');
@@ -174,12 +185,11 @@ export class SchedulePaymentService {
       });
 
       if (!schedulePayment) {
-        throw new NotFoundException('Schedule payment not found');
+        throw new NotFoundException(ErrorSchedulePayment.NotFound);
       }
 
       return schedulePayment;
     } catch (error) {
-      this.logger.error('Error getting schedule payment by id:', error);
       handleError(error, this.logger);
     }
   }
@@ -187,22 +197,18 @@ export class SchedulePaymentService {
   async getActiveSchedulePayments() {
     try {
       const now = new Date();
-      
+
       return await this.prisma.schedulePayment.findMany({
         where: {
-          status: SchedulePaymentStatus.ACTIVE,
+          status: SchedulePaymentStatusEnum.ACTIVE,
           nextExecutionDate: {
             lte: now,
           },
-          OR: [
-            { endDate: null },
-            { endDate: { gte: now } },
-          ],
+          OR: [{ endDate: null }, { endDate: { gte: now } }],
         },
         orderBy: { nextExecutionDate: 'asc' },
       });
     } catch (error) {
-      this.logger.error('Error getting active schedule payments:', error);
       handleError(error, this.logger);
     }
   }
@@ -218,7 +224,7 @@ export class SchedulePaymentService {
   ) {
     try {
       if (!id || id <= 0) {
-        throw new BadRequestException('Invalid schedule payment ID');
+        throw new BadRequestException(ErrorSchedulePayment.InvalidId);
       }
 
       validateAddress(userAddress, 'userAddress');
@@ -232,31 +238,35 @@ export class SchedulePaymentService {
       });
 
       if (!schedulePayment) {
-        throw new NotFoundException('Schedule payment not found');
+        throw new NotFoundException(ErrorSchedulePayment.NotFound);
       }
 
       // Validate dates if provided
       if (dto.nextExecutionDate) {
         const nextExecutionDate = new Date(dto.nextExecutionDate);
         if (nextExecutionDate <= new Date()) {
-          throw new BadRequestException('Next execution date must be in the future');
+          throw new BadRequestException(
+            ErrorSchedulePayment.InvalidNextExecutionDate,
+          );
         }
       }
 
       if (dto.endDate) {
         const endDate = new Date(dto.endDate);
-        const nextExecution = dto.nextExecutionDate 
+        const nextExecution = dto.nextExecutionDate
           ? new Date(dto.nextExecutionDate)
           : schedulePayment.nextExecutionDate;
-        
-        if (nextExecution && endDate <= nextExecution) {
-          throw new BadRequestException('End date must be after next execution date');
+
+        if (nextExecution && endDate < nextExecution) {
+          throw new BadRequestException(ErrorSchedulePayment.InvalidEndDate);
         }
       }
 
       // Validate max executions
       if (dto.maxExecutions !== undefined && dto.maxExecutions < 1) {
-        throw new BadRequestException('Max executions must be at least 1');
+        throw new BadRequestException(
+          ErrorSchedulePayment.InvalidMaxExecutions,
+        );
       }
 
       const updateData: any = {
@@ -265,16 +275,18 @@ export class SchedulePaymentService {
 
       if (dto.status !== undefined) updateData.status = dto.status;
       if (dto.frequency !== undefined) updateData.frequency = dto.frequency;
-      if (dto.endDate !== undefined) updateData.endDate = dto.endDate ? new Date(dto.endDate) : null;
-      if (dto.nextExecutionDate !== undefined) updateData.nextExecutionDate = new Date(dto.nextExecutionDate);
-      if (dto.maxExecutions !== undefined) updateData.maxExecutions = dto.maxExecutions;
+      if (dto.endDate !== undefined)
+        updateData.endDate = dto.endDate ? new Date(dto.endDate) : null;
+      if (dto.nextExecutionDate !== undefined)
+        updateData.nextExecutionDate = new Date(dto.nextExecutionDate);
+      if (dto.maxExecutions !== undefined)
+        updateData.maxExecutions = dto.maxExecutions;
 
       return await this.prisma.schedulePayment.update({
         where: { id },
         data: updateData,
       });
     } catch (error) {
-      this.logger.error('Error updating schedule payment:', error);
       handleError(error, this.logger);
     }
   }
@@ -282,10 +294,9 @@ export class SchedulePaymentService {
   async pauseSchedulePayment(id: number, userAddress: string) {
     try {
       return await this.updateSchedulePayment(id, userAddress, {
-        status: SchedulePaymentStatus.PAUSED,
+        status: SchedulePaymentStatusEnum.PAUSED,
       });
     } catch (error) {
-      this.logger.error('Error pausing schedule payment:', error);
       handleError(error, this.logger);
     }
   }
@@ -293,10 +304,9 @@ export class SchedulePaymentService {
   async resumeSchedulePayment(id: number, userAddress: string) {
     try {
       return await this.updateSchedulePayment(id, userAddress, {
-        status: SchedulePaymentStatus.ACTIVE,
+        status: SchedulePaymentStatusEnum.ACTIVE,
       });
     } catch (error) {
-      this.logger.error('Error resuming schedule payment:', error);
       handleError(error, this.logger);
     }
   }
@@ -304,10 +314,9 @@ export class SchedulePaymentService {
   async cancelSchedulePayment(id: number, userAddress: string) {
     try {
       return await this.updateSchedulePayment(id, userAddress, {
-        status: SchedulePaymentStatus.CANCELLED,
+        status: SchedulePaymentStatusEnum.CANCELLED,
       });
     } catch (error) {
-      this.logger.error('Error cancelling schedule payment:', error);
       handleError(error, this.logger);
     }
   }
@@ -321,23 +330,23 @@ export class SchedulePaymentService {
               id: transactionId,
             },
           },
-        }
+        },
       });
 
       if (!schedulePayment) {
-        throw new NotFoundException('Schedule payment not found');
+        throw new NotFoundException(ErrorSchedulePayment.NotFound);
       }
 
       const newExecutionCount = schedulePayment.executionCount + 1;
 
-      if(newExecutionCount === schedulePayment.maxExecutions ) {
+      if (newExecutionCount === schedulePayment.maxExecutions) {
         return await this.prisma.schedulePayment.update({
           where: { id: schedulePayment.id },
           data: {
             updatedAt: new Date(),
             nextExecutionDate: null,
             executionCount: newExecutionCount,
-            status: SchedulePaymentStatus.COMPLETED,
+            status: SchedulePaymentStatusEnum.COMPLETED,
           },
         });
       }
@@ -356,7 +365,6 @@ export class SchedulePaymentService {
         },
       });
     } catch (error) {
-      this.logger.error('Error recalling payment:', error);
       handleError(error, this.logger);
     }
   }
@@ -365,14 +373,14 @@ export class SchedulePaymentService {
   // **************** EXECUTION METHODS **************
   // *************************************************
 
-  async markExecuted(schedulePaymentId: number, transactionId: number) {
+  async markExecuted(schedulePaymentId: number) {
     try {
       const schedulePayment = await this.prisma.schedulePayment.findUnique({
         where: { id: schedulePaymentId },
       });
 
       if (!schedulePayment) {
-        throw new NotFoundException('Schedule payment not found');
+        throw new NotFoundException(ErrorSchedulePayment.NotFound);
       }
 
       const newExecutionCount = schedulePayment.executionCount + 1;
@@ -392,7 +400,7 @@ export class SchedulePaymentService {
       );
 
       if (shouldComplete) {
-        status = SchedulePaymentStatus.COMPLETED;
+        status = SchedulePaymentStatusEnum.COMPLETED;
         finalNextExecutionDate = null;
       }
 
@@ -406,22 +414,20 @@ export class SchedulePaymentService {
         },
       });
     } catch (error) {
-      this.logger.error('Error marking schedule payment as executed:', error);
       handleError(error, this.logger);
     }
   }
 
-  async markFailed(schedulePaymentId: number, reason?: string) {
+  async markFailed(schedulePaymentId: number) {
     try {
       return await this.prisma.schedulePayment.update({
         where: { id: schedulePaymentId },
         data: {
-          status: SchedulePaymentStatus.FAILED,
+          status: SchedulePaymentStatusEnum.FAILED,
           updatedAt: new Date(),
         },
       });
     } catch (error) {
-      this.logger.error('Error marking schedule payment as failed:', error);
       handleError(error, this.logger);
     }
   }
@@ -433,7 +439,7 @@ export class SchedulePaymentService {
   async deleteSchedulePayment(id: number, userAddress: string) {
     try {
       if (!id || id <= 0) {
-        throw new BadRequestException('Invalid schedule payment ID');
+        throw new BadRequestException(ErrorSchedulePayment.InvalidId);
       }
 
       validateAddress(userAddress, 'userAddress');
@@ -447,12 +453,17 @@ export class SchedulePaymentService {
       });
 
       if (!schedulePayment) {
-        throw new NotFoundException('Schedule payment not found');
+        throw new NotFoundException(ErrorSchedulePayment.NotFound);
       }
 
       // Only allow deletion if not active or has no executions yet
-      if (schedulePayment.status === SchedulePaymentStatus.ACTIVE && schedulePayment.executionCount > 0) {
-        throw new BadRequestException('Cannot delete active schedule payment with executions. Cancel it instead.');
+      if (
+        schedulePayment.status === SchedulePaymentStatusEnum.ACTIVE &&
+        schedulePayment.executionCount > 0
+      ) {
+        throw new BadRequestException(
+          ErrorSchedulePayment.CannotDeleteActiveWithExecutions,
+        );
       }
 
       await this.prisma.schedulePayment.delete({
@@ -461,7 +472,6 @@ export class SchedulePaymentService {
 
       return { message: 'Schedule payment deleted successfully' };
     } catch (error) {
-      this.logger.error('Error deleting schedule payment:', error);
       handleError(error, this.logger);
     }
   }
@@ -470,21 +480,24 @@ export class SchedulePaymentService {
   // **************** HELPER METHODS ****************
   // *************************************************
 
-  private calculateNextExecutionDate(currentDate: Date, frequency: SchedulePaymentFrequency): Date {
+  private calculateNextExecutionDate(
+    currentDate: Date,
+    frequency: SchedulePaymentFrequencyEnum,
+  ): Date {
     const nextDate = new Date(currentDate);
 
     switch (frequency) {
-      case SchedulePaymentFrequency.DAILY:
+      case SchedulePaymentFrequencyEnum.DAILY:
         nextDate.setDate(nextDate.getDate() + 1);
         break;
-      case SchedulePaymentFrequency.WEEKLY:
+      case SchedulePaymentFrequencyEnum.WEEKLY:
         nextDate.setDate(nextDate.getDate() + 7);
         break;
-      case SchedulePaymentFrequency.MONTHLY:
+      case SchedulePaymentFrequencyEnum.MONTHLY:
         nextDate.setMonth(nextDate.getMonth() + 1);
         break;
       default:
-        throw new BadRequestException('Invalid frequency');
+        throw new BadRequestException(ErrorSchedulePayment.InvalidFrequency);
     }
 
     return nextDate;
@@ -496,12 +509,18 @@ export class SchedulePaymentService {
     nextExecutionDate: Date,
   ): boolean {
     // Check max executions
-    if (schedulePayment.maxExecutions && newExecutionCount >= schedulePayment.maxExecutions) {
+    if (
+      schedulePayment.maxExecutions &&
+      newExecutionCount >= schedulePayment.maxExecutions
+    ) {
       return true;
     }
 
     // Check end date
-    if (schedulePayment.endDate && nextExecutionDate > schedulePayment.endDate) {
+    if (
+      schedulePayment.endDate &&
+      nextExecutionDate > schedulePayment.endDate
+    ) {
       return true;
     }
 

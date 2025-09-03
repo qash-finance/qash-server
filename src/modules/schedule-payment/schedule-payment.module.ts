@@ -6,11 +6,7 @@ import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    WalletAuthModule,
-    NotificationModule,
-  ],
+  imports: [PrismaModule, WalletAuthModule, NotificationModule],
   providers: [SchedulePaymentService],
   controllers: [SchedulePaymentController],
   exports: [SchedulePaymentService],

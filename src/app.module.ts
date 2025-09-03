@@ -1,4 +1,4 @@
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
 import { HealthModule } from './modules/health/health.module';
@@ -64,5 +64,5 @@ import { SchedulePaymentModule } from './modules/schedule-payment/schedule-payme
   ],
 })
 export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {}
+  configure() {}
 }

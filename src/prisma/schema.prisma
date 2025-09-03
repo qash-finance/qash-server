@@ -16,28 +16,15 @@ model AddressBook {
   address     String     @db.VarChar
   token       String?    @db.VarChar
   categoryId  Int        @map("categoryId")
-  categories  Categories @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "FK_address_book_category")
+  categories  Categories @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@map("address_book")
 }
-
-model Auths {
-  id           Int      @id() @default(autoincrement())
-  createdAt    DateTime @map("created_at") @db.Timestamp(6)
-  updatedAt    DateTime @map("updated_at") @db.Timestamp(6)
-  accessToken  String   @map("access_token") @db.VarChar
-  refreshToken String   @map("refresh_token") @db.VarChar
-  userId       Int      @unique() @map("user_id")
-  users        Users    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_593ea7ee438b323776029d3185f")
-
-  @@map("auths")
-}
-
 model Categories {
-  id          Int           @id(map: "PK_categories") @default(autoincrement())
+  id          Int           @id() @default(autoincrement())
   createdAt   DateTime      @map("created_at") @db.Timestamp(6)
   updatedAt   DateTime      @map("updated_at") @db.Timestamp(6)
-  name        String        @unique(map: "UQ_categories_name") @db.VarChar
+  name        String        @unique() @db.VarChar
   addressBook AddressBook[]
 
   @@map("categories")
@@ -74,7 +61,7 @@ model GroupPayment {
   status                   GroupPaymentStatusEnum  @default(PENDING)
   groupId                  Int?                       @map("groupId")
   tokens                   Json?
-  groupPaymentGroup        GroupPaymentGroup?         @relation(fields: [groupId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_2043920d55348e76ec85cc7a697")
+  groupPaymentGroup        GroupPaymentGroup?         @relation(fields: [groupId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   groupPaymentMemberStatus GroupPaymentMemberStatus[]
   requestPayment           RequestPayment[]
 
@@ -94,57 +81,38 @@ model GroupPaymentGroup {
 }
 
 model GroupPaymentMemberStatus {
-  id             Int                                     @id(map: "PK_ab9afa0912b24e8c7fd448ad49a") @default(autoincrement())
+  id             Int                                     @id() @default(autoincrement())
   createdAt      DateTime                                @map("created_at") @db.Timestamp(6)
   updatedAt      DateTime                                @map("updated_at") @db.Timestamp(6)
   memberAddress  String                                  @map("member_address") @db.VarChar
   status         GroupPaymentMemberStatusEnum            @default(PENDING)
   paidAt         DateTime?                               @map("paid_at") @db.Timestamp(6)
   groupPaymentId Int?                                    @map("groupPaymentId")
-  groupPayment   GroupPayment?                           @relation(fields: [groupPaymentId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_2b5e0e8e862cc615b7784956138")
+  groupPayment   GroupPayment?                           @relation(fields: [groupPaymentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("group_payment_member_status")
 }
 
-model MigrationsTypeorm {
-  id        Int    @id(map: "PK_48f349806db3f6cc916da893c67") @default(autoincrement())
-  timestamp BigInt
-  name      String @db.VarChar
-
-  @@map("migrations_typeorm")
-}
-
 model Notifications {
-  id             Int                       @id(map: "PK_notifications_id") @default(autoincrement())
+  id             Int                       @id() @default(autoincrement())
   createdAt      DateTime                  @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt      DateTime                  @default(now()) @map("updated_at") @db.Timestamp(6)
   title          String
   message        String?
   type           NotificationsTypeEnum
-  status         NotificationsStatusEnum @default(UNREAD)
+  status         NotificationsStatusEnum   @default(UNREAD)
   metadata       Json?
   actionUrl      String?                   @map("action_url") @db.VarChar
   walletAddress  String                    @map("wallet_address") @db.VarChar
   readAt         DateTime?                 @map("read_at") @db.Timestamp(6)
-  walletAuthKeys WalletAuthKeys            @relation(fields: [walletAddress], references: [walletAddress], onDelete: Cascade, onUpdate: NoAction, map: "FK_notifications_wallet_address")
 
-  @@index([status], map: "IDX_notifications_status")
-  @@index([type], map: "IDX_notifications_type")
-  @@index([walletAddress], map: "IDX_notifications_wallet_address")
-  @@index([walletAddress, createdAt], map: "IDX_notifications_wallet_address_created_at")
-  @@index([walletAddress, status], map: "IDX_notifications_wallet_address_status")
+
+  @@index([status])
+  @@index([type])
+  @@index([walletAddress])
+  @@index([walletAddress, createdAt])
+  @@index([walletAddress, status])
   @@map("notifications")
-}
-
-model ReferralCodes {
-  id        Int      @id() @default(autoincrement())
-  createdAt DateTime @map("created_at") @db.Timestamp(6)
-  updatedAt DateTime @map("updated_at") @db.Timestamp(6)
-  code      String   @unique(map: "UQ_adda7b9deda346ff710695f4968") @db.VarChar(8)
-  timesUsed Int      @default(0) @map("times_used")
-  users     Users?
-
-  @@map("referral_codes")
 }
 
 model RequestPayment {
@@ -161,27 +129,15 @@ model RequestPayment {
   groupPaymentId2 Int?                        @map("groupPaymentId")
   txid            String?                     @map("txid") @db.VarChar
   tokens          Json?
-  groupPayment    GroupPayment?               @relation(fields: [groupPaymentId2], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_e1233322d02cfe645f877ee0042")
+  groupPayment    GroupPayment?               @relation(fields: [groupPaymentId2], references: [id], onDelete: NoAction, onUpdate: NoAction)
   transactions    Transactions[]
 
   @@map("request_payment")
 }
 
-model Tokens {
-  id        Int                    @id() @default(autoincrement())
-  createdAt DateTime               @map("created_at") @db.Timestamp(6)
-  updatedAt DateTime               @map("updated_at") @db.Timestamp(6)
-  uuid      String                 @unique(map: "UQ_57b0dd7af7c6a0b7d4c3fd5c464") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  tokenType TokensTokenTypeEnum @map("token_type")
-  userId    Int                    @unique(map: "REL_8769073e38c365f315426554ca") @map("user_id")
-  users     Users                  @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_8769073e38c365f315426554ca5")
-
-  @@map("tokens")
-}
-
 model Transactions {
   id               Int                          @id() @default(autoincrement())
-  createdAt        DateTime                     @map("created_at") @db.Timestamp(6)
+  createdAt        DateTime                     @db.Timestamp(6)
   updatedAt        DateTime                     @map("updated_at") @db.Timestamp(6)
   sender           String                       @db.VarChar
   recipient        String                       @db.VarChar
@@ -196,34 +152,12 @@ model Transactions {
   timelockHeight   Int?                         @map("timelock_height")
   noteId           String?                      @map("note_id") @db.VarChar
   requestPaymentId Int?                         @map("request_payment_id")
-  requestPayment   RequestPayment?              @relation(fields: [requestPaymentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_request_payment_id")
+  requestPayment   RequestPayment?              @relation(fields: [requestPaymentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  schedulePayment   SchedulePayment? @relation(fields: [schedulePaymentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_schedule_payment_id")
+  schedulePayment   SchedulePayment? @relation(fields: [schedulePaymentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   schedulePaymentId Int?             @map("schedule_payment_id")
 
   @@map("transactions")
-}
-
-model Users {
-  id                     Int               @id() @default(autoincrement())
-  createdAt              DateTime          @map("created_at") @db.Timestamp(6)
-  updatedAt              DateTime          @map("updated_at") @db.Timestamp(6)
-  password               String            @db.VarChar
-  name                   String            @db.VarChar
-  email                  String            @unique() @db.VarChar
-  twoFactorAuthSecret    String?           @map("two_factor_auth_secret") @db.VarChar
-  isTwoFactorAuthEnabled Boolean           @default(false) @map("is_two_factor_auth_enabled")
-  role                   UsersRoleEnum?
-  status                 UsersStatusEnum
-  referralCodeId         Int?              @unique() @map("referral_code_id")
-  referredById           Int?              @unique() @map("referred_by_id")
-  auths                  Auths?
-  tokens                 Tokens?
-  users                  Users?            @relation("usersTousers", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_a78a00605c95ca6737389f6360b")
-  otherUsers             Users?            @relation("usersTousers")
-  referralCodes          ReferralCodes?    @relation(fields: [referralCodeId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_e29dedd79dea4c8cd1ab5021079")
-
-  @@map("users")
 }
 
 model WalletAuthChallenges {
@@ -261,7 +195,7 @@ model WalletAuthKeys {
   userAgent         String?                           @map("user_agent") @db.VarChar
   ipAddress         String?                           @map("ip_address") @db.VarChar
   metadata          Json?
-  notifications     Notifications[]
+
 
   @@index([walletAddress])
   @@index([walletAddress, status])
@@ -301,7 +235,7 @@ model SchedulePayment {
   message String? @db.VarChar
 
   // Scheduling info
-  frequency         SchedulePaymentFrequency? @map("frequency")
+  frequency         SchedulePaymentFrequencyEnum? @map("frequency")
   endDate           DateTime?                 @map("end_date") @db.Timestamp(6)
   nextExecutionDate DateTime?                 @map("next_execution") @db.Timestamp(6)
 
@@ -311,27 +245,26 @@ model SchedulePayment {
   payee String @db.VarChar
 
   // Status and execution tracking
-  status         SchedulePaymentStatus @default(ACTIVE)
-  executionCount Int                   @default(0) @map("execution_count") // Number of times the payment has been executed
-  maxExecutions  Int?                  @map("max_executions")
+  status         SchedulePaymentStatusEnum @default(ACTIVE)
+  executionCount Int                   @default(0) // Number of times the payment has been executed
+  maxExecutions  Int?                  
 
   // Relations to executed transactions
   transactions Transactions[]
 
-  @@index([status, nextExecutionDate], map: "IDX_schedule_payment_status_next_execution_date")
-  @@index([payer], map: "IDX_schedule_payment_payer")
-  @@index([payee], map: "IDX_schedule_payment_payee")
-  @@index([status], map: "IDX_schedule_payment_status")
-  @@map("schedule_payment")
+  @@index([status, nextExecutionDate])
+  @@index([payer])
+  @@index([payee])
+  @@index([status])
 }
 
-enum SchedulePaymentFrequency {
+enum SchedulePaymentFrequencyEnum {
   DAILY
   WEEKLY
   MONTHLY
 }
 
-enum SchedulePaymentStatus {
+enum SchedulePaymentStatusEnum {
   ACTIVE
   PAUSED
   COMPLETED
@@ -339,20 +272,16 @@ enum SchedulePaymentStatus {
   FAILED
 }
 
-
-
 enum GiftNoteTypeEnum {
   P2ID
   P2IDR
   GIFT
-  @@map("gift_note_type_enum")
 }
 
 enum GiftStatusEnum {
   PENDING
   RECALLED
   CONSUMED
-  @@map("gift_status_enum")
 }
 
 enum GroupPaymentMemberStatusEnum {
@@ -365,13 +294,11 @@ enum GroupPaymentStatusEnum {
   PENDING
   COMPLETED
   EXPIRED
-  @@map("group_payment_status_enum")
 }
 
 enum NotificationsStatusEnum {
   UNREAD
   READ
-  @@map("notifications_status_enum")
 }
 
 enum NotificationsTypeEnum {
@@ -386,48 +313,24 @@ enum NotificationsTypeEnum {
   GIFT_SEND
   GIFT_OPEN
   GIFT_CLAIM
-  @@map("notifications_type_enum")
 }
 
 enum RequestPaymentStatusEnum {
   PENDING
   ACCEPTED
   DENIED
-  @@map("request_payment_status_enum")
-}
-
-enum TokensTokenTypeEnum {
-  EMAIL
-  PASSWORD
-  @@map("tokens_token_type_enum")
 }
 
 enum TransactionsNoteTypeEnum {
   P2ID
   P2IDR
   GIFT
-  @@map("transactions_note_type_enum")
 }
 
 enum TransactionsStatusEnum {
   PENDING
   RECALLED
   CONSUMED
-  @@map("transactions_status_enum")
-}
-
-enum UsersRoleEnum {
-  ADMIN
-  ADMIN_ONLY_VIEW @map("admin-only-view")
-  USER
-  @@map("users_role_enum")
-}
-
-enum UsersStatusEnum {
-  ACTIVE
-  INACTIVE
-  PENDING
-  @@map("users_status_enum")
 }
 
 enum WalletAuthKeysDeviceTypeEnum {
@@ -435,13 +338,10 @@ enum WalletAuthKeysDeviceTypeEnum {
   MOBILE
   TABLET
   UNKNOWN
-  @@map("wallet_auth_keys_device_type_enum")
 }
-
 
 enum WalletAuthKeysStatusEnum {
   ACTIVE
   REVOKED
   EXPIRED
-  @@map("wallet_auth_keys_status_enum")
 }
