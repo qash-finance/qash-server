@@ -25,8 +25,8 @@ import {
   RevokeSessionDto,
 } from './wallet-auth.dto';
 import { WalletAuthGuard } from './wallet-auth.guard';
-import { NotificationType } from '../../common/enums/notification';
 import { NotificationService } from '../notification/notification.service';
+import { NotificationsTypeEnum } from '@prisma/client';
 
 @ApiTags('Wallet Authentication')
 @Controller('wallet-auth')
@@ -62,7 +62,7 @@ export class WalletAuthController {
     // Create notification for the wallet
     await this.notificationService.createNotification({
       walletAddress: dto.walletAddress,
-      type: NotificationType.WALLET_CREATE,
+      type: NotificationsTypeEnum.WALLET_CREATE,
       title: 'New Wallet Created',
       message: `Your new wallet has been created successfully`,
       metadata: {
@@ -146,17 +146,6 @@ export class WalletAuthController {
       valid: !!result,
       walletAddress: result?.walletAddress || null,
       publicKey: result?.publicKey || null,
-    };
-  }
-
-  @Get('health')
-  @ApiOperation({ summary: 'Wallet auth service health check' })
-  @ApiResponse({ status: 200, description: 'Service is healthy' })
-  async healthCheck() {
-    return {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      service: 'wallet-auth',
     };
   }
 }

@@ -1,73 +1,148 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Repository,
-  FindOptionsWhere,
-  FindOneOptions,
-  FindManyOptions,
-} from 'typeorm';
-import { AddressBookEntity } from './address-book.entity';
-import { AddressBookDto } from './address-book.dto';
-import { CategoryEntity } from './category.entity';
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
+import { AddressBook, Prisma } from '@prisma/client';
+import { BaseRepository } from '../../database/base.repository';
 
 @Injectable()
-export class AddressBookRepository {
-  private readonly logger = new Logger(AddressBookRepository.name);
+export class AddressBookRepository extends BaseRepository<
+  AddressBook,
+  Prisma.AddressBookWhereInput,
+  Prisma.AddressBookCreateInput,
+  Prisma.AddressBookUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
+  }
 
-  constructor(
-    @InjectRepository(AddressBookEntity)
-    private readonly addressBookRepository: Repository<AddressBookEntity>,
-  ) {}
+  protected getModel() {
+    return this.prisma.addressBook;
+  }
 
-  public async create(
-    dto: Omit<Partial<AddressBookDto>, 'category'> & {
-      category: CategoryEntity;
+  /**
+   * Find all address book entries for a user with categories
+   */
+  async findByUserWithCategories(userAddress: string): Promise<AddressBook[]> {
+    return this.findMany(
+      { userAddress },
+      {
+        include: { categories: true },
+      },
+    );
+  }
+
+  /**
+   * Find address book entry by user and name
+   */
+  async findByUserAndName(
+    userAddress: string,
+    name: string,
+  ): Promise<AddressBook | null> {
+    return this.findOne({ userAddress, name });
+  }
+
+  /**
+   * Find address book entry by user and address
+   */
+  async findByUserAndAddress(
+    userAddress: string,
+    address: string,
+  ): Promise<AddressBook | null> {
+    return this.findOne({ userAddress, address });
+  }
+
+  /**
+   * Find address book entries by category name
+   */
+  async findByCategoryName(
+    userAddress: string,
+    categoryName: string,
+  ): Promise<AddressBook[]> {
+    return this.findMany({
+      userAddress,
+      categories: {
+        name: categoryName,
+      },
+    });
+  }
+
+  /**
+   * Check if category exists for user
+   */
+  async categoryExistsForUser(
+    userAddress: string,
+    categoryName: string,
+  ): Promise<boolean> {
+    const entry = await this.findOne({
+      userAddress,
+      categories: {
+        name: categoryName,
+      },
+    });
+    return entry !== null;
+  }
+
+  /**
+   * Create address book entry with category connection
+   */
+  async createWithCategory(
+    userAddress: string,
+    name: string,
+    address: string,
+    categoryId: number,
+    token?: string,
+  ): Promise<AddressBook> {
+    const now = new Date();
+    return this.create({
+      userAddress,
+      name,
+      address,
+      token,
+      categories: {
+        connect: { id: categoryId },
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  /**
+   * Update address book entry
+   */
+  async updateEntry(
+    id: number,
+    data: {
+      name?: string;
+      address?: string;
+      token?: string;
+      categoryId?: number;
     },
-  ): Promise<AddressBookEntity> {
-    try {
-      const entity = this.addressBookRepository.create({
-        ...dto,
-        category: dto.category,
-      });
-      return await entity.save();
-    } catch (error) {
-      this.logger.error('Error creating address book entry:', error);
-      throw error;
+  ): Promise<AddressBook> {
+    const updateData: any = {
+      name: data.name,
+      address: data.address,
+      token: data.token,
+    };
+
+    if (data.categoryId) {
+      updateData.categories = {
+        connect: { id: data.categoryId },
+      };
     }
+
+    return this.update({ id }, updateData);
   }
 
-  public async findOne(
-    where: FindOptionsWhere<AddressBookEntity>,
-    options?: FindOneOptions<AddressBookEntity>,
-  ): Promise<AddressBookEntity | null> {
-    try {
-      const addressBookEntity = await this.addressBookRepository.findOne({
-        where,
-        ...options,
-      });
-
-      return addressBookEntity;
-    } catch (error) {
-      this.logger.error('Error finding address book entry:', error);
-      throw error;
-    }
+  /**
+   * Delete address book entry by ID
+   */
+  async deleteById(id: number): Promise<AddressBook> {
+    return this.delete({ id });
   }
 
-  public async find(
-    where: FindOptionsWhere<AddressBookEntity>,
-    options?: FindManyOptions<AddressBookEntity>,
-  ): Promise<AddressBookEntity[]> {
-    try {
-      return await this.addressBookRepository.find({
-        where,
-        order: {
-          createdAt: 'DESC',
-        },
-        ...options,
-      });
-    } catch (error) {
-      this.logger.error('Error finding address book entries:', error);
-      throw error;
-    }
+  /**
+   * Count entries by user
+   */
+  async countByUser(userAddress: string): Promise<number> {
+    return this.count({ userAddress });
   }
 }

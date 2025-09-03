@@ -19,23 +19,9 @@ export enum ErrorUser {
   RoleCannotBeChanged = 'Role cannot be changed',
 }
 
-export enum ErrorAuth {
-  UserNotActive = 'User is not active, verify your email',
-  InvalidCredentials = 'Invalid credentials',
-  InvalidTwoFactorCode = 'Invalid two-factor code',
-  InvalidRefreshToken = 'Invalid refresh token',
-  TwoFactorAuthAlreadyEnabled = 'Two factor auth already enabled',
-  TwoFactorAuthDisabled = 'Two factor auth was not enabled',
-  TwoFactorAuthRequired = 'Two factor auth required',
-  Unauthorized = 'Unauthorized',
-  SandboxDisabled = 'Sandbox is disabled',
-  ResendInterval = 'Resend time too short',
-}
-
 export enum ErrorQuery {
   BadIdString = 'Bad id string',
 }
-
 export enum ErrorReferralCode {
   ReferralCodeNotFound = 'Referral code not found',
 }
@@ -54,6 +40,7 @@ export enum ErrorTransaction {
   InvalidToken = 'Invalid token address',
   NotOwner = 'Sender is not the owner of the transactions',
   NotRecipient = 'Caller is not the recipient of the transactions',
+  ItemsArrayRequired = 'Items array is required and cannot be empty',
 }
 
 export enum ErrorAddressBook {
@@ -72,9 +59,15 @@ export enum ErrorRequestPayment {
   InvalidAddress = 'Invalid address format',
   InvalidAmount = 'Invalid amount',
   InvalidToken = 'Invalid token address',
+  InvalidTxid = 'Invalid txid',
   InvalidMessage = 'Invalid message',
   SelfRequestNotAllowed = 'Cannot request payment from yourself',
-  DuplicateRequest = 'Duplicate request already exists',
+  NotAccepted = 'Request payment is not accepted',
+  NotGroupPayment = 'Request payment is not a group payment',
+  InvalidRequestID = 'Invalid request ID',
+  MembersArrayRequired = 'Members array is required and cannot be empty',
+  DuplicateMembers = 'Duplicate members are not allowed',
+  OwnerInGroupPayment = 'Owner cannot be a member in their own group payment',
 }
 
 export enum ErrorGift {
@@ -107,4 +100,34 @@ export enum ErrorGroupPayment {
   MemberNotInGroup = 'Member is not part of this group',
   InvalidLinkCode = 'Invalid link code',
   NotOwner = 'Only the group owner can view payments for this group',
+  InvalidGroupId = 'Invalid group ID',
+  InvalidMemberCount = 'Invalid member count',
+  InvalidQuickSharePayment = 'This endpoint is only for Quick Share payments',
+  PaymentNotPending = 'Cannot add members to a completed or expired payment',
+  UserAlreadyMember = 'User is already a member of this Quick Share',
+  NoAvailableSlots = 'No available slots in this Quick Share payment',
+  InvalidMemberIndex = 'Invalid member index',
+}
+
+export enum ErrorWalletAuth {
+  InvalidChallenge = 'Invalid or expired challenge',
+  InvalidChallengeResponse = 'Invalid challenge response',
+  PublicKeyAlreadyRegistered = 'Public key already registered',
+  MaximumKeysPerWallet = 'Maximum keys per wallet reached',
+  InvalidKey = 'Invalid or expired key',
+  InvalidSignature = 'Invalid signature',
+  SignatureTimestampTooOld = 'Signature timestamp too old',
+  InvalidSession = 'Invalid or expired session',
+  KeyNoLongerActive = 'Key no longer active',
+}
+
+export enum ErrorSchedulePayment {
+  NotFound = 'Schedule payment not found',
+  InvalidId = 'Invalid schedule payment ID',
+  InvalidFrequency = 'Invalid frequency',
+  InvalidNextExecutionDate = 'Next execution date must be in the future',
+  InvalidEndDate = 'End date must be after next execution date',
+  InvalidMaxExecutions = 'Max executions must be at least 1',
+  InvalidTransactionIds = 'Transaction IDs are required',
+  CannotDeleteActiveWithExecutions = 'Cannot delete active schedule payment with executions. Cancel it instead.',
 }

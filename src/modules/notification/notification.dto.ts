@@ -8,10 +8,7 @@ import {
   IsUrl,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import {
-  NotificationType,
-  NotificationStatus,
-} from '../../common/enums/notification';
+import { NotificationsStatusEnum, NotificationsTypeEnum } from '@prisma/client';
 
 export class CreateNotificationDto {
   @ApiProperty()
@@ -24,9 +21,9 @@ export class CreateNotificationDto {
   @IsNotEmpty()
   public message: string;
 
-  @ApiProperty({ enum: NotificationType })
-  @IsEnum(NotificationType)
-  public type: NotificationType;
+  @ApiProperty({ enum: NotificationsTypeEnum })
+  @IsEnum(NotificationsTypeEnum)
+  public type: NotificationsTypeEnum;
 
   @ApiPropertyOptional()
   @IsObject()
@@ -45,9 +42,9 @@ export class CreateNotificationDto {
 }
 
 export class UpdateNotificationStatusDto {
-  @ApiProperty({ enum: NotificationStatus })
-  @IsEnum(NotificationStatus)
-  public status: NotificationStatus;
+  @ApiProperty({ enum: NotificationsStatusEnum })
+  @IsEnum(NotificationsStatusEnum)
+  public status: NotificationsStatusEnum;
 }
 
 export class NotificationQueryDto {
@@ -61,15 +58,15 @@ export class NotificationQueryDto {
   @Transform(({ value }) => parseInt(value))
   public limit?: number = 10;
 
-  @ApiPropertyOptional({ enum: NotificationType })
-  @IsEnum(NotificationType)
+  @ApiPropertyOptional({ enum: NotificationsTypeEnum })
+  @IsEnum(NotificationsTypeEnum)
   @IsOptional()
-  public type?: NotificationType;
+  public type?: NotificationsTypeEnum;
 
-  @ApiPropertyOptional({ enum: NotificationStatus })
-  @IsEnum(NotificationStatus)
+  @ApiPropertyOptional({ enum: NotificationsStatusEnum })
+  @IsEnum(NotificationsStatusEnum)
   @IsOptional()
-  public status?: NotificationStatus;
+  public status?: NotificationsStatusEnum;
 }
 
 export class NotificationResponseDto {
@@ -82,11 +79,11 @@ export class NotificationResponseDto {
   @ApiProperty()
   public message: string;
 
-  @ApiProperty({ enum: NotificationType })
-  public type: NotificationType;
+  @ApiProperty({ enum: NotificationsTypeEnum })
+  public type: NotificationsTypeEnum;
 
-  @ApiProperty({ enum: NotificationStatus })
-  public status: NotificationStatus;
+  @ApiProperty({ enum: NotificationsStatusEnum })
+  public status: NotificationsStatusEnum;
 
   @ApiPropertyOptional()
   public metadata: Record<string, any> | null;

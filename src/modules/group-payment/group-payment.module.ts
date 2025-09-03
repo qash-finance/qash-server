@@ -1,28 +1,30 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import {
-  GroupPaymentEntity,
-  GroupPaymentGroupEntity,
-  GroupPaymentMemberStatusEntity,
-} from './group-payment.entity';
-import { GroupPaymentRepository } from './group-payment.repository';
 import { GroupPaymentService } from './group-payment.service';
 import { GroupPaymentController } from './group-payment.controller';
+import {
+  GroupPaymentRepository,
+  GroupPaymentGroupRepository,
+} from './group-payment.repository';
+import { PrismaModule } from 'src/database/prisma.module';
 import { RequestPaymentModule } from '../request-payment/request-payment.module';
 import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      GroupPaymentGroupEntity,
-      GroupPaymentEntity,
-      GroupPaymentMemberStatusEntity,
-    ]),
+    PrismaModule,
     forwardRef(() => RequestPaymentModule),
     WalletAuthModule,
   ],
-  providers: [GroupPaymentRepository, GroupPaymentService],
+  providers: [
+    GroupPaymentService,
+    GroupPaymentRepository,
+    GroupPaymentGroupRepository,
+  ],
   controllers: [GroupPaymentController],
-  exports: [GroupPaymentService, GroupPaymentRepository],
+  exports: [
+    GroupPaymentService,
+    GroupPaymentRepository,
+    GroupPaymentGroupRepository,
+  ],
 })
 export class GroupPaymentModule {}

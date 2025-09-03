@@ -58,8 +58,27 @@ export class RequestPaymentController {
   @UseGuards(WalletAuthGuard)
   @ApiOperation({ summary: 'Accept a pending request' })
   @ApiResponse({ status: 200, description: 'Request accepted' })
-  async accept(@Param('id') id: number, @Req() req: RequestWithWalletAuth) {
-    return this.service.acceptRequest(id, req.walletAuth.walletAddress);
+  async accept(
+    @Param('id') id: number,
+    @Req() req: RequestWithWalletAuth,
+    @Body() body: { txid: string },
+  ) {
+    return this.service.acceptRequest(
+      id,
+      req.walletAuth.walletAddress,
+      body.txid,
+    );
+  }
+
+  @Put(':id/confirm-group-payment')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({ summary: 'Confirm a pending request' })
+  @ApiResponse({ status: 200, description: 'Request confirmed' })
+  async confirm(@Param('id') id: number, @Req() req: RequestWithWalletAuth) {
+    return this.service.confirmGroupPaymentRequest(
+      id,
+      req.walletAuth.walletAddress,
+    );
   }
 
   @Put(':id/deny')

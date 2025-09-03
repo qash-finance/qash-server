@@ -9,8 +9,55 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
   Min,
+  Max,
+  ValidateNested,
+  IsObject,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { FaucetMetadata } from '../transactions/transaction.dto';
+
+export class MemberDto {
+  @ApiProperty({
+    description: 'Member address',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+  })
+  @IsString()
+  @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
+    message: 'address must be a valid address starting with mt or mm',
+  })
+  @MinLength(3, { message: 'address is too short' })
+  address: string;
+
+  @ApiProperty({ description: 'Member name', example: 'Alice' })
+  @IsString()
+  @MinLength(1, { message: 'name is too short' })
+  @MaxLength(100, { message: 'name cannot be longer than 100 characters' })
+  name: string;
+}
+
+export class TokenDto {
+  @ApiProperty({
+    description: 'Faucet ID (token address)',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+  })
+  @IsString()
+  @MinLength(3, { message: 'faucetId is too short' })
+  faucetId: string;
+
+  @ApiProperty({ description: 'Amount', example: '1000' })
+  @IsString()
+  @Matches(/^\d+(\.\d+)?$/, {
+    message: 'amount must be a valid positive number',
+  })
+  amount: string;
+
+  @ApiProperty({
+    example: { symbol: 'MTST', decimals: 18, maxSupply: 1000000000000000000 },
+  })
+  @IsObject()
+  metadata: FaucetMetadata;
+}
 
 export class CreateGroupDto {
   @ApiProperty({ description: 'Group name', example: 'Group 1' })
@@ -26,37 +73,63 @@ export class CreateGroupDto {
   name: string;
 
   @ApiProperty({
-    description: 'Member addresses',
-    type: [String],
+    description: 'Members list',
+    type: [MemberDto],
     example: [
-      'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
-      'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+      { address: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a', name: 'Alice' },
+      { address: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6b', name: 'Bob' },
     ],
   })
   @IsArray()
   @ArrayMinSize(1, { message: 'At least 1 member is required' })
   @ArrayMaxSize(50, { message: 'Maximum 50 members allowed' })
-  @IsString({ each: true })
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    each: true,
-    message: 'Each member address must be a valid hex address starting with 0x',
+  @ValidateNested({ each: true })
+  @Type(() => MemberDto)
+  members: MemberDto[];
+}
+
+export class CreateDefaultGroupDto {
+  @ApiProperty({ description: 'Group name', example: 'Quick Share' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100, {
+    message: 'Group name cannot be longer than 100 characters',
   })
-  @MinLength(3, { each: true, message: 'Each member address is too short' })
-  members: string[];
+  @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
+    message:
+      'Group name can only contain letters, numbers, spaces, hyphens, and underscores',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Members list (optional for default groups)',
+    type: [MemberDto],
+    required: false,
+    example: [],
+  })
+  @IsArray()
+  @ArrayMaxSize(50, { message: 'Maximum 50 members allowed' })
+  @ValidateNested({ each: true })
+  @Type(() => MemberDto)
+  members: MemberDto[] = [];
 }
 
 export class CreateGroupPaymentDto {
   @ApiProperty({
-    description: 'Token address or symbol',
-    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+    description: 'Tokens',
+    example: [
+      {
+        faucetId: '0x2342342342342342342342342342342342342342',
+        amount: '100',
+        metadata: { name: 'test' },
+      },
+    ],
   })
-  @IsString()
+  @IsArray()
   @IsNotEmpty()
-  @Matches(/^0x[0-9a-fA-F]+$/, {
-    message: 'token must be a valid hex address starting with 0x',
-  })
-  @MinLength(3, { message: 'token is too short' })
-  token: string;
+  @ValidateNested({ each: true })
+  @Type(() => TokenDto)
+  tokens: TokenDto[];
 
   @ApiProperty({ description: 'Total amount to split', example: '100' })
   @IsString()
@@ -77,6 +150,50 @@ export class CreateGroupPaymentDto {
   @IsNotEmpty()
   @Min(1, { message: 'groupId must be a positive number' })
   groupId: number;
+}
+
+export class CreateQuickSharePaymentDto {
+  @ApiProperty({
+    description: 'Tokens',
+    example: [
+      {
+        faucetId: '0x2342342342342342342342342342342342342342',
+        amount: '100',
+        metadata: { name: 'test' },
+      },
+    ],
+  })
+  @IsArray()
+  @IsNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => TokenDto)
+  tokens: TokenDto[];
+
+  @ApiProperty({ description: 'Total amount to share', example: '100' })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d+(\.\d+)?$/, {
+    message: 'amount must be a valid positive number',
+  })
+  amount: string;
+
+  @ApiProperty({ description: 'Expected number of members', example: 5 })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(1, { message: 'memberCount must be at least 1' })
+  @Max(50, { message: 'memberCount cannot exceed 50' })
+  memberCount: number;
+}
+
+export class UpdateQuickShareMemberDto {
+  @ApiProperty({ description: 'User address to add to Quick Share' })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
+    message: 'userAddress must be a valid address starting with mt or mm',
+  })
+  @MinLength(3, { message: 'userAddress is too short' })
+  userAddress: string;
 }
 
 export class PayGroupPaymentDto {

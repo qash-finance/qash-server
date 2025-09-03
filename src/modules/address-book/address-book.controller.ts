@@ -18,7 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
-import { CategoryEntity } from './category.entity';
+import { AddressBook } from '@prisma/client';
 
 @ApiTags('Address Book')
 @ApiBearerAuth()
@@ -41,7 +41,7 @@ export class AddressBookController {
   })
   async getAllAddressBookEntries(
     @Req() req: RequestWithWalletAuth,
-  ): Promise<CategoryEntity[]> {
+  ): Promise<AddressBook[]> {
     return this.addressBookService.getAllAddressBookEntries(
       req.walletAuth.walletAddress,
     );
