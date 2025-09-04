@@ -28,6 +28,14 @@ Before you begin, you need to install the following tools:
 6. Finally, run `npm run start:dev` to start the dev server
 7. Visit `http://localhost:3001/api-v1` to view a list of available endpoints
 
+## Environment Variables
+
+Make sure your `.env` files include:
+
+```bash
+DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
+```
+
 # Running the app
 
 ```bash
@@ -50,43 +58,11 @@ npm run docker:db:up
 npm run docker:db:down
 ```
 
-# [Development] Prisma Database Management
-
-This project uses Prisma as the primary database ORM. Here are the key Prisma commands:
-
-## Prisma CLI Commands
-
-```bash
-# Generate Prisma client from schema
-npm run prisma:generate --schema ./src/database/prisma/schema.prisma
-
-# Deploy migrations to database
-npm run prisma:deploy --schema ./src/database/prisma/schema.prisma
-
-# Open Prisma Studio (database GUI)
-npx prisma studio --schema ./src/database/prisma/schema.prisma
-
-# Reset database (⚠️ destructive - drops all data)
-npx prisma db push --force-reset --schema ./src/database/prisma/schema.prisma
-
-# Push schema changes directly to database (for development)
-npx prisma db push --schema ./src/database/prisma/schema.prisma
-
-# Pull database schema into Prisma schema
-npx prisma db pull --schema ./src/database/prisma/schema.prisma
-
-# Validate Prisma schema
-npx prisma validate --schema ./src/database/prisma/schema.prisma
-
-# Format Prisma schema file
-npx prisma format --schema ./src/database/prisma/schema.prisma
-```
-
-## Prisma Workflow
+# [Development] How to edit database tables and run migration
 
 ### 1. Schema Changes
 
-Edit `src/prisma/schema.prisma` to modify your database models, then:
+Edit `src/prisma/schema.prisma` to modify your database models, then generate migration file by running:
 
 ```bash
 # Generate migration file
@@ -103,33 +79,13 @@ npm run prisma:generate --schema ./src/database/prisma/schema.prisma
 npm run prisma:deploy --schema ./src/database/prisma/schema.prisma
 ```
 
-### 3. Database Seeding
-
-```bash
-# Run seed script (if configured)
-npx prisma db seed --schema ./src/database/prisma/schema.prisma
-
-# Reset and seed database
-npx prisma migrate reset --schema ./src/database/prisma/schema.prisma
-```
-
-## Environment Variables
-
-Make sure your `.env` files include:
-
-```bash
-DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
-```
-
-## Prisma Studio
+# [Development] Prisma Studio
 
 Access your database through a web interface:
 
 ```bash
 npx prisma studio
 ```
-
-This opens a browser at `http://localhost:5555` where you can view and edit your data.
 
 # [Testing] Running tests
 

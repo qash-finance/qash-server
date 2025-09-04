@@ -210,9 +210,8 @@ export class GroupPaymentService {
         throw new BadRequestException(ErrorGroupPayment.NotOwner);
       }
 
-      await this.prisma.groupPaymentGroup.delete({
-        where: { id: groupId },
-      });
+      // Use the repository method that handles cascading deletes properly
+      await this.groupPaymentGroupRepository.deleteGroupWithPayments(groupId);
       return { success: true };
     } catch (error) {
       handleError(error, this.logger);
