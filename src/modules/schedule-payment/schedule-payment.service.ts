@@ -189,8 +189,6 @@ export class SchedulePaymentService {
 
   async getActiveSchedulePayments() {
     try {
-      const now = new Date();
-
       return await this.schedulePaymentRepository.findActiveReadyForExecution();
     } catch (error) {
       handleError(error, this.logger);

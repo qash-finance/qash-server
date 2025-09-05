@@ -76,20 +76,6 @@ export class SchedulePaymentRepository extends BaseRepository<
   }
 
   /**
-   * Find schedule payment by ID and user (payer or payee)
-   */
-  async findByIdAndUser(
-    id: number,
-    userAddress: string,
-    includeTransactions: boolean = true,
-  ): Promise<SchedulePayment | null> {
-    return this.findOne({
-      id,
-      OR: [{ payer: userAddress }, { payee: userAddress }],
-    }) as Promise<SchedulePayment | null>;
-  }
-
-  /**
    * Find schedule payment by ID and user with transactions
    */
   async findByIdAndUserWithTransactions(
