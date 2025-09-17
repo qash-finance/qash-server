@@ -58,26 +58,78 @@ npm run docker:db:up
 npm run docker:db:down
 ```
 
-# [Development] How to edit database tables and run migration
+# [Development] Database Management
 
-### 1. Schema Changes
+## Complete Database Reset & Migration Process
 
-Edit `src/prisma/schema.prisma` to modify your database models, then generate migration file by running:
+Follow these steps to completely reset your database and apply fresh migrations:
 
+### Step 1: Stop the Application
 ```bash
-# Generate migration file
-npm run prisma:migrate:dev
+# Stop your development server if running
+# Press Ctrl+C in the terminal where the server is running
 ```
 
-### 2. After Schema Changes
+### Step 2: Drop the Database
+```bash
+# Stop and remove the database container
+npm run docker:db:down
 
+# Remove the database volume (this deletes all data)
+docker volume rm miden-q3x-server_postgres_data
+```
+
+### Step 3: Start Fresh Database
+```bash
+# Start a new database container
+npm run docker:db:up
+```
+
+### Step 4: Apply Migrations
+```bash
+# Deploy all migrations to the fresh database
+npm run prisma:deploy --schema ./src/database/prisma/schema.prisma
+```
+
+### Step 5: Generate Prisma Client
+```bash
+# Generate the updated Prisma client
+npm run prisma:generate --schema ./src/database/prisma/schema.prisma
+```
+
+### Step 6: Verify Setup
+```bash
+# Start your development server
+npm run start:dev
+```
+
+## Making Schema Changes
+
+### 1. Edit Schema
+Edit `src/database/prisma/schema.prisma` to modify your database models.
+
+### 2. Generate Migration
+```bash
+# Generate migration file
+npm run prisma:migrate:dev --schema ./src/database/prisma/schema.prisma
+```
+
+### 3. Update Prisma Client
 ```bash
 # Generate updated Prisma client
 npm run prisma:generate --schema ./src/database/prisma/schema.prisma
-
-# Deploy migrations to production
-npm run prisma:deploy --schema ./src/database/prisma/schema.prisma
 ```
+
+## Important Notes
+
+⚠️ **Environment Configuration**: 
+- Prisma uses the `.env` file for database configuration
+- **DO NOT** use `.env.development` for Prisma - it will not be recognized
+- Always ensure your `.env` file contains the correct `DATABASE_URL`
+
+⚠️ **Schema Path**: 
+- All Prisma commands must include `--schema ./src/database/prisma/schema.prisma`
+- This is required due to our project structure
 
 # [Development] Prisma Studio
 
