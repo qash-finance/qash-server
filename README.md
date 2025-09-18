@@ -65,12 +65,14 @@ npm run docker:db:down
 Follow these steps to completely reset your database and apply fresh migrations:
 
 ### Step 1: Stop the Application
+
 ```bash
 # Stop your development server if running
 # Press Ctrl+C in the terminal where the server is running
 ```
 
 ### Step 2: Drop the Database
+
 ```bash
 # Stop and remove the database container
 npm run docker:db:down
@@ -80,24 +82,28 @@ docker volume rm miden-q3x-server_postgres_data
 ```
 
 ### Step 3: Start Fresh Database
+
 ```bash
 # Start a new database container
 npm run docker:db:up
 ```
 
 ### Step 4: Apply Migrations
+
 ```bash
 # Deploy all migrations to the fresh database
-npm run prisma:deploy --schema ./src/database/prisma/schema.prisma
+npm run prisma:migrate:deploy
 ```
 
 ### Step 5: Generate Prisma Client
+
 ```bash
 # Generate the updated Prisma client
-npm run prisma:generate --schema ./src/database/prisma/schema.prisma
+npm run prisma:generate
 ```
 
 ### Step 6: Verify Setup
+
 ```bash
 # Start your development server
 npm run start:dev
@@ -106,15 +112,18 @@ npm run start:dev
 ## Making Schema Changes
 
 ### 1. Edit Schema
+
 Edit `src/database/prisma/schema.prisma` to modify your database models.
 
 ### 2. Generate Migration
+
 ```bash
 # Generate migration file
 npm run prisma:migrate:dev --schema ./src/database/prisma/schema.prisma
 ```
 
 ### 3. Update Prisma Client
+
 ```bash
 # Generate updated Prisma client
 npm run prisma:generate --schema ./src/database/prisma/schema.prisma
@@ -122,12 +131,14 @@ npm run prisma:generate --schema ./src/database/prisma/schema.prisma
 
 ## Important Notes
 
-⚠️ **Environment Configuration**: 
+⚠️ **Environment Configuration**:
+
 - Prisma uses the `.env` file for database configuration
 - **DO NOT** use `.env.development` for Prisma - it will not be recognized
 - Always ensure your `.env` file contains the correct `DATABASE_URL`
 
-⚠️ **Schema Path**: 
+⚠️ **Schema Path**:
+
 - All Prisma commands must include `--schema ./src/database/prisma/schema.prisma`
 - This is required due to our project structure
 
@@ -136,7 +147,7 @@ npm run prisma:generate --schema ./src/database/prisma/schema.prisma
 Access your database through a web interface:
 
 ```bash
-npx prisma studio
+npx prisma studio --schema ./src/database/prisma/schema.prisma
 ```
 
 # [Testing] Running tests

@@ -255,6 +255,7 @@ model SchedulePayment {
   @@index([payer])
   @@index([payee])
   @@index([status])
+  @@map("schedule_payment")
 }
 
 enum SchedulePaymentFrequencyEnum {
