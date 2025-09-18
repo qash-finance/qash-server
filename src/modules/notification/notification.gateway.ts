@@ -72,10 +72,6 @@ export class NotificationGateway
     @MessageBody() data: { walletAddress: string },
   ) {
     const { walletAddress } = data;
-    console.log(
-      '🚀 ~ NotificationGateway ~ handleJoinWallet ~ walletAddress:',
-      walletAddress,
-    );
 
     if (!walletAddress) {
       client.emit('error', { message: 'Wallet address is required' });

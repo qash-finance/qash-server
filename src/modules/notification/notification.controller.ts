@@ -1,13 +1,11 @@
 import {
   Controller,
   Get,
-  Post,
   Patch,
   Param,
   Query,
   Request,
   UseGuards,
-  Body,
   ParseIntPipe,
 } from '@nestjs/common';
 import {
@@ -17,19 +15,15 @@ import {
   ApiTags,
   ApiParam,
   ApiQuery,
-  ApiBody,
 } from '@nestjs/swagger';
 
 import { NotificationService } from './notification.service';
 import { RequestWithWalletAuth } from '../../common/interfaces';
 import {
-  CreateNotificationDto,
   NotificationQueryDto,
   NotificationResponseDto,
 } from './notification.dto';
-import { NotificationType } from '../../common/enums/notification';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
-import { Public } from '../../common/decorators/public';
 
 @ApiBearerAuth()
 @UseGuards(WalletAuthGuard)
@@ -208,85 +202,5 @@ export class NotificationController {
   public async markAllAsRead(@Request() req: RequestWithWalletAuth) {
     await this.notificationService.markAllAsRead(req.walletAuth.walletAddress);
     return { message: 'All notifications marked as read' };
-  }
-
-  /***************************************/
-  /*************** TEST ****************/
-  /************Should be removed**************/
-
-  @Public()
-  @Post('/test-emit')
-  @ApiOperation({
-    summary: 'Test endpoint to emit notification',
-    description:
-      'Test endpoint to emit any notification back to user (for testing purposes only)',
-  })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        walletAddress: { type: 'string', example: '0x1234567890abcdef' },
-        title: { type: 'string', example: 'Test Notification' },
-        message: { type: 'string', example: 'This is a test notification' },
-        type: {
-          type: 'string',
-          enum: ['SEND', 'CLAIM', 'REFUND', 'BATCH_SEND', 'WALLET_CREATE'],
-          example: 'SEND',
-        },
-        metadata: {
-          type: 'object',
-          example: { testKey: 'testValue' },
-          nullable: true,
-        },
-        actionUrl: {
-          type: 'string',
-          example: 'https://example.com/action',
-          nullable: true,
-        },
-      },
-      required: ['walletAddress', 'title', 'message', 'type'],
-    },
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Test notification created and emitted successfully',
-    type: NotificationResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request - invalid data',
-  })
-  public async testEmitNotification(
-    @Body()
-    testData: {
-      walletAddress: string;
-      title: string;
-      message: string;
-      type: NotificationType;
-      metadata?: Record<string, any>;
-      actionUrl?: string;
-    },
-  ) {
-    // // Get user by wallet address
-    // const user = await this.notificationService['userService'].getByWalletAddress(testData.walletAddress);
-    // if (!user) {
-    //   throw new BadRequestException('User not found with the provided wallet address');
-    // }
-
-    // Create notification for the wallet
-    const createNotificationDto: CreateNotificationDto = {
-      walletAddress: testData.walletAddress,
-      title: testData.title,
-      message: testData.message,
-      type: testData.type,
-      metadata: testData.metadata || null,
-      actionUrl: testData.actionUrl || null,
-    };
-
-    const notification = await this.notificationService.createNotification(
-      createNotificationDto,
-    );
-
-    return this.notificationService['mapToResponseDto'](notification);
   }
 }

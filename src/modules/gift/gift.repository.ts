@@ -1,73 +1,90 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, FindManyOptions } from 'typeorm';
-import { GiftEntity } from './gift.entity';
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
+import { Gift, Prisma, GiftStatusEnum } from '@prisma/client';
+import { BaseRepository } from '../../database/base.repository';
 
 @Injectable()
-export class GiftRepository {
-  private readonly logger = new Logger(GiftRepository.name);
-
-  constructor(
-    @InjectRepository(GiftEntity)
-    private readonly giftRepository: Repository<GiftEntity>,
-  ) {}
-
-  public async create(dto: Partial<GiftEntity>): Promise<GiftEntity> {
-    try {
-      const entity = this.giftRepository.create(dto);
-      return await entity.save();
-    } catch (error) {
-      this.logger.error('Error creating gift:', error);
-      throw error;
-    }
+export class GiftRepository extends BaseRepository<
+  Gift,
+  Prisma.GiftWhereInput,
+  Prisma.GiftCreateInput,
+  Prisma.GiftUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
   }
 
-  public async updateOne(
-    where: FindOptionsWhere<GiftEntity>,
-    dto: Partial<GiftEntity>,
-  ): Promise<GiftEntity> {
-    try {
-      const giftEntity = await this.giftRepository.findOneBy(where);
-
-      if (!giftEntity) {
-        this.logger.warn('Gift not found for update:', where);
-        throw new Error('Gift not found');
-      }
-
-      Object.assign(giftEntity, dto);
-      return await giftEntity.save();
-    } catch (error) {
-      this.logger.error('Error updating gift:', error);
-      throw error;
-    }
+  protected getModel() {
+    return this.prisma.gift;
   }
 
-  async findOne(
-    where: FindOptionsWhere<GiftEntity>,
-  ): Promise<GiftEntity | null> {
-    try {
-      return await this.giftRepository.findOne({ where });
-    } catch (error) {
-      this.logger.error('Error finding gift:', error);
-      throw error;
-    }
+  /**
+   * Find gift by secret hash
+   */
+  async findBySecretHash(secretHash: string): Promise<Gift | null> {
+    return this.findOne({ secretHash });
   }
 
-  public find(
-    where: FindOptionsWhere<GiftEntity>,
-    options?: FindManyOptions<GiftEntity>,
-  ): Promise<GiftEntity[]> {
-    try {
-      return this.giftRepository.find({
-        where,
-        order: {
-          createdAt: 'DESC',
-        },
+  /**
+   * Find gifts by sender address
+   */
+  async findBySender(
+    senderAddress: string,
+    options?: { skip?: number; take?: number },
+  ): Promise<Gift[]> {
+    return this.findMany(
+      { sender: senderAddress },
+      {
+        orderBy: { createdAt: 'desc' },
         ...options,
-      });
-    } catch (error) {
-      this.logger.error('Error finding gifts:', error);
-      throw error;
-    }
+      },
+    );
+  }
+
+  /**
+   * Find recallable gifts by sender
+   */
+  async findRecallableBySender(senderAddress: string): Promise<Gift[]> {
+    const now = new Date();
+    return this.findMany(
+      {
+        sender: senderAddress,
+        recallable: true,
+        status: GiftStatusEnum.PENDING,
+        OR: [{ recallableTime: null }, { recallableTime: { lte: now } }],
+      },
+      {
+        orderBy: { createdAt: 'desc' },
+      },
+    );
+  }
+
+  /**
+   * Find recalled gifts by sender
+   */
+  async findRecalledBySender(senderAddress: string): Promise<Gift[]> {
+    return this.findMany(
+      {
+        sender: senderAddress,
+        status: GiftStatusEnum.RECALLED,
+      },
+      {
+        orderBy: { createdAt: 'desc' },
+      },
+    );
+  }
+
+  /**
+   * Update gift status
+   */
+  async updateStatus(
+    where: Prisma.GiftWhereInput,
+    status: GiftStatusEnum,
+    additionalData?: Partial<Gift>,
+  ): Promise<Gift> {
+    return this.update(where, {
+      status,
+      ...additionalData,
+    });
   }
 }

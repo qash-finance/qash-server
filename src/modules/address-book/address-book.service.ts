@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { AddressBookRepository } from './address-book.repository';
 import {
   AddressBookDto,
   AddressBookNameDuplicateDto,
@@ -14,6 +13,8 @@ import {
   sanitizeString,
 } from '../../common/utils/validation.util';
 import { ErrorAddressBook } from '../../common/constants/errors';
+import { AddressBook } from '@prisma/client';
+import { AddressBookRepository } from './address-book.repository';
 import { CategoryRepository } from './category.repository';
 
 @Injectable()
@@ -28,21 +29,16 @@ export class AddressBookService {
   // *************************************************
   // **************** GET METHODS ******************
   // *************************************************
-  async getAllAddressBookEntries(userAddress: string) {
+  async getAllAddressBookEntries(userAddress: string): Promise<AddressBook[]> {
     try {
       // Validate user address
       validateAddress(userAddress, 'userAddress');
 
       const normalizedUserAddress = normalizeAddress(userAddress);
 
-      return this.categoryRepository.find({
-        relations: ['addressBooks'],
-        where: {
-          addressBooks: {
-            userAddress: normalizedUserAddress,
-          },
-        },
-      });
+      return this.addressBookRepository.findByUserWithCategories(
+        normalizedUserAddress,
+      );
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -79,13 +75,10 @@ export class AddressBookService {
       const normalizedUserAddress = normalizeAddress(userAddress);
       const sanitizedCategory = sanitizeString(category);
 
-      const existingCategory = await this.addressBookRepository.findOne({
-        userAddress: normalizedUserAddress,
-        category: {
-          name: sanitizedCategory,
-        },
-      });
-      return existingCategory !== null;
+      return this.addressBookRepository.categoryExistsForUser(
+        normalizedUserAddress,
+        sanitizedCategory,
+      );
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -153,21 +146,18 @@ export class AddressBookService {
 
       if (!category) {
         // Create new category if it doesn't exist
-        category = await this.categoryRepository.create({
-          name: sanitizedCategory,
-        });
+        category =
+          await this.categoryRepository.createByName(sanitizedCategory);
       }
 
       // Create the entry with normalized and sanitized data
-      const createDto = {
-        userAddress: normalizedUserAddress,
-        address: normalizedAddress,
-        name: sanitizedName,
-        category,
-        token: normalizedToken,
-      };
-
-      return this.addressBookRepository.create(createDto);
+      return this.addressBookRepository.createWithCategory(
+        normalizedUserAddress,
+        sanitizedName,
+        normalizedAddress,
+        category.id,
+        normalizedToken,
+      );
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -184,7 +174,7 @@ export class AddressBookService {
     const existingEntry = await this.addressBookRepository.findOne({
       userAddress,
       name,
-      category: {
+      categories: {
         name: category,
       },
     });
@@ -199,7 +189,7 @@ export class AddressBookService {
     const existingEntry = await this.addressBookRepository.findOne({
       userAddress,
       address,
-      category: {
+      categories: {
         name: category,
       },
     });

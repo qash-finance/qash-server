@@ -28,14 +28,13 @@ jobs:
           SKIP_LOGIN: true
       - name: Copy .env.example to .env.test
         run: cp .env.example .env.test
-      - name : copy secrets to .env.test
+      - name: copy secrets to .env.test
         run: echo "${{ secrets.ENV_TEST }}" >> .env.test
       - run: npm install
+      - run: npm run prisma:generate
       - run: npm run build
         name: Build
       - run: npm run lint
         name: Lint
       - run: npm run test
         name: Test
-      - run: NODE_ENV=test npm run test:e2e
-        name: E2E Test

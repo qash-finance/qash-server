@@ -1,8 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { GiftRepository } from './gift.repository';
 import { CreateGiftDto } from './gift.dto';
 import { AppConfigService } from '../../common/config/services/config.service';
-import { NoteStatus, NoteType } from '../../common/enums/note';
 import { handleError } from '../../common/utils/errors';
 import {
   validateAddress,
@@ -11,16 +9,21 @@ import {
 } from '../../common/utils/validation.util';
 import { ErrorGift } from '../../common/constants/errors';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '../../common/enums/notification';
+import { GiftRepository } from './gift.repository';
+import {
+  GiftNoteTypeEnum,
+  GiftStatusEnum,
+  NotificationsTypeEnum,
+} from '@prisma/client';
 
 @Injectable()
 export class GiftService {
   private readonly logger = new Logger(GiftService.name);
 
   constructor(
-    private readonly giftRepository: GiftRepository,
     private readonly notificationService: NotificationService,
     private readonly appConfigService: AppConfigService,
+    private readonly giftRepository: GiftRepository,
   ) {}
 
   // *************************************************
@@ -29,9 +32,7 @@ export class GiftService {
   public async getGiftBySecret(secretNumber: string) {
     try {
       console.log('FINDING GIFT BY SECRET', secretNumber);
-      const gift = await this.giftRepository.findOne({
-        secretNumber: secretNumber,
-      });
+      const gift = await this.giftRepository.findBySecretHash(secretNumber);
 
       if (!gift) {
         throw new BadRequestException(ErrorGift.GiftNotFound);
@@ -49,9 +50,9 @@ export class GiftService {
       const normalizedSenderAddress = normalizeAddress(senderAddress);
 
       // we will get all gifts for the sender
-      const gifts = await this.giftRepository.find({
-        sender: normalizedSenderAddress,
-      });
+      const gifts = await this.giftRepository.findBySender(
+        normalizedSenderAddress,
+      );
 
       // calculate total amount of gifts
       const totalAmount = gifts.reduce((acc, gift) => {
@@ -60,7 +61,7 @@ export class GiftService {
 
       // total opened gifts
       const totalOpenedGifts = gifts.filter(
-        (gift) => gift.status === NoteStatus.CONSUMED,
+        (gift) => gift.status === GiftStatusEnum.CONSUMED,
       ).length;
 
       return {
@@ -91,7 +92,7 @@ export class GiftService {
         walletAddress: senderAddress,
         title: 'Gift created successfully',
         message: 'Gift created successfully',
-        type: NotificationType.GIFT_SEND,
+        type: NotificationsTypeEnum.GIFT_SEND,
         metadata: {
           tokenId: dto.assets[0].faucetId,
           tokenName: dto.assets[0].metadata.symbol,
@@ -124,20 +125,18 @@ export class GiftService {
       const secretWithPlus = decodedSecret.replace(/ /g, '+');
 
       // Find the gift by secret hash
-      const gift = await this.giftRepository.findOne({
-        secretNumber: secretWithPlus,
-      });
+      const gift = await this.giftRepository.findBySecretHash(secretWithPlus);
       if (!gift) {
         throw new BadRequestException(ErrorGift.GiftNotFound);
       }
 
       // Check if gift is already opened
-      if (gift.status === NoteStatus.CONSUMED) {
+      if (gift.status === GiftStatusEnum.CONSUMED) {
         throw new BadRequestException(ErrorGift.GiftAlreadyOpened);
       }
 
       // Check if gift is recalled
-      if (gift.status === NoteStatus.RECALLED) {
+      if (gift.status === GiftStatusEnum.RECALLED) {
         throw new BadRequestException('Gift has been recalled by sender');
       }
 
@@ -145,7 +144,7 @@ export class GiftService {
         walletAddress: gift.sender,
         title: 'Gift opened by',
         message: 'Gift opened by',
-        type: NotificationType.GIFT_OPEN,
+        type: NotificationsTypeEnum.GIFT_OPEN,
         metadata: {
           tokenId: gift.assets[0].faucetId,
           tokenName: gift.assets[0].metadata.symbol,
@@ -159,7 +158,7 @@ export class GiftService {
         walletAddress: caller,
         title: 'You claimed a gift!',
         message: 'Gift claimed successfully',
-        type: NotificationType.GIFT_CLAIM,
+        type: NotificationsTypeEnum.GIFT_CLAIM,
         metadata: {
           tokenId: gift.assets[0].faucetId,
           tokenName: gift.assets[0].metadata.symbol,
@@ -169,9 +168,10 @@ export class GiftService {
         },
       });
 
-      return this.giftRepository.updateOne(
-        { secretNumber: secret },
-        { status: NoteStatus.CONSUMED, openedAt: new Date() },
+      return this.giftRepository.updateStatus(
+        { id: gift.id },
+        GiftStatusEnum.CONSUMED,
+        { openedAt: new Date() },
       );
     } catch (error) {
       handleError(error, this.logger);
@@ -187,16 +187,8 @@ export class GiftService {
       validateAddress(senderAddress, 'senderAddress');
       const normalizedSenderAddress = normalizeAddress(senderAddress);
 
-      const now = new Date();
-      const gifts = await this.giftRepository.find({
-        sender: normalizedSenderAddress,
-        status: NoteStatus.PENDING,
-        recallable: true,
-      });
-
-      // Filter gifts that are actually recallable (recallableTime has passed)
-      return gifts.filter(
-        (gift) => !gift.recallableTime || gift.recallableTime <= now,
+      return this.giftRepository.findRecallableBySender(
+        normalizedSenderAddress,
       );
     } catch (error) {
       handleError(error, this.logger);
@@ -208,10 +200,7 @@ export class GiftService {
       validateAddress(senderAddress, 'senderAddress');
       const normalizedSenderAddress = normalizeAddress(senderAddress);
 
-      return this.giftRepository.find({
-        sender: normalizedSenderAddress,
-        status: NoteStatus.RECALLED,
-      });
+      return this.giftRepository.findRecalledBySender(normalizedSenderAddress);
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -229,7 +218,7 @@ export class GiftService {
         throw new BadRequestException(ErrorGift.GiftNotFound);
       }
 
-      if (gift.status !== NoteStatus.PENDING) {
+      if (gift.status !== GiftStatusEnum.PENDING) {
         throw new BadRequestException(
           'Gift cannot be recalled - it has already been processed',
         );
@@ -250,7 +239,7 @@ export class GiftService {
         walletAddress: gift.sender,
         title: 'Gift recalled successfully',
         message: 'Gift recalled successfully',
-        type: NotificationType.REFUND,
+        type: NotificationsTypeEnum.REFUND,
         metadata: {
           tokenId: gift.assets[0].faucetId,
           tokenName: gift.assets[0].metadata.symbol,
@@ -259,10 +248,9 @@ export class GiftService {
         },
       });
 
-      return this.giftRepository.updateOne(
-        { id },
-        { status: NoteStatus.RECALLED, recalledAt: new Date() },
-      );
+      return this.giftRepository.updateStatus({ id }, GiftStatusEnum.RECALLED, {
+        recalledAt: new Date(),
+      });
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -273,16 +261,22 @@ export class GiftService {
     dto: CreateGiftDto,
     normalizedSenderAddress: string,
   ) {
+    const now = new Date();
+    const assets = dto.assets.map((asset) => ({
+      ...asset,
+    }));
     return this.giftRepository.create({
       sender: normalizedSenderAddress,
-      assets: dto.assets,
-      status: NoteStatus.PENDING,
+      status: GiftStatusEnum.PENDING,
       recallableTime: new Date(Date.now()),
       recallable: true,
-      secretNumber: dto.secretNumber,
+      secretHash: dto.secretNumber,
       serialNumber: dto.serialNumber,
-      noteType: NoteType.GIFT,
+      noteType: GiftNoteTypeEnum.GIFT,
       noteId: dto.txId,
+      assets: assets,
+      createdAt: now,
+      updatedAt: now,
     });
   }
 }

@@ -1,283 +1,306 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
 import {
-  GroupPaymentEntity,
-  GroupPaymentGroupEntity,
+  GroupPayment,
+  GroupPaymentGroup,
   GroupPaymentMemberStatus,
-  GroupPaymentMemberStatusEntity,
-} from './group-payment.entity';
+  Prisma,
+  GroupPaymentStatusEnum,
+  GroupPaymentMemberStatusEnum,
+} from '@prisma/client';
+import { BaseRepository } from '../../database/base.repository';
 
 @Injectable()
-export class GroupPaymentRepository {
-  private readonly logger = new Logger(GroupPaymentRepository.name);
-
-  constructor(
-    @InjectRepository(GroupPaymentGroupEntity)
-    private readonly groupRepository: Repository<GroupPaymentGroupEntity>,
-    @InjectRepository(GroupPaymentEntity)
-    private readonly paymentRepository: Repository<GroupPaymentEntity>,
-    @InjectRepository(GroupPaymentMemberStatusEntity)
-    private readonly memberStatusRepository: Repository<GroupPaymentMemberStatusEntity>,
-  ) {}
-
-  public async createGroup(
-    dto: Partial<GroupPaymentGroupEntity>,
-  ): Promise<GroupPaymentGroupEntity> {
-    try {
-      const entity = this.groupRepository.create(dto);
-      return await entity.save();
-    } catch (error) {
-      this.logger.error('Error creating group:', error);
-      throw error;
-    }
+export class GroupPaymentRepository extends BaseRepository<
+  GroupPayment,
+  Prisma.GroupPaymentWhereInput,
+  Prisma.GroupPaymentCreateInput,
+  Prisma.GroupPaymentUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
   }
 
-  public async updateGroup(
-    groupId: number,
-    update: Partial<GroupPaymentGroupEntity>,
-  ): Promise<GroupPaymentGroupEntity> {
-    try {
-      await this.groupRepository.update(groupId, update);
-      const updated = await this.groupRepository.findOne({
-        where: { id: groupId },
-      });
-      return updated as GroupPaymentGroupEntity;
-    } catch (error) {
-      this.logger.error('Error updating group:', error);
-      throw error;
-    }
+  protected getModel() {
+    return this.prisma.groupPayment;
   }
 
-  public async deleteGroup(groupId: number): Promise<void> {
-    try {
-      await this.groupRepository.delete(groupId);
-    } catch (error) {
-      this.logger.error('Error deleting group:', error);
-      throw error;
-    }
+  /**
+   * Create group payment with member statuses
+   */
+  async createWithMembers(
+    data: Omit<Prisma.GroupPaymentCreateInput, 'groupPaymentMemberStatus'>,
+    memberAddresses: string[],
+  ): Promise<GroupPayment> {
+    const now = new Date();
+    return this.getModel().create({
+      data: {
+        ...data,
+        createdAt: now,
+        updatedAt: now,
+        groupPaymentMemberStatus: {
+          create: memberAddresses.map((address) => ({
+            memberAddress: address,
+            status: GroupPaymentMemberStatusEnum.PENDING,
+            createdAt: now,
+            updatedAt: now,
+          })),
+        },
+      },
+      include: {
+        groupPaymentMemberStatus: true,
+        groupPaymentGroup: true,
+      },
+    });
   }
 
-  public async createPayment(
-    dto: Partial<GroupPaymentEntity>,
-  ): Promise<GroupPaymentEntity> {
-    try {
-      const entity = this.paymentRepository.create(dto);
-      return await entity.save();
-    } catch (error) {
-      this.logger.error('Error creating payment:', error);
-      throw error;
-    }
+  /**
+   * Find group payments by owner
+   */
+  async findByOwner(ownerAddress: string): Promise<GroupPayment[]> {
+    return this.findMany(
+      { ownerAddress },
+      {
+        orderBy: { createdAt: 'desc' },
+        include: {
+          groupPaymentMemberStatus: true,
+          groupPaymentGroup: true,
+        },
+      },
+    );
   }
 
-  public async createMemberStatus(
-    groupPaymentId: number,
-    members: { address: string; name: string }[] | string[],
-  ): Promise<GroupPaymentMemberStatusEntity[]> {
-    try {
-      const memberStatusEntities = members.map((member) => {
-        const address = typeof member === 'string' ? member : member.address;
-        return this.memberStatusRepository.create({
-          groupPayment: { id: groupPaymentId },
-          memberAddress: address,
-          status: GroupPaymentMemberStatus.PENDING,
-        });
-      });
-
-      return await this.memberStatusRepository.save(memberStatusEntities);
-    } catch (error) {
-      this.logger.error('Error creating member statuses:', error);
-      throw error;
-    }
+  /**
+   * Find group payment by link code
+   */
+  async findByLinkCode(linkCode: string): Promise<GroupPayment | null> {
+    return this.getModel().findUnique({
+      where: { linkCode },
+      include: {
+        groupPaymentMemberStatus: true,
+        groupPaymentGroup: true,
+      },
+    });
   }
 
-  async findGroup(
-    where: FindOptionsWhere<GroupPaymentGroupEntity>,
-  ): Promise<GroupPaymentGroupEntity[]> {
-    try {
-      return await this.groupRepository.find({
-        where,
-        order: { createdAt: 'DESC' },
-      });
-    } catch (error) {
-      this.logger.error('Error finding groups:', error);
-      throw error;
-    }
+  /**
+   * Find group payments by member address
+   */
+  async findByMember(memberAddress: string): Promise<GroupPayment[]> {
+    return this.getModel().findMany({
+      where: {
+        groupPaymentMemberStatus: {
+          some: {
+            memberAddress,
+          },
+        },
+      },
+      include: {
+        groupPaymentMemberStatus: true,
+        groupPaymentGroup: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
-  async findOneGroup(
-    where: FindOptionsWhere<GroupPaymentGroupEntity>,
-  ): Promise<GroupPaymentGroupEntity | null> {
-    try {
-      return await this.groupRepository.findOne({ where });
-    } catch (error) {
-      this.logger.error('Error finding group:', error);
-      throw error;
-    }
+  /**
+   * Update group payment status
+   */
+  async updateStatus(
+    id: number,
+    status: GroupPaymentStatusEnum,
+  ): Promise<GroupPayment> {
+    return this.update({ id }, { status });
   }
 
-  async findGroupsByOwner(
-    ownerAddress: string,
-  ): Promise<GroupPaymentGroupEntity[]> {
-    try {
-      return await this.groupRepository.find({
-        where: { ownerAddress },
-        order: { createdAt: 'DESC' },
-      });
-    } catch (error) {
-      this.logger.error('Error finding groups by owner:', error);
-      throw error;
-    }
-  }
-
-  async findPaymentsByGroup(groupId: number): Promise<GroupPaymentEntity[]> {
-    try {
-      return await this.paymentRepository.find({
-        where: { group: { id: groupId } },
-        relations: ['group'],
-        order: { createdAt: 'DESC' },
-      });
-    } catch (error) {
-      this.logger.error('Error finding payments by group:', error);
-      throw error;
-    }
-  }
-
-  async findMemberStatusesByPayment(
-    groupPaymentId: number,
-  ): Promise<GroupPaymentMemberStatusEntity[]> {
-    try {
-      return await this.memberStatusRepository.find({
-        where: { groupPayment: { id: groupPaymentId } },
-        order: { createdAt: 'DESC' },
-      });
-    } catch (error) {
-      this.logger.error('Error finding member statuses by payment:', error);
-      throw error;
-    }
-  }
-
-  async findPaymentById(id: number): Promise<GroupPaymentEntity | null> {
-    try {
-      return await this.paymentRepository.findOne({ where: { id } });
-    } catch (error) {
-      this.logger.error('Error finding payment by ID:', error);
-      throw error;
-    }
-  }
-
-  async findPaymentByLinkCode(
-    linkCode: string,
-  ): Promise<GroupPaymentEntity | null> {
-    try {
-      return await this.paymentRepository.findOne({
-        where: { linkCode },
-        relations: ['group'],
-      });
-    } catch (error) {
-      this.logger.error('Error finding payment by link code:', error);
-      throw error;
-    }
-  }
-
-  // Quick Share specific repository methods
-  async updateGroupMembers(
-    groupId: number,
-    members: { address: string; name: string }[],
-  ): Promise<void> {
-    try {
-      await this.groupRepository.update(groupId, { members });
-    } catch (error) {
-      this.logger.error('Error updating group members:', error);
-      throw error;
-    }
-  }
-
-  async updatePaymentPerMember(
-    paymentId: number,
-    perMember: number,
-  ): Promise<void> {
-    try {
-      await this.paymentRepository.update(paymentId, { perMember });
-    } catch (error) {
-      this.logger.error('Error updating payment per member:', error);
-      throw error;
-    }
-  }
-
-  async updateMemberStatusToPaid(
+  /**
+   * Update member status in group payment
+   */
+  async updateMemberStatus(
     groupPaymentId: number,
     memberAddress: string,
-  ): Promise<void> {
-    try {
-      await this.memberStatusRepository.update(
-        {
-          groupPayment: { id: groupPaymentId },
-          memberAddress: memberAddress,
-        },
-        {
-          status: GroupPaymentMemberStatus.PAID,
-          paidAt: new Date(),
-        },
-      );
-    } catch (error) {
-      this.logger.error('Error updating member status to paid:', error);
-      throw error;
+    status: GroupPaymentMemberStatusEnum,
+  ): Promise<GroupPaymentMemberStatus> {
+    const now = new Date();
+    const memberStatus = await this.prisma.groupPaymentMemberStatus.findFirst({
+      where: {
+        groupPaymentId,
+        memberAddress,
+      },
+    });
+
+    if (!memberStatus) {
+      throw new Error('Member status not found');
     }
+
+    return this.prisma.groupPaymentMemberStatus.update({
+      where: {
+        id: memberStatus.id,
+      },
+      data: {
+        status,
+        paidAt: status === GroupPaymentMemberStatusEnum.PAID ? now : null,
+        updatedAt: now,
+      },
+    });
   }
 
-  async updateMemberStatusByIndex(
+  /**
+   * Get group payment member status
+   */
+  async getMemberStatus(
     groupPaymentId: number,
-    memberIndex: number,
-    newMemberAddress: string,
-  ): Promise<void> {
-    try {
-      // Get all member statuses for this payment, ordered by creation time
-      const memberStatuses = await this.memberStatusRepository.find({
-        where: { groupPayment: { id: groupPaymentId } },
-        order: { createdAt: 'ASC' },
-      });
+    memberAddress: string,
+  ): Promise<GroupPaymentMemberStatus | null> {
+    return this.prisma.groupPaymentMemberStatus.findFirst({
+      where: {
+        groupPaymentId,
+        memberAddress,
+      },
+    });
+  }
 
-      // Find the status at the specific index
-      if (memberIndex < 0 || memberIndex >= memberStatuses.length) {
-        throw new Error('Invalid member index');
+  /**
+   * Check if all members have paid
+   */
+  async checkAllMembersPaid(groupPaymentId: number): Promise<boolean> {
+    const unpaidMembers = await this.prisma.groupPaymentMemberStatus.findMany({
+      where: {
+        groupPaymentId,
+        status: GroupPaymentMemberStatusEnum.PENDING,
+      },
+    });
+    return unpaidMembers.length === 0;
+  }
+
+  /**
+   * Get group payment statistics for owner
+   */
+  async getOwnerStats(ownerAddress: string): Promise<{
+    total: number;
+    pending: number;
+    completed: number;
+    cancelled: number;
+  }> {
+    const stats = await this.prisma.groupPayment.groupBy({
+      by: ['status'],
+      where: { ownerAddress },
+      _count: { status: true },
+    });
+
+    const result = {
+      total: 0,
+      pending: 0,
+      completed: 0,
+      cancelled: 0,
+    };
+
+    stats.forEach((stat) => {
+      result.total += stat._count.status;
+      switch (stat.status) {
+        case GroupPaymentStatusEnum.PENDING:
+          result.pending = stat._count.status;
+          break;
+        case GroupPaymentStatusEnum.COMPLETED:
+          result.completed = stat._count.status;
+          break;
+        case GroupPaymentStatusEnum.EXPIRED:
+          result.cancelled = stat._count.status;
+          break;
       }
+    });
 
-      const targetStatus = memberStatuses[memberIndex];
+    return result;
+  }
+}
 
-      // Update the member status with new address and mark as PAID
-      await this.memberStatusRepository.update(
-        { id: targetStatus.id },
-        {
-          memberAddress: newMemberAddress,
-          status: GroupPaymentMemberStatus.PAID,
-          paidAt: new Date(),
-        },
-      );
-    } catch (error) {
-      this.logger.error('Error updating member status by index:', error);
-      throw error;
-    }
+@Injectable()
+export class GroupPaymentGroupRepository extends BaseRepository<
+  GroupPaymentGroup,
+  Prisma.GroupPaymentGroupWhereInput,
+  Prisma.GroupPaymentGroupCreateInput,
+  Prisma.GroupPaymentGroupUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
   }
 
-  async updateMemberStatusToDenied(
-    groupPaymentId: number,
-    memberAddress: string,
-  ): Promise<void> {
-    try {
-      await this.memberStatusRepository.update(
-        {
-          groupPayment: { id: groupPaymentId },
-          memberAddress: memberAddress,
+  protected getModel() {
+    return this.prisma.groupPaymentGroup;
+  }
+
+  /**
+   * Find groups by owner
+   */
+  async findByOwner(ownerAddress: string): Promise<GroupPaymentGroup[]> {
+    return this.findMany(
+      { ownerAddress },
+      {
+        orderBy: { createdAt: 'desc' },
+        include: {
+          groupPayment: {
+            include: {
+              groupPaymentMemberStatus: true,
+            },
+          },
         },
-        {
-          status: GroupPaymentMemberStatus.DENIED,
-          paidAt: null,
+      },
+    );
+  }
+
+  /**
+   * Find group by name and owner
+   */
+  async findByNameAndOwner(
+    name: string,
+    ownerAddress: string,
+  ): Promise<GroupPaymentGroup[]> {
+    return this.findMany(
+      {
+        name,
+        ownerAddress,
+      },
+      {
+        orderBy: { createdAt: 'desc' },
+      },
+    );
+  }
+
+  /**
+   * Find group by ID and owner
+   */
+  async findByIdAndOwner(
+    id: number,
+    ownerAddress: string,
+  ): Promise<GroupPaymentGroup | null> {
+    return this.findOne({ id, ownerAddress });
+  }
+
+  /**
+   * Delete group and related payments
+   */
+  async deleteGroupWithPayments(id: number): Promise<void> {
+    // First delete related group payments and their member statuses
+    await this.prisma.groupPaymentMemberStatus.deleteMany({
+      where: {
+        groupPayment: {
+          groupId: id,
         },
-      );
-    } catch (error) {
-      this.logger.error('Error updating member status to denied:', error);
-      throw error;
-    }
+      },
+    });
+
+    await this.prisma.groupPayment.deleteMany({
+      where: { groupId: id },
+    });
+
+    // Then delete the group itself
+    await this.delete({ id });
+  }
+
+  /**
+   * Count groups by owner
+   */
+  async countByOwner(ownerAddress: string): Promise<number> {
+    return this.count({ ownerAddress });
   }
 }

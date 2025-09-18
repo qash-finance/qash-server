@@ -6,18 +6,18 @@ import {
   forwardRef,
 } from '@nestjs/common';
 
-import { NotificationEntity } from './notification.entity';
-import { NotificationRepository } from './notification.repository';
 import {
   CreateNotificationDto,
   NotificationQueryDto,
   NotificationResponseDto,
 } from './notification.dto';
-import {
-  NotificationType,
-  NotificationStatus,
-} from '../../common/enums/notification';
 import { NotificationGateway } from './notification.gateway';
+import { NotificationRepository } from './notification.repository';
+import {
+  Notifications,
+  NotificationsStatusEnum,
+  NotificationsTypeEnum,
+} from '@prisma/client';
 
 @Injectable()
 export class NotificationService {
@@ -31,11 +31,17 @@ export class NotificationService {
 
   public async createNotification(
     dto: CreateNotificationDto,
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     this.logger.log(
       `Creating notification for wallet ${dto.walletAddress} of type ${dto.type}`,
     );
-    const notification = await this.notificationRepository.create(dto);
+
+    const now = new Date();
+    const notification = await this.notificationRepository.create({
+      ...dto,
+      createdAt: now,
+      updatedAt: now,
+    });
 
     // Emit real-time notification to wallet if gateway is available and wallet is connected
     if (
@@ -76,11 +82,18 @@ export class NotificationService {
     if (type) where.type = type;
     if (status) where.status = status;
 
-    const [notifications, total] =
-      await this.notificationRepository.findAndCount(where, {
+    const [notifications, total] = await Promise.all([
+      this.notificationRepository.findByWalletWithPagination(walletAddress, {
         skip,
         take: limit,
-      });
+        type,
+        status,
+      }),
+      this.notificationRepository.countByWallet(walletAddress, {
+        type,
+        status,
+      }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
 
@@ -96,11 +109,11 @@ export class NotificationService {
   public async getNotificationById(
     id: number,
     walletAddress: string,
-  ): Promise<NotificationEntity> {
-    const notification = await this.notificationRepository.findOne({
+  ): Promise<Notifications> {
+    const notification = await this.notificationRepository.findByIdAndWallet(
       id,
       walletAddress,
-    });
+    );
 
     if (!notification) {
       throw new NotFoundException('Notification not found');
@@ -112,10 +125,12 @@ export class NotificationService {
   public async markAsRead(
     id: number,
     walletAddress: string,
-  ): Promise<NotificationEntity> {
-    const updatedNotification = await this.notificationRepository.updateOne(
-      { id, walletAddress },
-      { status: NotificationStatus.READ },
+  ): Promise<Notifications> {
+    const updatedNotification = await this.notificationRepository.updateStatus(
+      id,
+      walletAddress,
+      NotificationsStatusEnum.READ,
+      { readAt: new Date() },
     );
 
     // Emit real-time update if gateway is available and wallet is connected
@@ -139,15 +154,17 @@ export class NotificationService {
   public async markAsUnread(
     id: number,
     walletAddress: string,
-  ): Promise<NotificationEntity> {
-    return this.notificationRepository.updateOne(
-      { id, walletAddress },
-      { status: NotificationStatus.UNREAD },
+  ): Promise<Notifications> {
+    return this.notificationRepository.updateStatus(
+      id,
+      walletAddress,
+      NotificationsStatusEnum.UNREAD,
     );
   }
 
   public async markAllAsRead(walletAddress: string): Promise<void> {
-    await this.notificationRepository.markAllAsRead(walletAddress);
+    await this.notificationRepository.markAllAsReadForWallet(walletAddress);
+
     this.logger.log(
       `Marked all notifications as read for wallet ${walletAddress}`,
     );
@@ -163,7 +180,7 @@ export class NotificationService {
   }
 
   public async getUnreadCount(walletAddress: string): Promise<number> {
-    return this.notificationRepository.getUnreadCount(walletAddress);
+    return this.notificationRepository.countUnreadByWallet(walletAddress);
   }
 
   // These methods are now the primary methods (no longer wallet-specific aliases)
@@ -177,10 +194,10 @@ export class NotificationService {
       assetType: string;
       transactionId?: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.SEND,
+      type: NotificationsTypeEnum.SEND,
       title: 'Payment Sent',
       message: `You sent ${data.amount} ${data.assetType} to ${data.recipientAddress}`,
       metadata: data,
@@ -198,10 +215,10 @@ export class NotificationService {
       senderAddress: string;
       transactionId?: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.CONSUME,
+      type: NotificationsTypeEnum.CLAIM,
       title: 'Payment Received',
       message: `You received ${data.amount} ${data.assetType} from ${data.senderAddress}`,
       metadata: data,
@@ -219,10 +236,10 @@ export class NotificationService {
       originalRecipient: string;
       transactionId?: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.REFUND,
+      type: NotificationsTypeEnum.REFUND,
       title: 'Payment Refunded',
       message: `Your payment of ${data.amount} ${data.assetType} to ${data.originalRecipient} has been refunded`,
       metadata: data,
@@ -240,10 +257,10 @@ export class NotificationService {
       assetType: string;
       batchId?: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.BATCH_SEND,
+      type: NotificationsTypeEnum.BATCH_SEND,
       title: 'Batch Payment Sent',
       message: `You sent ${data.totalAmount} ${data.assetType} to ${data.recipientCount} recipients`,
       metadata: data,
@@ -257,10 +274,10 @@ export class NotificationService {
       walletAddress: string;
       walletType?: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.WALLET_CREATE,
+      type: NotificationsTypeEnum.WALLET_CREATE,
       title: 'Wallet Created',
       message: `Your new wallet has been created successfully`,
       metadata: data,
@@ -277,10 +294,10 @@ export class NotificationService {
       tokenId: string;
       payee: string;
     },
-  ): Promise<NotificationEntity> {
+  ): Promise<Notifications> {
     return this.createNotification({
       walletAddress,
-      type: NotificationType.REQUEST_PAYMENT,
+      type: NotificationsTypeEnum.REQUEST_PAYMENT,
       title: 'Payment Request',
       message: data.message,
       metadata: {
@@ -291,8 +308,9 @@ export class NotificationService {
       },
     });
   }
+
   private mapToResponseDto(
-    notification: NotificationEntity,
+    notification: Notifications,
   ): NotificationResponseDto {
     return {
       id: notification.id,
@@ -300,7 +318,7 @@ export class NotificationService {
       message: notification.message,
       type: notification.type,
       status: notification.status,
-      metadata: notification.metadata,
+      metadata: notification.metadata as Record<string, any>,
       actionUrl: notification.actionUrl,
       walletAddress: notification.walletAddress,
       createdAt: notification.createdAt,

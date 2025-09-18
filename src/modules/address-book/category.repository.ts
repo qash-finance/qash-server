@@ -1,45 +1,67 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { CategoryEntity } from './category.entity';
+import { PrismaService } from '../../database/prisma.service';
+import { Categories, Prisma } from '@prisma/client';
+import { BaseRepository } from '../../database/base.repository';
 
 @Injectable()
-export class CategoryRepository {
-  constructor(
-    @InjectRepository(CategoryEntity)
-    private readonly repository: Repository<CategoryEntity>,
-  ) {}
-
-  async find(options?: any): Promise<CategoryEntity[]> {
-    return this.repository.find(options);
+export class CategoryRepository extends BaseRepository<
+  Categories,
+  Prisma.CategoriesWhereInput,
+  Prisma.CategoriesCreateInput,
+  Prisma.CategoriesUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
   }
 
-  async findAll(): Promise<CategoryEntity[]> {
-    return this.repository.find();
+  protected getModel() {
+    return this.prisma.categories;
   }
 
-  async findById(id: number): Promise<CategoryEntity | null> {
-    return this.repository.findOne({ where: { id } });
+  /**
+   * Find all categories
+   */
+  async findAll(): Promise<Categories[]> {
+    return this.findMany({});
   }
 
-  async findByName(name: string): Promise<CategoryEntity | null> {
-    return this.repository.findOne({ where: { name } });
+  /**
+   * Find category by ID
+   */
+  async findById(id: number): Promise<Categories | null> {
+    return this.findOne({ id });
   }
 
-  async create(category: Partial<CategoryEntity>): Promise<CategoryEntity> {
-    const newCategory = this.repository.create(category);
-    return this.repository.save(newCategory);
+  /**
+   * Find category by name
+   */
+  async findByName(name: string): Promise<Categories | null> {
+    return this.findOne({ name });
   }
 
-  async update(
-    id: number,
-    category: Partial<CategoryEntity>,
-  ): Promise<CategoryEntity | null> {
-    await this.repository.update(id, category);
-    return this.findById(id);
+  /**
+   * Create category with name
+   */
+  async createByName(name: string): Promise<Categories> {
+    const now = new Date();
+    return this.create({
+      name,
+      createdAt: now,
+      updatedAt: now,
+    });
   }
 
-  async delete(id: number): Promise<void> {
-    await this.repository.delete(id);
+  /**
+   * Update category name
+   */
+  async updateName(id: number, name: string): Promise<Categories> {
+    return this.update({ id }, { name });
+  }
+
+  /**
+   * Delete category by ID
+   */
+  async deleteById(id: number): Promise<Categories> {
+    return this.delete({ id });
   }
 }

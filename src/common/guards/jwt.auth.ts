@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
-import { ErrorAuth, ErrorToken, ErrorUser } from '../constants/errors';
+import { ErrorToken, ErrorUser } from '../constants/errors';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt-http') implements CanActivate {
@@ -27,10 +27,6 @@ export class JwtAuthGuard extends AuthGuard('jwt-http') implements CanActivate {
         return true;
       }
       switch (e.message) {
-        case ErrorAuth.TwoFactorAuthDisabled:
-          throw new UnauthorizedException(ErrorAuth.TwoFactorAuthDisabled);
-        case ErrorAuth.TwoFactorAuthRequired:
-          throw new UnauthorizedException(ErrorAuth.TwoFactorAuthRequired);
         case ErrorToken.Expired:
           throw new UnauthorizedException(ErrorToken.Expired);
         case ErrorUser.NoRole:
