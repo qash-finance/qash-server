@@ -2,13 +2,14 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { AddressBookService } from './address-book.service';
-import { AddressBookDto } from './address-book.dto';
+import { AddressBookDto, CategoryDto, CategoryOrderDto } from './address-book.dto';
 import { RequestWithWalletAuth } from '../../common/interfaces';
 import {
   ApiBearerAuth,
@@ -18,7 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
-import { AddressBook } from '@prisma/client';
+import { AddressBook, Categories } from '@prisma/client';
 
 @ApiTags('Address Book')
 @ApiBearerAuth()
@@ -43,6 +44,24 @@ export class AddressBookController {
     @Req() req: RequestWithWalletAuth,
   ): Promise<AddressBook[]> {
     return this.addressBookService.getAllAddressBookEntries(
+      req.walletAuth.walletAddress,
+    );
+  }
+
+  @Get('category')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({
+    summary: 'Get all categories',
+    description: 'Get all categories',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories fetched successfully',
+  })
+  async getAllCategories(
+    @Req() req: RequestWithWalletAuth,
+  ): Promise<Categories[]> {
+    return this.addressBookService.getAllCategories(
       req.walletAuth.walletAddress,
     );
   }
@@ -87,6 +106,26 @@ export class AddressBookController {
     );
   }
 
+  @Get('by-category')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({
+    summary: 'Get address book entries by category',
+    description: 'Get all address book entries filtered by category',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Address book entries fetched successfully',
+  })
+  async getAddressBookEntriesByCategory(
+    @Query('category') category: string,
+    @Req() req: RequestWithWalletAuth,
+  ): Promise<AddressBook[]> {
+    return this.addressBookService.getAddressBookEntriesByCategory(
+      req.walletAuth.walletAddress,
+      category,
+    );
+  }
+
   // *************************************************
   // **************** POST METHODS *******************
   // *************************************************
@@ -109,5 +148,44 @@ export class AddressBookController {
       dto,
       req.walletAuth.walletAddress,
     );
+  }
+
+  @Post('category')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({
+    summary: 'Create a new category',
+    description: 'Create a new category',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category created successfully',
+  })
+  @ApiBody({ type: CategoryDto })
+  async createNewCategory(
+    @Body() dto: CategoryDto,
+    @Req() req: RequestWithWalletAuth,
+  ) {
+    return this.addressBookService.createNewCategory(
+      dto,
+      req.walletAuth.walletAddress,
+    );
+  }
+
+  // *************************************************
+  // **************** PATCH METHODS *******************
+  // *************************************************
+  @Patch('category/update-order')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({
+    summary: 'Update order of categories',
+    description: 'Update order of categories',
+  })
+  @ApiResponse({ status: 200, description: 'Categories ordered successfully' })
+  @ApiBody({ type: CategoryOrderDto })
+  async updateCategoryOrder(
+    @Body() dto: CategoryOrderDto,
+    @Req() req: RequestWithWalletAuth,
+  ) {
+    return this.addressBookService.updateCategoryOrder(dto, req.walletAuth.walletAddress);
   }
 }

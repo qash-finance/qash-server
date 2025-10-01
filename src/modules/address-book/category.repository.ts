@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { Categories, Prisma } from '@prisma/client';
+import { Categories, CategoryShapeEnum, Prisma } from '@prisma/client';
 import { BaseRepository } from '../../database/base.repository';
 
 @Injectable()
@@ -21,8 +21,14 @@ export class CategoryRepository extends BaseRepository<
   /**
    * Find all categories
    */
-  async findAll(): Promise<Categories[]> {
-    return this.findMany({});
+  async findAll(ownerAddress: string): Promise<Categories[]> {
+    return this.findMany({
+      ownerAddress,
+    }, {
+      orderBy: {
+        order: 'asc',
+      },
+    });
   }
 
   /**
@@ -42,12 +48,15 @@ export class CategoryRepository extends BaseRepository<
   /**
    * Create category with name
    */
-  async createByName(name: string): Promise<Categories> {
+  async createByName(ownerAddress: string, name: string, color: string, shape: CategoryShapeEnum): Promise<Categories> {
     const now = new Date();
     return this.create({
       name,
+      color,
+      shape,
+      ownerAddress,
       createdAt: now,
-      updatedAt: now,
+      updatedAt: now
     });
   }
 
@@ -63,5 +72,22 @@ export class CategoryRepository extends BaseRepository<
    */
   async deleteById(id: number): Promise<Categories> {
     return this.delete({ id });
+  }
+
+  /**
+   * Update category order
+   */
+  async updateCategoryOrder(ownerAddress: string, categoryIds: number[]): Promise<Categories[]> {
+    const updates = categoryIds.map((id, index) => 
+      this.update({ id, ownerAddress }, { order: index + 1 })
+    );
+    
+    await Promise.all(updates);
+    
+    // Return updated categories in the new order
+    return this.findMany({
+      ownerAddress,
+      id: { in: categoryIds }
+    });
   }
 }

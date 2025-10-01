@@ -63,8 +63,8 @@ export class WalletAuthController {
     await this.notificationService.createNotification({
       walletAddress: dto.walletAddress,
       type: NotificationsTypeEnum.WALLET_CREATE,
-      title: 'New Wallet Created',
-      message: `Your new wallet has been created successfully`,
+      title: 'Wallet created successfully!',
+      message: `You’re all set — your wallet is ready to use`,
       metadata: {
         walletAddress: dto.walletAddress,
         publicKey: dto.publicKey,

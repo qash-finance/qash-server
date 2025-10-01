@@ -89,13 +89,15 @@ export class AddressBookRepository extends BaseRepository<
     name: string,
     address: string,
     categoryId: number,
-    token?: string,
+    token?: any,
+    email?: string,
   ): Promise<AddressBook> {
     const now = new Date();
     return this.create({
       userAddress,
       name,
       address,
+      email,
       token,
       categories: {
         connect: { id: categoryId },
@@ -113,13 +115,15 @@ export class AddressBookRepository extends BaseRepository<
     data: {
       name?: string;
       address?: string;
-      token?: string;
+      email?: string;
+      token?: any;
       categoryId?: number;
     },
   ): Promise<AddressBook> {
     const updateData: any = {
       name: data.name,
       address: data.address,
+      email: data.email,
       token: data.token,
     };
 

@@ -14,7 +14,9 @@ model AddressBook {
   userAddress String     @map("user_address") @db.VarChar
   name        String     @db.VarChar
   address     String     @db.VarChar
-  token       String?    @db.VarChar
+  email       String?    @db.VarChar
+  token       Json?      @db.Json
+  order       Int        @default(autoincrement())
   categoryId  Int        @map("categoryId")
   categories  Categories @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
@@ -22,12 +24,17 @@ model AddressBook {
 }
 
 model Categories {
-  id          Int           @id() @default(autoincrement())
-  createdAt   DateTime      @map("created_at") @db.Timestamp(6)
-  updatedAt   DateTime      @map("updated_at") @db.Timestamp(6)
-  name        String        @unique() @db.VarChar
-  addressBook AddressBook[]
+  id           Int               @id() @default(autoincrement())
+  createdAt    DateTime          @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime          @map("updated_at") @db.Timestamp(6)
+  name         String            @unique() @db.VarChar
+  shape        CategoryShapeEnum @default(CIRCLE)
+  color        String            @db.VarChar
+  order        Int               @default(autoincrement())
+  ownerAddress String            @map("owner_address") @db.VarChar
+  addressBook  AddressBook[]
 
+  @@index([order])
   @@map("categories")
 }
 
@@ -256,6 +263,13 @@ model SchedulePayment {
   @@index([payee])
   @@index([status])
   @@map("schedule_payment")
+}
+
+enum CategoryShapeEnum {
+  CIRCLE
+  DIAMOND
+  SQUARE
+  TRIANGLE
 }
 
 enum SchedulePaymentFrequencyEnum {
