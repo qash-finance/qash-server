@@ -66,6 +66,23 @@ export class AddressBookRepository extends BaseRepository<
   }
 
   /**
+   * Find address book entries by category ID
+   */
+  async findByCategoryId(
+    userAddress: string,
+    categoryId: number,
+  ): Promise<AddressBook[]> {
+    return this.findMany({
+      userAddress,
+      categoryId,
+    }, {
+      orderBy: {
+        order: 'asc',
+      },
+    });
+  }
+
+  /**
    * Check if category exists for user
    */
   async categoryExistsForUser(
@@ -148,5 +165,28 @@ export class AddressBookRepository extends BaseRepository<
    */
   async countByUser(userAddress: string): Promise<number> {
     return this.count({ userAddress });
+  }
+
+  /**
+   * Update entry order within a specific category
+   */
+  async updateEntryOrder(userAddress: string, categoryId: number, entryIds: number[]): Promise<AddressBook[]> {
+    const updates = entryIds.map((id, index) => 
+      this.update({ id, userAddress, categoryId }, { order: index + 1 })
+    );
+    
+    await Promise.all(updates);
+    
+    // Return updated entries in the new order
+    return this.findMany({
+      userAddress,
+      categoryId,
+      id: { in: entryIds }
+    }, {
+      include: { categories: true },
+      orderBy: {
+        order: 'asc',
+      },
+    });
   }
 }

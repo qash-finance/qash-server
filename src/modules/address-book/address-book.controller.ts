@@ -7,9 +7,12 @@ import {
   Query,
   Req,
   UseGuards,
+  ParseIntPipe,
+  Param,
+  Delete,
 } from '@nestjs/common';
 import { AddressBookService } from './address-book.service';
-import { AddressBookDto, CategoryDto, CategoryOrderDto } from './address-book.dto';
+import { AddressBookDto, CategoryDto, CategoryOrderDto, UpdateAddressBookDto, DeleteAddressBookDto, AddressBookOrderDto } from './address-book.dto';
 import { RequestWithWalletAuth } from '../../common/interfaces';
 import {
   ApiBearerAuth,
@@ -110,19 +113,19 @@ export class AddressBookController {
   @UseGuards(WalletAuthGuard)
   @ApiOperation({
     summary: 'Get address book entries by category',
-    description: 'Get all address book entries filtered by category',
+    description: 'Get all address book entries filtered by category ID',
   })
   @ApiResponse({
     status: 200,
     description: 'Address book entries fetched successfully',
   })
   async getAddressBookEntriesByCategory(
-    @Query('category') category: string,
+    @Query('categoryId', ParseIntPipe) categoryId: number,
     @Req() req: RequestWithWalletAuth,
   ): Promise<AddressBook[]> {
     return this.addressBookService.getAddressBookEntriesByCategory(
       req.walletAuth.walletAddress,
-      category,
+      categoryId,
     );
   }
 
@@ -174,6 +177,21 @@ export class AddressBookController {
   // *************************************************
   // **************** PATCH METHODS *******************
   // *************************************************
+  @Patch('update-order')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({
+    summary: 'Update order of address book entries',
+    description: 'Update order of address book entries',
+  })
+  @ApiResponse({ status: 200, description: 'Address book entries ordered successfully' })
+  @ApiBody({ type: AddressBookOrderDto })
+  async updateAddressBookEntryOrder(
+    @Body() dto: AddressBookOrderDto,
+    @Req() req: RequestWithWalletAuth,
+  ) {
+      return this.addressBookService.updateAddressBookEntryOrder(dto, req.walletAuth.walletAddress);
+    }
+
   @Patch('category/update-order')
   @UseGuards(WalletAuthGuard)
   @ApiOperation({
@@ -187,5 +205,39 @@ export class AddressBookController {
     @Req() req: RequestWithWalletAuth,
   ) {
     return this.addressBookService.updateCategoryOrder(dto, req.walletAuth.walletAddress);
+  }
+
+  @Patch(':id')
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({
+    summary: 'Update address book entry',
+    description: 'Update address book entry',
+  })
+  @ApiResponse({ status: 200, description: 'Address book entry updated successfully' })
+  @ApiBody({ type: UpdateAddressBookDto })
+  async updateAddressBookEntry(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateAddressBookDto,
+    @Req() req: RequestWithWalletAuth,
+  ) {
+    return this.addressBookService.updateAddressBookEntry(id, dto, req.walletAuth.walletAddress);
+  }
+
+    // *************************************************
+  // **************** DELETE METHODS *******************
+  // *************************************************
+  @Delete()
+  @UseGuards(WalletAuthGuard)
+  @ApiOperation({
+    summary: 'Delete address book entries',
+    description: 'Delete multiple address book entries by IDs',
+  })
+  @ApiResponse({ status: 200, description: 'Address book entries deleted successfully' })
+  @ApiBody({ type: DeleteAddressBookDto })
+  async deleteAddressBookEntries(
+    @Body() dto: DeleteAddressBookDto,
+    @Req() req: RequestWithWalletAuth,
+  ) {
+    return this.addressBookService.deleteAddressBookEntries(dto.ids, req.walletAuth.walletAddress);
   }
 }

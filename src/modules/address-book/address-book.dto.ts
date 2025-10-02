@@ -10,6 +10,8 @@ import {
   MinLength,
   IsEmail,
   IsObject,
+  IsArray,
+  IsNumber,
 } from 'class-validator';
 
 export class AddressBookDto {
@@ -138,12 +140,99 @@ export class AddressBookNameDuplicateDto {
   userAddress: string;
 }
 
+export class UpdateAddressBookDto {
+  @ApiProperty({
+    description: 'The name of the address book entry',
+    example: 'JuPENG',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100, { message: 'name cannot be longer than 100 characters' })
+  @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
+    message:
+      'name can only contain letters, numbers, spaces, hyphens, and underscores',
+  })
+  name?: string;
+
+  @ApiProperty({
+    description: 'The address of the address book entry',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(3, { message: 'address is too short' })
+  address?: string;
+
+  @ApiProperty({
+    description: 'The email of the address book entry',
+    example: 'user@example.com',
+    required: false,
+  })
+  @IsOptional()
+  @IsEmail({}, { message: 'email must be a valid email address' })
+  @MaxLength(255, { message: 'email cannot be longer than 255 characters' })
+  email?: string;
+
+  @ApiProperty({
+    description: 'The token information of the address book entry',
+    example: { address: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a', symbol: 'USDC' },
+    required: false,
+  })
+  @IsOptional()
+  @IsObject()
+  token?: any;
+
+  @ApiProperty({
+    description: 'The category ID of the address book entry',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  categoryId?: number;
+}
+
+export class DeleteAddressBookDto {
+  @ApiProperty({
+    description: 'Array of address book entry IDs to delete',
+    example: [1, 3, 2, 4],
+    type: [Number],
+  })
+  @IsArray()
+  @IsNotEmpty()
+  @IsNumber({}, { each: true })
+  ids: number[];
+}
+
+export class AddressBookOrderDto {
+  @ApiProperty({
+    description: 'The category ID to reorder entries within',
+    example: 1,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  categoryId: number;
+
+  @ApiProperty({
+    description: 'Array of address book entry IDs in the desired order',
+    example: [1, 3, 2, 4],
+    type: [Number],
+  })
+  @IsArray()
+  @IsNotEmpty()
+  @IsNumber({}, { each: true })
+  entryIds: number[];
+}
+
 export class CategoryOrderDto {
   @ApiProperty({
     description: 'Array of category IDs in the desired order',
     example: [1, 3, 2, 4],
     type: [Number],
   })
+  @IsArray()
   @IsNotEmpty()
+  @IsNumber({}, { each: true })
   categoryIds: number[];
 }
