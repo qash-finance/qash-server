@@ -24,6 +24,7 @@ import { AppConfigServiceModule } from './common/config/services/config.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PrismaModule } from './database/prisma.module';
 import { SchedulePaymentModule } from './modules/schedule-payment/schedule-payment.module';
+import { PaymentLinkModule } from './modules/payment-link/payment-link.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { SchedulePaymentModule } from './modules/schedule-payment/schedule-payme
     WalletAuthModule,
     NotificationModule,
     SchedulePaymentModule,
+    PaymentLinkModule,
   ],
   controllers: [AppController],
   providers: [

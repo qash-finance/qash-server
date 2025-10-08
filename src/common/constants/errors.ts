@@ -132,3 +132,20 @@ export enum ErrorSchedulePayment {
   InvalidTransactionIds = 'Transaction IDs are required',
   CannotDeleteActiveWithExecutions = 'Cannot delete active schedule payment with executions. Cancel it instead.',
 }
+
+export enum ErrorPaymentLink {
+  NotFound = 'Payment link not found',
+  InvalidCode = 'Invalid payment link code',
+  CodeAlreadyExists = 'Payment link code already exists',
+  InvalidTitle = 'Invalid title',
+  InvalidDescription = 'Invalid description',
+  InvalidAmount = 'Invalid amount',
+  InvalidPayee = 'Invalid payee address',
+  InvalidPayer = 'Invalid payer address',
+  AlreadyDeactivated = 'Payment link is already deactivated',
+  AlreadyActive = 'Payment link is already active',
+  NotOwner = 'Only the payee can modify this payment link',
+  InvalidTokens = 'Invalid accepted tokens',
+  InvalidChains = 'Invalid accepted chains',
+  PaymentRecordNotFound = 'Payment record not found',
+}

@@ -58,6 +58,41 @@ model Gift {
   @@map("gift")
 }
 
+model PaymentLink {
+  id             Int                   @id() @default(autoincrement())
+  code           String                @unique() @map("code") @db.VarChar
+  createdAt      DateTime              @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime              @map("updated_at") @db.Timestamp(6)
+  title          String                @db.VarChar
+  description    String                @db.VarChar
+  amount         String                @db.VarChar
+  status         PaymentLinkStatusEnum @default(ACTIVE)
+  order          Int                   @default(autoincrement())
+  payee          String                @db.VarChar
+  records        PaymentLinkRecord[]
+  acceptedTokens Json?                 @map("accepted_tokens")
+  acceptedChains Json?                 @map("accepted_chains")
+
+  @@index([code])
+  @@index([payee])
+  @@index([order])
+  @@map("payment_link")
+}
+
+model PaymentLinkRecord {
+  id            Int         @id() @default(autoincrement())
+  createdAt     DateTime    @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime    @map("updated_at") @db.Timestamp(6)
+  payer         String      @db.VarChar
+  txid          String?     @map("txid") @db.VarChar
+  paymentLinkId Int         @map("payment_link_id")
+  PaymentLink   PaymentLink @relation(fields: [paymentLinkId], references: [id])
+  token         Json?
+  chain         Json?
+
+  @@map("payment_link_record")
+}
+
 model GroupPayment {
   id                       Int                        @id() @default(autoincrement())
   createdAt                DateTime                   @map("created_at") @db.Timestamp(6)
@@ -358,4 +393,9 @@ enum WalletAuthKeysStatusEnum {
   ACTIVE
   REVOKED
   EXPIRED
+}
+
+enum PaymentLinkStatusEnum {
+  ACTIVE
+  DEACTIVATED
 }
