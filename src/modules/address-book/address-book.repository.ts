@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { AddressBook, Prisma } from '@prisma/client';
-import { BaseRepository } from '../../database/base.repository';
+import { Prisma } from 'src/database/generated/client';
+import { AddressBook } from 'src/database/generated/client';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+  PaginationOptions,
+  PaginatedResult,
+} from '../../database/base.repository';
 
 @Injectable()
 export class AddressBookRepository extends BaseRepository<
@@ -14,179 +20,274 @@ export class AddressBookRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel() {
-    return this.prisma.addressBook;
+  protected getModel(tx?: PrismaTransactionClient) {
+    return tx ? tx.addressBook : this.prisma.addressBook;
+  }
+
+  protected getModelName(): string {
+    return 'AddressBook';
   }
 
   /**
    * Find all address book entries for a user with categories
    */
-  async findByUserWithCategories(userAddress: string): Promise<AddressBook[]> {
+  async findByUserWithCategories(
+    userAddress: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<(AddressBook & { categories: any })[]> {
     return this.findMany(
       { userAddress },
       {
         include: { categories: true },
+        orderBy: [{ categories: { order: 'asc' } }, { order: 'asc' }],
       },
-    );
+      tx,
+    ) as Promise<(AddressBook & { categories: any })[]>;
   }
 
   /**
-   * Find address book entry by user and name
+   * Find address book entries with categories and pagination
    */
-  async findByUserAndName(
+  async findByUserWithCategoriesPaginated(
+    userAddress: string,
+    pagination: PaginationOptions,
+    tx?: PrismaTransactionClient,
+  ): Promise<PaginatedResult<AddressBook & { categories: any }>> {
+    const page = Math.max(1, pagination.page || 1);
+    const limit = Math.min(100, Math.max(1, pagination.limit || 10));
+    const skip = (page - 1) * limit;
+
+    const model = this.getModel(tx);
+
+    const [data, total] = await Promise.all([
+      model.findMany({
+        where: { userAddress },
+        include: { categories: true },
+        orderBy: [{ categories: { order: 'asc' } }, { order: 'asc' }],
+        skip,
+        take: limit,
+      }),
+      model.count({ where: { userAddress } }),
+    ]);
+
+    return {
+      data: data as (AddressBook & { categories: any })[],
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      },
+    };
+  }
+
+  /**
+   * Check if name exists in category for user
+   */
+  async isNameDuplicateInCategory(
     userAddress: string,
     name: string,
-  ): Promise<AddressBook | null> {
-    return this.findOne({ userAddress, name });
-  }
-
-  /**
-   * Find address book entry by user and address
-   */
-  async findByUserAndAddress(
-    userAddress: string,
-    address: string,
-  ): Promise<AddressBook | null> {
-    return this.findOne({ userAddress, address });
-  }
-
-  /**
-   * Find address book entries by category name
-   */
-  async findByCategoryName(
-    userAddress: string,
-    categoryName: string,
-  ): Promise<AddressBook[]> {
-    return this.findMany({
-      userAddress,
-      categories: {
-        name: categoryName,
-      },
-    });
-  }
-
-  /**
-   * Find address book entries by category ID
-   */
-  async findByCategoryId(
-    userAddress: string,
     categoryId: number,
-  ): Promise<AddressBook[]> {
-    return this.findMany({
-      userAddress,
-      categoryId,
-    }, {
-      orderBy: {
-        order: 'asc',
-      },
-    });
-  }
-
-  /**
-   * Check if category exists for user
-   */
-  async categoryExistsForUser(
-    userAddress: string,
-    categoryName: string,
+    excludeId?: number,
+    tx?: PrismaTransactionClient,
   ): Promise<boolean> {
-    const entry = await this.findOne({
-      userAddress,
-      categories: {
-        name: categoryName,
-      },
-    });
-    return entry !== null;
-  }
-
-  /**
-   * Create address book entry with category connection
-   */
-  async createWithCategory(
-    userAddress: string,
-    name: string,
-    address: string,
-    categoryId: number,
-    token?: any,
-    email?: string,
-  ): Promise<AddressBook> {
-    const now = new Date();
-    return this.create({
+    const where: Prisma.AddressBookWhereInput = {
       userAddress,
       name,
-      address,
-      email,
-      token,
-      categories: {
-        connect: { id: categoryId },
-      },
-      createdAt: now,
-      updatedAt: now,
-    });
-  }
-
-  /**
-   * Update address book entry
-   */
-  async updateEntry(
-    id: number,
-    data: {
-      name?: string;
-      address?: string;
-      email?: string;
-      token?: any;
-      categoryId?: number;
-    },
-  ): Promise<AddressBook> {
-    const updateData: any = {
-      name: data.name,
-      address: data.address,
-      email: data.email,
-      token: data.token,
+      categoryId,
     };
 
-    if (data.categoryId) {
-      updateData.categories = {
-        connect: { id: data.categoryId },
-      };
+    if (excludeId) {
+      where.id = { not: excludeId };
     }
 
-    return this.update({ id }, updateData);
+    return await this.exists(where, tx);
   }
 
   /**
-   * Delete address book entry by ID
+   * Check if address exists in category for user
    */
-  async deleteById(id: number): Promise<AddressBook> {
-    return this.delete({ id });
-  }
-
-  /**
-   * Count entries by user
-   */
-  async countByUser(userAddress: string): Promise<number> {
-    return this.count({ userAddress });
-  }
-
-  /**
-   * Update entry order within a specific category
-   */
-  async updateEntryOrder(userAddress: string, categoryId: number, entryIds: number[]): Promise<AddressBook[]> {
-    const updates = entryIds.map((id, index) => 
-      this.update({ id, userAddress, categoryId }, { order: index + 1 })
-    );
-    
-    await Promise.all(updates);
-    
-    // Return updated entries in the new order
-    return this.findMany({
+  async isAddressDuplicateInCategory(
+    userAddress: string,
+    address: string,
+    categoryId: number,
+    excludeId?: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<boolean> {
+    const where: Prisma.AddressBookWhereInput = {
       userAddress,
+      address,
       categoryId,
-      id: { in: entryIds }
-    }, {
-      include: { categories: true },
-      orderBy: {
-        order: 'asc',
+    };
+
+    if (excludeId) {
+      where.id = { not: excludeId };
+    }
+
+    return await this.exists(where, tx);
+  }
+
+  /**
+   * Find entries by category
+   */
+  async findByCategory(
+    userAddress: string,
+    categoryId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<AddressBook[]> {
+    return this.findMany(
+      {
+        userAddress,
+        categoryId,
       },
+      {
+        orderBy: { order: 'asc' },
+      },
+      tx,
+    );
+  }
+
+  /**
+   * Update order for multiple entries in a transaction
+   */
+  async updateOrdersInBatch(
+    updates: Array<{ id: number; order: number }>,
+    tx?: PrismaTransactionClient,
+  ): Promise<void> {
+    const model = this.getModel(tx);
+
+    await Promise.all(
+      updates.map(({ id, order }) =>
+        model.update({
+          where: { id },
+          data: {
+            order,
+            updatedAt: new Date(),
+          },
+        }),
+      ),
+    );
+
+    this.logger.debug(
+      `Updated order for ${updates.length} address book entries`,
+    );
+  }
+
+  /**
+   * Get next order value for category
+   */
+  async getNextOrderForCategory(
+    userAddress: string,
+    categoryId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<number> {
+    const model = this.getModel(tx);
+
+    const lastEntry = await model.findFirst({
+      where: {
+        userAddress,
+        categoryId,
+      },
+      orderBy: { order: 'desc' },
+      select: { order: true },
     });
+
+    return (lastEntry?.order || 0) + 1;
+  }
+
+  /**
+   * Bulk upsert address book entries
+   */
+  async bulkUpsertEntries(
+    userAddress: string,
+    entries: Array<{
+      name: string;
+      address: string;
+      categoryId: number;
+      email?: string;
+      token?: any;
+    }>,
+    tx?: PrismaTransactionClient,
+  ): Promise<AddressBook[]> {
+    const results: AddressBook[] = [];
+
+    for (const entry of entries) {
+      const result = await this.upsert(
+        {
+          userAddress,
+          name: entry.name,
+          categoryId: entry.categoryId,
+        },
+        {
+          userAddress,
+          name: entry.name,
+          address: entry.address,
+          categories: {
+            connect: { id: entry.categoryId },
+          },
+          email: entry.email,
+          token: entry.token,
+          order: await this.getNextOrderForCategory(
+            userAddress,
+            entry.categoryId,
+            tx,
+          ),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          address: entry.address,
+          email: entry.email,
+          token: entry.token,
+        },
+        tx,
+      );
+
+      results.push(result);
+    }
+
+    this.logger.debug(`Bulk upserted ${results.length} address book entries`);
+    return results;
+  }
+
+  /**
+   * Search entries by name or address
+   */
+  async searchEntries(
+    userAddress: string,
+    searchTerm: string,
+    categoryId?: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<(AddressBook & { categories: any })[]> {
+    const where: Prisma.AddressBookWhereInput = {
+      userAddress,
+      OR: [
+        { name: { contains: searchTerm, mode: 'insensitive' } },
+        { address: { contains: searchTerm, mode: 'insensitive' } },
+        { email: { contains: searchTerm, mode: 'insensitive' } },
+      ],
+    };
+
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    const result = await this.findMany(
+      where,
+      {
+        include: {
+          categories: true,
+        },
+        orderBy: [{ categories: { order: 'asc' } }, { order: 'asc' }],
+      },
+      tx,
+    );
+
+    this.logger.debug(
+      `Found ${result.length} entries matching search term: ${searchTerm}`,
+    );
+    return result as (AddressBook & { categories: any })[];
   }
 }

@@ -5,8 +5,11 @@ import {
   Prisma,
   NotificationsStatusEnum,
   NotificationsTypeEnum,
-} from '@prisma/client';
-import { BaseRepository } from '../../database/base.repository';
+} from 'src/database/generated/client';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from '../../database/base.repository';
 
 @Injectable()
 export class NotificationRepository extends BaseRepository<
@@ -19,8 +22,12 @@ export class NotificationRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel() {
-    return this.prisma.notifications;
+  protected getModel(tx?: PrismaTransactionClient) {
+    return tx ? tx.notifications : this.prisma.notifications;
+  }
+
+  protected getModelName(): string {
+    return 'Notifications';
   }
 
   /**

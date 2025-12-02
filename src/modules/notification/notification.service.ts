@@ -17,7 +17,7 @@ import {
   Notifications,
   NotificationsStatusEnum,
   NotificationsTypeEnum,
-} from '@prisma/client';
+} from 'src/database/generated/client';
 
 @Injectable()
 export class NotificationService {
@@ -181,132 +181,6 @@ export class NotificationService {
 
   public async getUnreadCount(walletAddress: string): Promise<number> {
     return this.notificationRepository.countUnreadByWallet(walletAddress);
-  }
-
-  // These methods are now the primary methods (no longer wallet-specific aliases)
-
-  // Convenience methods for creating specific notification types
-  public async createSendNotification(
-    walletAddress: string,
-    data: {
-      recipientAddress: string;
-      amount: string;
-      assetType: string;
-      transactionId?: string;
-    },
-  ): Promise<Notifications> {
-    return this.createNotification({
-      walletAddress,
-      type: NotificationsTypeEnum.SEND,
-      title: 'Payment Sent',
-      message: `You sent ${data.amount} ${data.assetType} to ${data.recipientAddress}`,
-      metadata: data,
-      actionUrl: data.transactionId
-        ? `/transactions/${data.transactionId}`
-        : null,
-    });
-  }
-
-  public async createClaimNotification(
-    walletAddress: string,
-    data: {
-      amount: string;
-      assetType: string;
-      senderAddress: string;
-      transactionId?: string;
-    },
-  ): Promise<Notifications> {
-    return this.createNotification({
-      walletAddress,
-      type: NotificationsTypeEnum.CLAIM,
-      title: 'Payment Received',
-      message: `You received ${data.amount} ${data.assetType} from ${data.senderAddress}`,
-      metadata: data,
-      actionUrl: data.transactionId
-        ? `/transactions/${data.transactionId}`
-        : null,
-    });
-  }
-
-  public async createRefundNotification(
-    walletAddress: string,
-    data: {
-      amount: string;
-      assetType: string;
-      originalRecipient: string;
-      transactionId?: string;
-    },
-  ): Promise<Notifications> {
-    return this.createNotification({
-      walletAddress,
-      type: NotificationsTypeEnum.REFUND,
-      title: 'Payment Refunded',
-      message: `Your payment of ${data.amount} ${data.assetType} to ${data.originalRecipient} has been refunded`,
-      metadata: data,
-      actionUrl: data.transactionId
-        ? `/transactions/${data.transactionId}`
-        : null,
-    });
-  }
-
-  public async createBatchSendNotification(
-    walletAddress: string,
-    data: {
-      recipientCount: number;
-      totalAmount: string;
-      assetType: string;
-      batchId?: string;
-    },
-  ): Promise<Notifications> {
-    return this.createNotification({
-      walletAddress,
-      type: NotificationsTypeEnum.BATCH_SEND,
-      title: 'Batch Payment Sent',
-      message: `You sent ${data.totalAmount} ${data.assetType} to ${data.recipientCount} recipients`,
-      metadata: data,
-      actionUrl: data.batchId ? `/batch-payments/${data.batchId}` : null,
-    });
-  }
-
-  public async createWalletCreateNotification(
-    walletAddress: string,
-    data: {
-      walletAddress: string;
-      walletType?: string;
-    },
-  ): Promise<Notifications> {
-    return this.createNotification({
-      walletAddress,
-      type: NotificationsTypeEnum.WALLET_CREATE,
-      title: 'Wallet Created',
-      message: `Your new wallet has been created successfully`,
-      metadata: data,
-      actionUrl: '/wallet',
-    });
-  }
-
-  public async createRequestPaymentNotification(
-    walletAddress: string,
-    data: {
-      message: string;
-      amount: string;
-      tokenName: string;
-      tokenId: string;
-      payee: string;
-    },
-  ): Promise<Notifications> {
-    return this.createNotification({
-      walletAddress,
-      type: NotificationsTypeEnum.REQUEST_PAYMENT,
-      title: 'Payment Request',
-      message: data.message,
-      metadata: {
-        payee: data.payee,
-        amount: data.amount,
-        tokenId: data.tokenId,
-        tokenName: data.tokenName,
-      },
-    });
   }
 
   private mapToResponseDto(

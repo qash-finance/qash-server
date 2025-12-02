@@ -5,8 +5,11 @@ import {
   PaymentLinkRecord,
   Prisma,
   PaymentLinkStatusEnum,
-} from '@prisma/client';
-import { BaseRepository } from '../../database/base.repository';
+} from 'src/database/generated/client';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from '../../database/base.repository';
 
 @Injectable()
 export class PaymentLinkRepository extends BaseRepository<
@@ -19,8 +22,12 @@ export class PaymentLinkRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel() {
-    return this.prisma.paymentLink;
+  protected getModel(tx?: PrismaTransactionClient) {
+    return tx ? tx.paymentLink : this.prisma.paymentLink;
+  }
+
+  protected getModelName(): string {
+    return 'PaymentLink';
   }
 
   /**
@@ -136,9 +143,9 @@ export class PaymentLinkRepository extends BaseRepository<
       await this.prisma.paymentLinkRecord.deleteMany({
         where: {
           PaymentLink: {
-            code: code
-          }
-        }
+            code: code,
+          },
+        },
       });
 
       // Then delete the PaymentLink entry
@@ -159,9 +166,9 @@ export class PaymentLinkRepository extends BaseRepository<
       await this.prisma.paymentLinkRecord.deleteMany({
         where: {
           PaymentLink: {
-            code: { in: codes }
-          }
-        }
+            code: { in: codes },
+          },
+        },
       });
 
       // Then delete the PaymentLink entries
@@ -304,9 +311,7 @@ export class PaymentLinkRecordRepository {
   /**
    * Count records with txid (completed payments)
    */
-  async countCompletedByPaymentLinkId(
-    paymentLinkId: number,
-  ): Promise<number> {
+  async countCompletedByPaymentLinkId(paymentLinkId: number): Promise<number> {
     try {
       return await this.prisma.paymentLinkRecord.count({
         where: {
@@ -325,4 +330,3 @@ export class PaymentLinkRecordRepository {
 }
 
 import { Logger } from '@nestjs/common';
-

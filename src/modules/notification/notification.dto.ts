@@ -8,7 +8,10 @@ import {
   IsUrl,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { NotificationsStatusEnum, NotificationsTypeEnum } from '@prisma/client';
+import {
+  NotificationsStatusEnum,
+  NotificationsTypeEnum,
+} from 'src/database/generated/enums';
 
 export class CreateNotificationDto {
   @ApiProperty()

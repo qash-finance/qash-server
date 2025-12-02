@@ -23,10 +23,8 @@ import {
   NotificationQueryDto,
   NotificationResponseDto,
 } from './notification.dto';
-import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
 
 @ApiBearerAuth()
-@UseGuards(WalletAuthGuard)
 @ApiTags('Notifications')
 @Controller('/notifications')
 export class NotificationController {

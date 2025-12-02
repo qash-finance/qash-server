@@ -3,28 +3,23 @@ import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
 import { HealthModule } from './modules/health/health.module';
 import { APP_PIPE } from '@nestjs/core';
-import { HttpValidationPipe } from './common/pipes';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppService } from './app.service';
 import {
-  envValidator,
   mailConfig,
   authConfig,
   databaseConfig,
   othersConfig,
   serverConfig,
-} from './common/config';
-import { TransactionsModule } from './modules/transactions/transactions.module';
+} from './modules/shared/config/registration';
 import { AddressBookModule } from './modules/address-book/address-book.module';
-import { RequestPaymentModule } from './modules/request-payment/request-payment.module';
-import { GiftModule } from './modules/gift/gift.module';
-import { GroupPaymentModule } from './modules/group-payment/group-payment.module';
-import { WalletAuthModule } from './modules/wallet-auth/wallet-auth.module';
-import { AppConfigServiceModule } from './common/config/services/config.module';
+import { AppConfigServiceModule } from './modules/shared/config/config.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PrismaModule } from './database/prisma.module';
-import { SchedulePaymentModule } from './modules/schedule-payment/schedule-payment.module';
 import { PaymentLinkModule } from './modules/payment-link/payment-link.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { envValidator } from './common/validators/env.validation';
+import { HttpValidationPipe } from './modules/shared/pipes/http-validation';
 
 @Module({
   imports: [
@@ -46,15 +41,10 @@ import { PaymentLinkModule } from './modules/payment-link/payment-link.module';
     PrismaModule,
     ScheduleModule.forRoot(),
     HealthModule,
-    TransactionsModule,
     AddressBookModule,
-    RequestPaymentModule,
-    GiftModule,
-    GroupPaymentModule,
-    WalletAuthModule,
     NotificationModule,
-    SchedulePaymentModule,
     PaymentLinkModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [

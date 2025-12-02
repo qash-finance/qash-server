@@ -1,5 +1,31 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
+
+// Transaction client type for Prisma
+export type PrismaTransactionClient = Omit<
+  any,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
+
+// Pagination options interface
+export interface PaginationOptions {
+  page?: number;
+  limit?: number;
+  orderBy?: Record<string, 'asc' | 'desc'>;
+}
+
+// Paginated result interface
+export interface PaginatedResult<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
 
 @Injectable()
 export abstract class BaseRepository<
@@ -13,19 +39,39 @@ export abstract class BaseRepository<
   constructor(protected readonly prisma: PrismaService) {}
 
   /**
+   * Get the Prisma model - must be implemented by child classes
+   */
+  protected abstract getModel(tx?: PrismaTransactionClient): any;
+
+  /**
+   * Get the model name for logging and error messages
+   */
+  protected abstract getModelName(): string;
+
+  /**
    * Find a single record by where condition
    */
-  async findOne(where: TWhereInput): Promise<TModel | null> {
+  async findOne(
+    where: TWhereInput,
+    tx?: PrismaTransactionClient,
+  ): Promise<TModel | null> {
     try {
-      return await this.getModel().findFirst({ where });
+      const model = this.getModel(tx);
+      const result = await model.findFirst({ where });
+
+      this.logger.debug(`Found ${this.getModelName()} record:`, {
+        where,
+        found: !!result,
+      });
+      return result;
     } catch (error) {
-      this.logger.error(`Error finding record:`, error);
+      this.logger.error(`Error finding ${this.getModelName()} record:`, error);
       throw error;
     }
   }
 
   /**
-   * Find multiple records by where condition
+   * Find multiple records with enhanced options
    */
   async findMany(
     where: TWhereInput,
@@ -36,54 +82,137 @@ export abstract class BaseRepository<
       include?: any;
       select?: any;
     },
+    tx?: PrismaTransactionClient,
   ): Promise<TModel[]> {
     try {
-      return await this.getModel().findMany({
+      const model = this.getModel(tx);
+      const result = await model.findMany({
         where,
         ...options,
       });
+
+      this.logger.debug(
+        `Found ${result.length} ${this.getModelName()} records`,
+      );
+      return result;
     } catch (error) {
-      this.logger.error(`Error finding records:`, error);
+      this.logger.error(`Error finding ${this.getModelName()} records:`, error);
       throw error;
     }
   }
 
   /**
-   * Create a new record
+   * Find records with pagination
    */
-  async create(data: TCreateInput): Promise<TModel> {
+  async findManyPaginated(
+    where: TWhereInput,
+    pagination: PaginationOptions,
+    options?: {
+      include?: any;
+      select?: any;
+    },
+    tx?: PrismaTransactionClient,
+  ): Promise<PaginatedResult<TModel>> {
+    const page = Math.max(1, pagination.page || 1);
+    const limit = Math.min(100, Math.max(1, pagination.limit || 10));
+    const skip = (page - 1) * limit;
+
     try {
+      const model = this.getModel(tx);
+
+      const [data, total] = await Promise.all([
+        model.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: pagination.orderBy || { id: 'desc' },
+          ...options,
+        }),
+        model.count({ where }),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        data,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error finding paginated ${this.getModelName()} records:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new record with automatic timestamps
+   */
+  async create(
+    data: TCreateInput,
+    tx?: PrismaTransactionClient,
+  ): Promise<TModel> {
+    try {
+      const model = this.getModel(tx);
       const now = new Date();
-      return await this.getModel().create({
+
+      const result = await model.create({
         data: {
           createdAt: now,
           updatedAt: now,
           ...data,
         },
       });
+
+      this.logger.debug(`Created ${this.getModelName()} record:`, {
+        id: (result as any).id,
+      });
+      return result;
     } catch (error) {
-      this.logger.error(`Error creating record:`, error);
+      this.logger.error(`Error creating ${this.getModelName()} record:`, error);
       throw error;
     }
   }
 
   /**
-   * Create multiple records
+   * Create multiple records in batch
    */
-  async createMany(data: TCreateInput[]): Promise<{ count: number }> {
+  async createMany(
+    data: TCreateInput[],
+    tx?: PrismaTransactionClient,
+  ): Promise<{ count: number }> {
     try {
+      const model = this.getModel(tx);
       const now = new Date();
+
       const dataWithTimestamps = data.map((item) => ({
         createdAt: now,
         updatedAt: now,
         ...item,
       }));
 
-      return await this.getModel().createMany({
+      const result = await model.createMany({
         data: dataWithTimestamps,
+        skipDuplicates: false,
       });
+
+      this.logger.debug(
+        `Created ${result.count} ${this.getModelName()} records`,
+      );
+      return result;
     } catch (error) {
-      this.logger.error(`Error creating multiple records:`, error);
+      this.logger.error(
+        `Error creating multiple ${this.getModelName()} records:`,
+        error,
+      );
       throw error;
     }
   }
@@ -91,22 +220,36 @@ export abstract class BaseRepository<
   /**
    * Update a single record
    */
-  async update(where: TWhereInput, data: TUpdateInput): Promise<TModel> {
+  async update(
+    where: TWhereInput,
+    data: TUpdateInput,
+    tx?: PrismaTransactionClient,
+  ): Promise<TModel> {
     try {
-      const existing = await this.findOne(where);
+      const model = this.getModel(tx);
+
+      // First check if record exists
+      const existing = await this.findOne(where, tx);
       if (!existing) {
-        throw new Error('Record not found for update');
+        throw new NotFoundException(
+          `${this.getModelName()} record not found for update`,
+        );
       }
 
-      return await this.getModel().update({
+      const result = await model.update({
         where: { id: (existing as any).id },
         data: {
           ...data,
           updatedAt: new Date(),
         },
       });
+
+      this.logger.debug(`Updated ${this.getModelName()} record:`, {
+        id: (result as any).id,
+      });
+      return result;
     } catch (error) {
-      this.logger.error(`Error updating record:`, error);
+      this.logger.error(`Error updating ${this.getModelName()} record:`, error);
       throw error;
     }
   }
@@ -117,17 +260,67 @@ export abstract class BaseRepository<
   async updateMany(
     where: TWhereInput,
     data: TUpdateInput,
+    tx?: PrismaTransactionClient,
   ): Promise<{ count: number }> {
     try {
-      return await this.getModel().updateMany({
+      const model = this.getModel(tx);
+
+      const result = await model.updateMany({
         where,
         data: {
           ...data,
           updatedAt: new Date(),
         },
       });
+
+      this.logger.debug(
+        `Updated ${result.count} ${this.getModelName()} records`,
+      );
+      return result;
     } catch (error) {
-      this.logger.error(`Error updating multiple records:`, error);
+      this.logger.error(
+        `Error updating multiple ${this.getModelName()} records:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Upsert (create or update) a record
+   */
+  async upsert(
+    where: TWhereInput,
+    create: TCreateInput,
+    update: TUpdateInput,
+    tx?: PrismaTransactionClient,
+  ): Promise<TModel> {
+    try {
+      const model = this.getModel(tx);
+      const now = new Date();
+
+      const result = await model.upsert({
+        where,
+        create: {
+          createdAt: now,
+          updatedAt: now,
+          ...create,
+        },
+        update: {
+          ...update,
+          updatedAt: now,
+        },
+      });
+
+      this.logger.debug(`Upserted ${this.getModelName()} record:`, {
+        id: (result as any).id,
+      });
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error upserting ${this.getModelName()} record:`,
+        error,
+      );
       throw error;
     }
   }
@@ -135,18 +328,31 @@ export abstract class BaseRepository<
   /**
    * Delete a single record
    */
-  async delete(where: TWhereInput): Promise<TModel> {
+  async delete(
+    where: TWhereInput,
+    tx?: PrismaTransactionClient,
+  ): Promise<TModel> {
     try {
-      const existing = await this.findOne(where);
+      const model = this.getModel(tx);
+
+      // First check if record exists
+      const existing = await this.findOne(where, tx);
       if (!existing) {
-        throw new Error('Record not found for deletion');
+        throw new NotFoundException(
+          `${this.getModelName()} record not found for deletion`,
+        );
       }
 
-      return await this.getModel().delete({
+      const result = await model.delete({
         where: { id: (existing as any).id },
       });
+
+      this.logger.debug(`Deleted ${this.getModelName()} record:`, {
+        id: (result as any).id,
+      });
+      return result;
     } catch (error) {
-      this.logger.error(`Error deleting record:`, error);
+      this.logger.error(`Error deleting ${this.getModelName()} record:`, error);
       throw error;
     }
   }
@@ -154,30 +360,80 @@ export abstract class BaseRepository<
   /**
    * Delete multiple records
    */
-  async deleteMany(where: TWhereInput): Promise<{ count: number }> {
+  async deleteMany(
+    where: TWhereInput,
+    tx?: PrismaTransactionClient,
+  ): Promise<{ count: number }> {
     try {
-      return await this.getModel().deleteMany({ where });
+      const model = this.getModel(tx);
+
+      const result = await model.deleteMany({ where });
+
+      this.logger.debug(
+        `Deleted ${result.count} ${this.getModelName()} records`,
+      );
+      return result;
     } catch (error) {
-      this.logger.error(`Error deleting multiple records:`, error);
+      this.logger.error(
+        `Error deleting multiple ${this.getModelName()} records:`,
+        error,
+      );
       throw error;
     }
   }
 
   /**
-   * Count records
+   * Count records matching criteria
    */
-  async count(where: TWhereInput): Promise<number> {
+  async count(
+    where: TWhereInput,
+    tx?: PrismaTransactionClient,
+  ): Promise<number> {
     try {
-      return await this.getModel().count({ where });
+      const model = this.getModel(tx);
+      const result = await model.count({ where });
+
+      this.logger.debug(`Counted ${result} ${this.getModelName()} records`);
+      return result;
     } catch (error) {
-      this.logger.error(`Error counting records:`, error);
+      this.logger.error(
+        `Error counting ${this.getModelName()} records:`,
+        error,
+      );
       throw error;
     }
   }
 
   /**
-   * Abstract method to get the Prisma model
-   * Must be implemented by child classes
+   * Check if any records exist matching criteria
    */
-  protected abstract getModel(): any;
+  async exists(
+    where: TWhereInput,
+    tx?: PrismaTransactionClient,
+  ): Promise<boolean> {
+    try {
+      const count = await this.count(where, tx);
+      return count > 0;
+    } catch (error) {
+      this.logger.error(
+        `Error checking ${this.getModelName()} existence:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Find first record or throw NotFoundException
+   */
+  async findOneOrFail(
+    where: TWhereInput,
+    tx?: PrismaTransactionClient,
+  ): Promise<TModel> {
+    const result = await this.findOne(where, tx);
+    if (!result) {
+      throw new NotFoundException(`${this.getModelName()} record not found`);
+    }
+    return result;
+  }
 }

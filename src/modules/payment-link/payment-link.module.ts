@@ -5,18 +5,20 @@ import {
   PaymentLinkRepository,
   PaymentLinkRecordRepository,
 } from './payment-link.repository';
-import { WalletAuthModule } from '../wallet-auth/wallet-auth.module';
 import { PrismaModule } from '../../database/prisma.module';
 
 @Module({
-  imports: [PrismaModule, WalletAuthModule],
+  imports: [PrismaModule],
   providers: [
     PaymentLinkService,
     PaymentLinkRepository,
     PaymentLinkRecordRepository,
   ],
   controllers: [PaymentLinkController],
-  exports: [PaymentLinkService, PaymentLinkRepository, PaymentLinkRecordRepository],
+  exports: [
+    PaymentLinkService,
+    PaymentLinkRepository,
+    PaymentLinkRecordRepository,
+  ],
 })
 export class PaymentLinkModule {}
-

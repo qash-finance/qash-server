@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CategoryShapeEnum } from '@prisma/client';
+import { CategoryShapeEnum } from 'src/database/generated/client';
 import {
   IsEnum,
   IsNotEmpty,
@@ -61,7 +61,10 @@ export class AddressBookDto {
 
   @ApiProperty({
     description: 'The token information of the address book entry',
-    example: { address: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a', symbol: 'USDC' },
+    example: {
+      address: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+      symbol: 'USDC',
+    },
     required: false,
   })
   @IsOptional()
@@ -177,7 +180,10 @@ export class UpdateAddressBookDto {
 
   @ApiProperty({
     description: 'The token information of the address book entry',
-    example: { address: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a', symbol: 'USDC' },
+    example: {
+      address: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+      symbol: 'USDC',
+    },
     required: false,
   })
   @IsOptional()
@@ -207,22 +213,20 @@ export class DeleteAddressBookDto {
 
 export class AddressBookOrderDto {
   @ApiProperty({
-    description: 'The category ID to reorder entries within',
+    description: 'The address book entry ID',
     example: 1,
   })
   @IsNumber()
   @IsNotEmpty()
-  categoryId: number;
+  id: number;
 
   @ApiProperty({
-    description: 'Array of address book entry IDs in the desired order',
-    example: [1, 3, 2, 4],
-    type: [Number],
+    description: 'The new order position',
+    example: 1,
   })
-  @IsArray()
+  @IsNumber()
   @IsNotEmpty()
-  @IsNumber({}, { each: true })
-  entryIds: number[];
+  order: number;
 }
 
 export class CategoryOrderDto {

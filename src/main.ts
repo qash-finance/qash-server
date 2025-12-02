@@ -4,13 +4,13 @@ import { useContainer } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
 import { json, urlencoded } from 'body-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { SwaggerTheme } from 'swagger-themes';
+import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
 
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { APP } from './common/constants';
-import { AppConfigService } from './common/config/services/config.service';
+import { AppConfigService } from './modules/shared/config/config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -92,14 +92,14 @@ async function bootstrap() {
     );
   }
 
-  const theme = new SwaggerTheme('v3');
+  const theme = new SwaggerTheme();
   const optionsV1 = {
     explorer: true,
-    customCss: theme.getBuffer('dark'),
+    customCss: theme.getBuffer(SwaggerThemeNameEnum.DARK),
   };
   const optionsV2 = {
     explorer: true,
-    customCss: theme.getBuffer('classic'),
+    customCss: theme.getBuffer(SwaggerThemeNameEnum.DARK),
   };
 
   SwaggerModule.setup('api-v1', app, document, optionsV1);

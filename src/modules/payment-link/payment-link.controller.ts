@@ -26,9 +26,8 @@ import {
   PaymentLinkOrderDto,
   DeletePaymentLinksDto,
 } from './payment-link.dto';
-import { WalletAuthGuard } from '../wallet-auth/wallet-auth.guard';
 import { RequestWithWalletAuth } from '../../common/interfaces';
-import { Public } from '../../common/decorators';
+import { Public } from '../shared/decorators';
 
 @ApiTags('Payment Link')
 @ApiBearerAuth()
@@ -41,7 +40,6 @@ export class PaymentLinkController {
   // *************************************************
 
   @Get()
-  @UseGuards(WalletAuthGuard)
   @ApiOperation({ summary: 'Get all payment links for authenticated user' })
   @ApiResponse({ status: 200, description: 'List of payment links' })
   async getAllPaymentLinks(@Req() req: RequestWithWalletAuth) {
@@ -59,7 +57,6 @@ export class PaymentLinkController {
   }
 
   @Get(':code/owner')
-  @UseGuards(WalletAuthGuard)
   @ApiOperation({
     summary: 'Get payment link by code for owner (with ownership check)',
   })
@@ -85,7 +82,6 @@ export class PaymentLinkController {
   // *************************************************
 
   @Post()
-  @UseGuards(WalletAuthGuard)
   @ApiOperation({ summary: 'Create a new payment link' })
   @ApiResponse({ status: 201, description: 'Payment link created' })
   @ApiResponse({ status: 400, description: 'Bad Request - Validation failed' })
@@ -119,7 +115,6 @@ export class PaymentLinkController {
   // *************************************************
 
   @Put(':code')
-  @UseGuards(WalletAuthGuard)
   @ApiOperation({ summary: 'Update a payment link' })
   @ApiResponse({ status: 200, description: 'Payment link updated' })
   @ApiResponse({ status: 400, description: 'Bad Request - Validation failed' })
@@ -143,10 +138,12 @@ export class PaymentLinkController {
   }
 
   @Put(':code/deactivate')
-  @UseGuards(WalletAuthGuard)
   @ApiOperation({ summary: 'Deactivate a payment link' })
   @ApiResponse({ status: 200, description: 'Payment link deactivated' })
-  @ApiResponse({ status: 400, description: 'Bad Request - Already deactivated' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Already deactivated',
+  })
   @ApiResponse({ status: 404, description: 'Payment link not found' })
   @ApiResponse({
     status: 403,
@@ -164,7 +161,6 @@ export class PaymentLinkController {
   }
 
   @Put(':code/activate')
-  @UseGuards(WalletAuthGuard)
   @ApiOperation({ summary: 'Activate a payment link' })
   @ApiResponse({ status: 200, description: 'Payment link activated' })
   @ApiResponse({ status: 400, description: 'Bad Request - Already active' })
@@ -178,14 +174,10 @@ export class PaymentLinkController {
     @Param('code') code: string,
     @Req() req: RequestWithWalletAuth,
   ) {
-    return this.service.activatePaymentLink(
-      code,
-      req.walletAuth.walletAddress,
-    );
+    return this.service.activatePaymentLink(code, req.walletAuth.walletAddress);
   }
 
   @Put('payment/:paymentId/txid')
-  @UseGuards(WalletAuthGuard)
   @ApiOperation({ summary: 'Update payment record with transaction ID' })
   @ApiResponse({ status: 200, description: 'Payment updated' })
   @ApiResponse({ status: 404, description: 'Payment record not found' })
@@ -219,12 +211,14 @@ export class PaymentLinkController {
   // *************************************************
 
   @Patch('update-order')
-  @UseGuards(WalletAuthGuard)
   @ApiOperation({
     summary: 'Update order of payment links',
     description: 'Update the display order of payment links',
   })
-  @ApiResponse({ status: 200, description: 'Payment links reordered successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment links reordered successfully',
+  })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid link IDs' })
   @ApiBody({ type: PaymentLinkOrderDto })
   async updatePaymentLinkOrder(
@@ -242,25 +236,38 @@ export class PaymentLinkController {
   // *************************************************
 
   @Delete()
-  @UseGuards(WalletAuthGuard)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Delete payment links',
-    description: 'Delete one or more payment links by providing their codes. Use an array with one code for single deletion.'
+    description:
+      'Delete one or more payment links by providing their codes. Use an array with one code for single deletion.',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Payment links deleted successfully',
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: '3 payment link(s) deleted successfully' },
+        message: {
+          type: 'string',
+          example: '3 payment link(s) deleted successfully',
+        },
         deletedCount: { type: 'number', example: 3 },
-        deletedCodes: { type: 'array', items: { type: 'string' }, example: ['ABC123', 'DEF456', 'GHI789'] }
-      }
-    }
+        deletedCodes: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['ABC123', 'DEF456', 'GHI789'],
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid codes or validation failed' })
-  @ApiResponse({ status: 404, description: 'One or more payment links not found' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid codes or validation failed',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'One or more payment links not found',
+  })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - Not the owner of one or more payment links',
@@ -273,4 +280,3 @@ export class PaymentLinkController {
     return this.service.deletePaymentLinks(dto, req.walletAuth.walletAddress);
   }
 }
-

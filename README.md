@@ -21,11 +21,11 @@ Before you begin, you need to install the following tools:
     git clone https://github.com/q3x-finance/qash-ui.git
     cd qash-ui
    ```
-2. Make sure to install all dependencies by running `npm install`
+2. Make sure to install all dependencies by running `pnpm install`
 3. Run `cp .env.example .env`
 4. Before spinning up a local database, make sure you don't have a running container with the same port that will be used by server, these ports are `6500`, `5050` and `3001`
-5. Make sure you have docker installed and running, then run `npm run docker:db:up`, it will spin up a local database
-6. Finally, run `npm run start:dev` to start the dev server
+5. Make sure you have docker installed and running, then run `pnpm run docker:db:up`, it will spin up a local database
+6. Finally, run `pnpm run start:dev` to start the dev server
 7. Visit `http://localhost:3001/api-v1` to view a list of available endpoints
 
 ## Environment Variables
@@ -40,22 +40,22 @@ DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
 
 ```bash
 # development, make sure you have a local database running
-npm run start:dev
+pnpm run start:dev
 
 # production mode
-npm run start:prod
+pnpm run start:prod
 ```
 
 # [Development] Starting a local database
 
 ```bash
-npm run docker:db:up
+pnpm run docker:db:up
 ```
 
 # [Development] Stopping a local database
 
 ```bash
-npm run docker:db:down
+pnpm run docker:db:down
 ```
 
 # [Development] Database Management
@@ -74,39 +74,35 @@ Follow these steps to completely reset your database and apply fresh migrations:
 ### Step 2: Drop the Database
 
 ```bash
-# Stop and remove the database container
-npm run docker:db:down
-
-# Remove the database volume (this deletes all data)
-docker volume rm miden-q3x-server_postgres_data
+pnpm run docker:db:down
 ```
 
-### Step 3: Start Fresh Database
-
-```bash
-# Start a new database container
-npm run docker:db:up
-```
-
-### Step 4: Apply Migrations
-
-```bash
-# Deploy all migrations to the fresh database
-npm run prisma:migrate:deploy
-```
-
-### Step 5: Generate Prisma Client
+### Step 3: Generate Prisma Client
 
 ```bash
 # Generate the updated Prisma client
-npm run prisma:generate
+pnpm run prisma:generate
+```
+
+### Step 4: Start Fresh Database
+
+```bash
+# Start a new database container
+pnpm run docker:db:up
+```
+
+### Step 5: Apply Migrations
+
+```bash
+# Deploy all migrations to the fresh database
+pnpm run prisma:migrate:deploy
 ```
 
 ### Step 6: Verify Setup
 
 ```bash
 # Start your development server
-npm run start:dev
+pnpm run start:dev
 ```
 
 ## Making Schema Changes
@@ -119,14 +115,14 @@ Edit `src/database/prisma/schema.prisma` to modify your database models.
 
 ```bash
 # Generate migration file
-npm run prisma:migrate:dev --schema ./src/database/prisma/schema.prisma
+pnpm run prisma:migrate:dev --schema ./src/database/prisma/schema.prisma
 ```
 
 ### 3. Update Prisma Client
 
 ```bash
 # Generate updated Prisma client
-npm run prisma:generate --schema ./src/database/prisma/schema.prisma
+pnpm run prisma:generate --schema ./src/database/prisma/schema.prisma
 ```
 
 ## Important Notes
@@ -154,14 +150,14 @@ npx prisma studio --schema ./src/database/prisma/schema.prisma
 
 ```bash
 # unit tests
-npm run test
+pnpm run test
 
 # test coverage
-npm run test:cov
+pnpm run test:cov
 ```
 
 # [Production] Linter
 
 ```bash
-npm run format
+pnpm run format
 ```

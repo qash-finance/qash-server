@@ -1,11 +1,13 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   AddressBookDto,
-  AddressBookNameDuplicateDto,
   CategoryDto,
-  CategoryOrderDto,
   UpdateAddressBookDto,
-  DeleteAddressBookDto,
   AddressBookOrderDto,
 } from './address-book.dto';
 import { handleError } from '../../common/utils/errors';
@@ -18,9 +20,24 @@ import {
   sanitizeString,
 } from '../../common/utils/validation.util';
 import { ErrorAddressBook } from '../../common/constants/errors';
-import { AddressBook, Categories } from '@prisma/client';
 import { AddressBookRepository } from './address-book.repository';
 import { CategoryRepository } from './category.repository';
+import { PrismaService } from '../../database/prisma.service';
+import { AddressBook, Prisma } from 'src/database/generated/client';
+import {
+  PaginationOptions,
+  PaginatedResult,
+} from '../../database/base.repository';
+
+export interface AddressBookWithCategory extends AddressBook {
+  categories: {
+    id: number;
+    name: string;
+    shape: string;
+    color: string;
+    order: number;
+  };
+}
 
 @Injectable()
 export class AddressBookService {
@@ -29,338 +46,233 @@ export class AddressBookService {
   constructor(
     private readonly addressBookRepository: AddressBookRepository,
     private readonly categoryRepository: CategoryRepository,
+    private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Execute operation with automatic error handling and logging
+   */
+  private async executeWithErrorHandling<T>(
+    operation: () => Promise<T>,
+    operationName: string,
+    context?: Record<string, any>,
+  ): Promise<T> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.debug(`Starting ${operationName}`, context);
+
+      const result = await operation();
+
+      const duration = Date.now() - startTime;
+      this.logger.debug(`Completed ${operationName} in ${duration}ms`, context);
+
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.error(
+        `Failed ${operationName} after ${duration}ms:`,
+        error,
+        context,
+      );
+      handleError(error, this.logger);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute operation within a transaction with error handling
+   */
+  private async executeInTransaction<T>(
+    operation: (tx: any) => Promise<T>,
+    operationName: string,
+    context?: Record<string, any>,
+  ): Promise<T> {
+    return this.executeWithErrorHandling(
+      () => this.prisma.$transaction(operation),
+      `${operationName} (transaction)`,
+      context,
+    );
+  }
+
+  /**
+   * Sanitize and normalize input data
+   */
+  private sanitizeInput<T extends Record<string, any>>(data: T): T {
+    const sanitized = { ...data };
+
+    for (const [key, value] of Object.entries(sanitized)) {
+      if (typeof value === 'string') {
+        (sanitized as any)[key] = value.trim();
+      }
+    }
+
+    return sanitized;
+  }
 
   // *************************************************
   // **************** GET METHODS ******************
   // *************************************************
-  async getAllAddressBookEntries(userAddress: string): Promise<AddressBook[]> {
-    try {
-      // Validate user address
-      validateAddress(userAddress, 'userAddress');
 
-      const normalizedUserAddress = normalizeAddress(userAddress);
+  /**
+   * Get all address book entries for a user with pagination
+   */
+  async getAllAddressBookEntries(
+    userAddress: string,
+    pagination?: PaginationOptions,
+  ): Promise<
+    PaginatedResult<AddressBookWithCategory> | AddressBookWithCategory[]
+  > {
+    return this.executeWithErrorHandling(
+      async () => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
 
-      return this.addressBookRepository.findByUserWithCategories(
-        normalizedUserAddress,
-      );
-    } catch (error) {
-      handleError(error, this.logger);
-    }
+        if (pagination) {
+          return this.addressBookRepository.findByUserWithCategoriesPaginated(
+            normalizedUserAddress,
+            pagination,
+          );
+        }
+
+        const entries =
+          await this.addressBookRepository.findByUserWithCategories(
+            normalizedUserAddress,
+          );
+        return entries as AddressBookWithCategory[];
+      },
+      'getAllAddressBookEntries',
+      { userAddress },
+    );
   }
 
-  async getAllCategories(userAddress: string): Promise<Categories[]> {
-    try {
-      // Validate user address
-      validateAddress(userAddress, 'userAddress');
-
-      const normalizedUserAddress = normalizeAddress(userAddress);
-
-      return this.categoryRepository.findAll(normalizedUserAddress);
-    } catch (error) {
-      handleError(error, this.logger);
-    }
+  /**
+   * Get all categories for a user
+   */
+  async getAllCategories(
+    userAddress: string,
+  ): Promise<Prisma.CategoriesGetPayload<{}>[]> {
+    return this.executeWithErrorHandling(
+      async () => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
+        return this.categoryRepository.findAll(normalizedUserAddress);
+      },
+      'getAllCategories',
+      { userAddress },
+    );
   }
 
-  async getAddressBookEntriesByCategory(
+  /**
+   * Get address book entries by category
+   */
+  async getEntriesByCategory(
     userAddress: string,
     categoryId: number,
   ): Promise<AddressBook[]> {
-    try {
-      // Validate inputs
-      validateAddress(userAddress, 'userAddress');
-      
-      if (!categoryId || categoryId <= 0) {
-        throw new BadRequestException('Category ID must be a positive number');
-      }
-
-      const normalizedUserAddress = normalizeAddress(userAddress);
-
-      return this.addressBookRepository.findByCategoryId(
-        normalizedUserAddress,
-        categoryId,
-      );
-    } catch (error) {
-      handleError(error, this.logger);
-    }
+    return this.executeWithErrorHandling(
+      async () => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
+        return this.addressBookRepository.findByCategory(
+          normalizedUserAddress,
+          categoryId,
+        );
+      },
+      'getEntriesByCategory',
+      { userAddress, categoryId },
+    );
   }
 
-  async checkIfAddressBookNameExists(dto: AddressBookNameDuplicateDto) {
-    try {
-      // Validate inputs
-      validateAddress(dto.userAddress, 'userAddress');
-      validateName(dto.name, 'name');
-      validateCategory(dto.category, 'category');
+  /**
+   * Search address book entries
+   */
+  async searchEntries(
+    userAddress: string,
+    searchTerm: string,
+    categoryId?: number,
+  ): Promise<AddressBookWithCategory[]> {
+    return this.executeWithErrorHandling(
+      async () => {
+        validateAddress(userAddress, 'userAddress');
 
-      const normalizedUserAddress = normalizeAddress(dto.userAddress);
-      const sanitizedName = sanitizeString(dto.name);
-      const sanitizedCategory = sanitizeString(dto.category);
+        if (!searchTerm || searchTerm.trim().length < 2) {
+          throw new BadRequestException(
+            'Search term must be at least 2 characters long',
+          );
+        }
 
-      const isNameDuplicate = await this.isAddressBookNameDuplicate(
-        normalizedUserAddress,
-        sanitizedName,
-        sanitizedCategory,
-      );
-      return isNameDuplicate;
-    } catch (error) {
-      handleError(error, this.logger);
-    }
+        const normalizedUserAddress = normalizeAddress(userAddress);
+
+        return this.addressBookRepository.searchEntries(
+          normalizedUserAddress,
+          searchTerm.trim(),
+          categoryId,
+        ) as Promise<AddressBookWithCategory[]>;
+      },
+      'searchEntries',
+      { userAddress, searchTerm, categoryId },
+    );
   }
 
-  async checkIfCategoryExists(userAddress: string, category: string) {
-    try {
-      // Validate inputs
-      validateAddress(userAddress, 'userAddress');
-      validateCategory(category, 'category');
+  /**
+   * Get a single address book entry by ID
+   */
+  async getEntryById(
+    id: number,
+    userAddress: string,
+  ): Promise<AddressBookWithCategory> {
+    return this.executeWithErrorHandling(
+      async () => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
 
-      const normalizedUserAddress = normalizeAddress(userAddress);
-      const sanitizedCategory = sanitizeString(category);
+        const entry = await this.addressBookRepository.findOne({
+          id,
+          userAddress: normalizedUserAddress,
+        });
 
-      return this.addressBookRepository.categoryExistsForUser(
-        normalizedUserAddress,
-        sanitizedCategory,
-      );
-    } catch (error) {
-      handleError(error, this.logger);
-    }
+        if (!entry) {
+          throw new NotFoundException('Address book entry not found');
+        }
+
+        // Get entry with category info
+        const entryWithCategory = await this.addressBookRepository.findMany(
+          { id, userAddress: normalizedUserAddress },
+          { include: { categories: true } },
+        );
+
+        return entryWithCategory[0] as AddressBookWithCategory;
+      },
+      'getEntryById',
+      { id, userAddress },
+    );
   }
 
   // *************************************************
   // **************** POST METHODS ******************
   // *************************************************
-  async createNewAddressBookEntry(dto: AddressBookDto, userAddress: string) {
-    try {
-      // Validate all inputs
-      validateAddress(userAddress, 'userAddress');
-      validateAddress(dto.address, 'address');
-      validateName(dto.name, 'name');
-      validateCategory(dto.category, 'category');
 
-      // Note: token is now a JSON object, no need for address validation
-
-      // Normalize addresses
-      const normalizedUserAddress = normalizeAddress(userAddress);
-      const normalizedAddress = normalizeAddress(dto.address);
-
-      // Check if user is trying to add their own address
-      validateDifferentAddresses(
-        normalizedUserAddress,
-        normalizedAddress,
-        'userAddress',
-        'address',
-      );
-
-      // Sanitize string inputs
-      const sanitizedName = sanitizeString(dto.name);
-      const sanitizedCategory = sanitizeString(dto.category);
-      const sanitizedEmail = dto.email ? sanitizeString(dto.email) : undefined;
-
-      // Check if name is duplicate in the same category
-      const isNameDuplicate = await this.isAddressBookNameDuplicate(
-        normalizedUserAddress,
-        sanitizedName,
-        sanitizedCategory,
-      );
-
-      if (isNameDuplicate) {
-        throw new BadRequestException(ErrorAddressBook.NameAlreadyExists);
-      }
-
-      // Check if address already exists in the same category
-      const isAddressDuplicate = await this.isAddressBookAddressDuplicate(
-        normalizedUserAddress,
-        normalizedAddress,
-        sanitizedCategory,
-      );
-
-      if (isAddressDuplicate) {
-        throw new BadRequestException(ErrorAddressBook.AddressAlreadyExists);
-      }
-
-      // Find or create category
-      let category =
-        await this.categoryRepository.findByName(sanitizedCategory);
-
-      // if (!category) {
-      //   // Create new category if it doesn't exist
-      //   category =
-      //     await this.categoryRepository.createByName(sanitizedCategory);
-      // }
-
-      // Create the entry with normalized and sanitized data
-      return this.addressBookRepository.createWithCategory(
-        normalizedUserAddress,
-        sanitizedName,
-        normalizedAddress,
-        category.id,
-        dto.token,
-        sanitizedEmail,
-      );
-    } catch (error) {
-      handleError(error, this.logger);
-    }
-  }
-
-  async createNewCategory (dto: CategoryDto, userAddress: string) {
-    try {
-      // Validate inputs
-      validateAddress(userAddress, 'userAddress');
-      validateCategory(dto.name, 'category');
-
-      // Normalize addresses
-      const normalizedUserAddress = normalizeAddress(userAddress);
-      const sanitizedName = sanitizeString(dto.name);
-
-      // Check if category already exists
-      const isCategoryExists = await this.categoryRepository.findByName(sanitizedName);
-      if (isCategoryExists) {
-        throw new BadRequestException(ErrorAddressBook.CategoryAlreadyExists);
-      }
-      
-      // Create new category
-      const newCategory = await this.categoryRepository.createByName(normalizedUserAddress, sanitizedName, dto.color, dto.shape);
-      return newCategory;
-
-    } catch (error) {
-      handleError(error, this.logger);
-    }
-  }
-
-  // *************************************************
-  // **************** PATCH METHODS ******************
-  // *************************************************
-  async updateAddressBookEntryOrder(
-    dto: AddressBookOrderDto,
-    userAddress: string,
-  ): Promise<AddressBook[]> {
-    try {
-      // Validate user address
-      validateAddress(userAddress, 'userAddress');
-
-      const normalizedUserAddress = normalizeAddress(userAddress);
-
-      // Validate category ID
-      if (!dto.categoryId || dto.categoryId <= 0) {
-        throw new BadRequestException('Category ID must be a positive number');
-      }
-
-      // Validate that all entry IDs are provided
-      if (!dto.entryIds || dto.entryIds.length === 0) {
-        throw new BadRequestException('Entry IDs array cannot be empty');
-      }
-
-      // Check if category exists and belongs to the user
-      const category = await this.categoryRepository.findById(dto.categoryId);
-      if (!category || category.ownerAddress !== normalizedUserAddress) {
-        throw new BadRequestException('Category not found or does not belong to user');
-      }
-
-      // Check if all entries belong to the user and are in the specified category
-      const userEntriesInCategory = await this.addressBookRepository.findByCategoryId(
-        normalizedUserAddress,
-        dto.categoryId,
-      );
-      const userEntryIds = userEntriesInCategory.map(entry => entry.id);
-      
-      const invalidIds = dto.entryIds.filter(id => !userEntryIds.includes(id));
-      if (invalidIds.length > 0) {
-        throw new BadRequestException(`Invalid entry IDs: ${invalidIds.join(', ')}`);
-      }
-
-      // Check if all user entries in this category are included
-      const missingIds = userEntryIds.filter(id => !dto.entryIds.includes(id));
-      if (missingIds.length > 0) {
-        throw new BadRequestException(`Missing entry IDs: ${missingIds.join(', ')}`);
-      }
-
-      return this.addressBookRepository.updateEntryOrder(normalizedUserAddress, dto.categoryId, dto.entryIds);
-    } catch (error) {
-      handleError(error, this.logger);
-    }
-  }
-
-  async deleteAddressBookEntries(
-    ids: number[],
-    userAddress: string,
-  ): Promise<{ deletedCount: number; deletedIds: number[] }> {
-    try {
-      // Validate user address
-      validateAddress(userAddress, 'userAddress');
-
-      if (!ids || ids.length === 0) {
-        throw new BadRequestException('IDs array cannot be empty');
-      }
-
-      // Validate all IDs are positive numbers
-      const invalidIds = ids.filter(id => !id || id <= 0);
-      if (invalidIds.length > 0) {
-        throw new BadRequestException(`Invalid IDs: ${invalidIds.join(', ')}`);
-      }
-
-      const normalizedUserAddress = normalizeAddress(userAddress);
-
-      // Check if all entries exist and belong to the user
-      const existingEntries = await this.addressBookRepository.findMany({
-        id: { in: ids },
-        userAddress: normalizedUserAddress,
-      });
-
-      if (existingEntries.length !== ids.length) {
-        const existingIds = existingEntries.map(entry => entry.id);
-        const missingIds = ids.filter(id => !existingIds.includes(id));
-        throw new BadRequestException(`Address book entries not found or do not belong to user: ${missingIds.join(', ')}`);
-      }
-
-      // Delete all entries
-      const deletePromises = ids.map(id => 
-        this.addressBookRepository.deleteById(id)
-      );
-
-      await Promise.all(deletePromises);
-
-      return {
-        deletedCount: ids.length,
-        deletedIds: ids,
-      };
-    } catch (error) {
-      handleError(error, this.logger);
-    }
-  }
-
-  async updateAddressBookEntry(
-    id: number,
-    dto: UpdateAddressBookDto,
+  /**
+   * Create a new address book entry with proper validation and transaction handling
+   */
+  async createNewAddressBookEntry(
+    dto: AddressBookDto,
     userAddress: string,
   ): Promise<AddressBook> {
-    try {
-      // Validate user address
-      validateAddress(userAddress, 'userAddress');
-
-      if (!id || id <= 0) {
-        throw new BadRequestException('ID must be a positive number');
-      }
-
-      const normalizedUserAddress = normalizeAddress(userAddress);
-
-      // Check if the address book entry exists and belongs to the user
-      const existingEntry = await this.addressBookRepository.findOne({
-        id,
-        userAddress: normalizedUserAddress,
-      });
-
-      if (!existingEntry) {
-        throw new BadRequestException('Address book entry not found or does not belong to user');
-      }
-
-      // Prepare update data
-      const updateData: any = {};
-
-      // Validate and normalize address if provided
-      if (dto.address !== undefined) {
+    return this.executeInTransaction(
+      async (tx) => {
+        // Validate all inputs
+        validateAddress(userAddress, 'userAddress');
         validateAddress(dto.address, 'address');
+        validateName(dto.name, 'name');
+        validateCategory(dto.category, 'category');
+
+        // Normalize addresses
+        const normalizedUserAddress = normalizeAddress(userAddress);
         const normalizedAddress = normalizeAddress(dto.address);
-        
-        // Check if user is trying to update to their own address
+
+        // Check if user is trying to add their own address
         validateDifferentAddresses(
           normalizedUserAddress,
           normalizedAddress,
@@ -368,171 +280,609 @@ export class AddressBookService {
           'address',
         );
 
-        // Check if address already exists in the same category (excluding current entry)
-        const isAddressDuplicate = await this.isAddressBookAddressDuplicateForUpdate(
-          normalizedUserAddress,
-          normalizedAddress,
-          existingEntry.categoryId,
-          id,
-        );
+        // Sanitize string inputs
+        const sanitizedData = this.sanitizeInput({
+          name: dto.name,
+          category: dto.category,
+          email: dto.email,
+        });
 
-        if (isAddressDuplicate) {
-          throw new BadRequestException(ErrorAddressBook.AddressAlreadyExists);
+        // Find or create category
+        let category = await this.categoryRepository.findByName(
+          sanitizedData.category,
+        );
+        if (!category) {
+          throw new BadRequestException('Category does not exist');
         }
 
-        updateData.address = normalizedAddress;
-      }
-
-      // Validate and sanitize name if provided
-      if (dto.name !== undefined) {
-        validateName(dto.name, 'name');
-        const sanitizedName = sanitizeString(dto.name);
-
-        // Check if name is duplicate in the same category (excluding current entry)
-        const isNameDuplicate = await this.isAddressBookNameDuplicateForUpdate(
-          normalizedUserAddress,
-          sanitizedName,
-          existingEntry.categoryId,
-          id,
-        );
+        // Check for duplicates within the transaction
+        const [isNameDuplicate, isAddressDuplicate] = await Promise.all([
+          this.addressBookRepository.isNameDuplicateInCategory(
+            normalizedUserAddress,
+            sanitizedData.name,
+            category.id,
+            undefined,
+            tx,
+          ),
+          this.addressBookRepository.isAddressDuplicateInCategory(
+            normalizedUserAddress,
+            normalizedAddress,
+            category.id,
+            undefined,
+            tx,
+          ),
+        ]);
 
         if (isNameDuplicate) {
           throw new BadRequestException(ErrorAddressBook.NameAlreadyExists);
         }
 
-        updateData.name = sanitizedName;
-      }
-
-      // Validate and sanitize email if provided
-      if (dto.email !== undefined) {
-        const sanitizedEmail = dto.email ? sanitizeString(dto.email) : undefined;
-        updateData.email = sanitizedEmail;
-      }
-
-      // Add token if provided
-      if (dto.token !== undefined) {
-        updateData.token = dto.token;
-      }
-
-      // Validate category if provided
-      if (dto.categoryId !== undefined) {
-        if (!dto.categoryId || dto.categoryId <= 0) {
-          throw new BadRequestException('Category ID must be a positive number');
+        if (isAddressDuplicate) {
+          throw new BadRequestException(ErrorAddressBook.AddressAlreadyExists);
         }
 
-        // Check if category exists and belongs to the user
-        const category = await this.categoryRepository.findById(dto.categoryId);
-        if (!category || category.ownerAddress !== normalizedUserAddress) {
-          throw new BadRequestException('Category not found or does not belong to user');
-        }
+        // Get next order for the category
+        const order = await this.addressBookRepository.getNextOrderForCategory(
+          normalizedUserAddress,
+          category.id,
+          tx,
+        );
 
-        updateData.categoryId = dto.categoryId;
-      }
+        // Create the entry
+        const newEntry = await this.addressBookRepository.create(
+          {
+            userAddress: normalizedUserAddress,
+            name: sanitizedData.name,
+            address: normalizedAddress,
+            email: sanitizedData.email || null,
+            token: dto.token || null,
+            categories: {
+              connect: { id: category.id },
+            },
+            order,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          tx,
+        );
 
-      // Update the entry
-      return this.addressBookRepository.updateEntry(id, updateData);
-    } catch (error) {
-      handleError(error, this.logger);
-    }
+        this.logger.log(
+          `Created address book entry: ${newEntry.id} for user: ${normalizedUserAddress}`,
+        );
+        return newEntry;
+      },
+      'createNewAddressBookEntry',
+      { userAddress, entryName: dto.name },
+    );
   }
 
-  async updateCategoryOrder(dto: CategoryOrderDto, userAddress: string): Promise<Categories[]> {
-    try {
-      // Validate user address
-      validateAddress(userAddress, 'userAddress');
+  /**
+   * Create a new category
+   */
+  async createNewCategory(dto: CategoryDto, userAddress: string) {
+    return this.executeInTransaction(
+      async (tx) => {
+        validateAddress(userAddress, 'userAddress');
+        validateName(dto.name, 'name');
 
-      const normalizedUserAddress = normalizeAddress(userAddress);
+        const normalizedUserAddress = normalizeAddress(userAddress);
+        const sanitizedName = sanitizeString(dto.name);
 
-      // Validate that all category IDs are provided
-      if (!dto.categoryIds || dto.categoryIds.length === 0) {
-        throw new BadRequestException('Category IDs array cannot be empty');
-      }
+        // Check if category already exists
+        const existingCategory =
+          await this.categoryRepository.findByName(sanitizedName);
+        if (existingCategory) {
+          throw new BadRequestException('Category already exists');
+        }
 
-      // Check if all categories belong to the user
-      const userCategories = await this.categoryRepository.findAll(normalizedUserAddress);
-      const userCategoryIds = userCategories.map(cat => cat.id);
-      
-      const invalidIds = dto.categoryIds.filter(id => !userCategoryIds.includes(id));
-      if (invalidIds.length > 0) {
-        throw new BadRequestException(`Invalid category IDs: ${invalidIds.join(', ')}`);
-      }
+        // Get next order
+        const order = await this.categoryRepository.getNextOrder(
+          normalizedUserAddress,
+          tx,
+        );
 
-      // Check if all user categories are included
-      const missingIds = userCategoryIds.filter(id => !dto.categoryIds.includes(id));
-      if (missingIds.length > 0) {
-        throw new BadRequestException(`Missing category IDs: ${missingIds.join(', ')}`);
-      }
+        const newCategory = await this.categoryRepository.create(
+          {
+            name: sanitizedName,
+            shape: dto.shape,
+            color: dto.color,
+            ownerAddress: normalizedUserAddress,
+            order,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          tx,
+        );
 
-      return this.categoryRepository.updateCategoryOrder(normalizedUserAddress, dto.categoryIds);
-    } catch (error) {
-      handleError(error, this.logger);
-    }
+        this.logger.log(
+          `Created category: ${newCategory.id} for user: ${normalizedUserAddress}`,
+        );
+        return newCategory;
+      },
+      'createNewCategory',
+      { userAddress, categoryName: dto.name },
+    );
   }
 
   // *************************************************
-  // **************** UTIL METHODS ******************
+  // **************** PUT METHODS ******************
   // *************************************************
-  private async isAddressBookNameDuplicate(
+
+  /**
+   * Update an existing address book entry
+   */
+  async updateAddressBookEntry(
+    entryId: number,
+    dto: UpdateAddressBookDto,
+    userAddress: string,
+  ): Promise<AddressBook> {
+    return this.executeInTransaction(
+      async (tx) => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
+
+        // Find existing entry
+        const existingEntry = await this.addressBookRepository.findOneOrFail(
+          { id: entryId, userAddress: normalizedUserAddress },
+          tx,
+        );
+
+        // Validate and sanitize update data
+        const updateData: any = {};
+
+        if (dto.name !== undefined) {
+          validateName(dto.name, 'name');
+          updateData.name = sanitizeString(dto.name);
+
+          // Check name duplicate if name is being changed
+          if (updateData.name !== existingEntry.name) {
+            const isDuplicate =
+              await this.addressBookRepository.isNameDuplicateInCategory(
+                normalizedUserAddress,
+                updateData.name,
+                existingEntry.categoryId,
+                entryId,
+                tx,
+              );
+
+            if (isDuplicate) {
+              throw new BadRequestException(ErrorAddressBook.NameAlreadyExists);
+            }
+          }
+        }
+
+        if (dto.address !== undefined) {
+          validateAddress(dto.address, 'address');
+          const normalizedAddress = normalizeAddress(dto.address);
+
+          validateDifferentAddresses(
+            normalizedUserAddress,
+            normalizedAddress,
+            'userAddress',
+            'address',
+          );
+
+          updateData.address = normalizedAddress;
+
+          // Check address duplicate if address is being changed
+          if (updateData.address !== existingEntry.address) {
+            const isDuplicate =
+              await this.addressBookRepository.isAddressDuplicateInCategory(
+                normalizedUserAddress,
+                updateData.address,
+                existingEntry.categoryId,
+                entryId,
+                tx,
+              );
+
+            if (isDuplicate) {
+              throw new BadRequestException(
+                ErrorAddressBook.AddressAlreadyExists,
+              );
+            }
+          }
+        }
+
+        if (dto.email !== undefined) {
+          updateData.email = dto.email ? sanitizeString(dto.email) : null;
+        }
+
+        if (dto.token !== undefined) {
+          updateData.token = dto.token;
+        }
+
+        // Update the entry
+        const updatedEntry = await this.addressBookRepository.update(
+          { id: entryId, userAddress: normalizedUserAddress },
+          updateData,
+          tx,
+        );
+
+        this.logger.log(
+          `Updated address book entry: ${updatedEntry.id} for user: ${normalizedUserAddress}`,
+        );
+        return updatedEntry;
+      },
+      'updateAddressBookEntry',
+      { entryId, userAddress },
+    );
+  }
+
+  /**
+   * Update order of multiple entries
+   */
+  async updateEntriesOrder(
+    orderUpdates: AddressBookOrderDto[],
+    userAddress: string,
+  ): Promise<void> {
+    return this.executeInTransaction(
+      async (tx) => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
+
+        // Validate all entries belong to the user
+        const entryIds = orderUpdates.map((update) => update.id);
+        const entries = await this.addressBookRepository.findMany(
+          {
+            id: { in: entryIds },
+            userAddress: normalizedUserAddress,
+          },
+          {},
+          tx,
+        );
+
+        if (entries.length !== entryIds.length) {
+          throw new NotFoundException(
+            'Some entries not found or do not belong to user',
+          );
+        }
+
+        // Update orders in batch
+        await this.addressBookRepository.updateOrdersInBatch(
+          orderUpdates.map((update) => ({
+            id: update.id,
+            order: update.order,
+          })),
+          tx,
+        );
+
+        this.logger.log(
+          `Updated order for ${orderUpdates.length} entries for user: ${normalizedUserAddress}`,
+        );
+      },
+      'updateEntriesOrder',
+      { userAddress, entriesCount: orderUpdates.length },
+    );
+  }
+
+  // *************************************************
+  // **************** DELETE METHODS ****************
+  // *************************************************
+
+  /**
+   * Delete an address book entry
+   */
+  async deleteAddressBookEntry(
+    entryId: number,
+    userAddress: string,
+  ): Promise<void> {
+    return this.executeInTransaction(
+      async (tx) => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
+
+        const deletedEntry = await this.addressBookRepository.delete(
+          { id: entryId, userAddress: normalizedUserAddress },
+          tx,
+        );
+
+        this.logger.log(
+          `Deleted address book entry: ${deletedEntry.id} for user: ${normalizedUserAddress}`,
+        );
+      },
+      'deleteAddressBookEntry',
+      { entryId, userAddress },
+    );
+  }
+
+  /**
+   * Bulk delete address book entries
+   */
+  async bulkDeleteEntries(ids: number[], userAddress: string): Promise<void> {
+    return this.executeInTransaction(
+      async (tx) => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
+
+        // Validate all entries belong to the user
+        const entries = await this.addressBookRepository.findMany(
+          {
+            id: { in: ids },
+            userAddress: normalizedUserAddress,
+          },
+          {},
+          tx,
+        );
+
+        if (entries.length !== ids.length) {
+          throw new NotFoundException(
+            'Some entries not found or do not belong to user',
+          );
+        }
+
+        // Delete all entries
+        await this.addressBookRepository.deleteMany(
+          {
+            id: { in: ids },
+            userAddress: normalizedUserAddress,
+          },
+          tx,
+        );
+
+        this.logger.log(
+          `Bulk deleted ${ids.length} entries for user: ${normalizedUserAddress}`,
+        );
+      },
+      'bulkDeleteEntries',
+      { userAddress, entriesCount: ids.length },
+    );
+  }
+
+  // *************************************************
+  // **************** BULK OPERATIONS ***************
+  // *************************************************
+
+  /**
+   * Bulk import address book entries
+   */
+  async bulkImportEntries(
+    entries: AddressBookDto[],
+    userAddress: string,
+  ): Promise<AddressBook[]> {
+    return this.executeInTransaction(
+      async (tx) => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
+
+        // Validate all entries
+        for (const entry of entries) {
+          validateAddress(entry.address, 'address');
+          validateName(entry.name, 'name');
+          validateCategory(entry.category, 'category');
+        }
+
+        // Process entries and get category IDs
+        const processedEntries = [];
+
+        for (const entry of entries) {
+          const sanitizedData = this.sanitizeInput({
+            name: entry.name,
+            category: entry.category,
+            email: entry.email,
+          });
+
+          const category = await this.categoryRepository.findByName(
+            sanitizedData.category,
+          );
+          if (!category) {
+            throw new BadRequestException(
+              `Category '${sanitizedData.category}' does not exist`,
+            );
+          }
+
+          processedEntries.push({
+            name: sanitizedData.name,
+            address: normalizeAddress(entry.address),
+            categoryId: category.id,
+            email: sanitizedData.email,
+            token: entry.token,
+          });
+        }
+
+        // Bulk upsert entries
+        const importedEntries =
+          await this.addressBookRepository.bulkUpsertEntries(
+            normalizedUserAddress,
+            processedEntries,
+            tx,
+          );
+
+        this.logger.log(
+          `Bulk imported ${importedEntries.length} entries for user: ${normalizedUserAddress}`,
+        );
+        return importedEntries;
+      },
+      'bulkImportEntries',
+      { userAddress, entriesCount: entries.length },
+    );
+  }
+
+  // *************************************************
+  // **************** UTILITY METHODS ***************
+  // *************************************************
+
+  /**
+   * Get statistics for user's address book
+   */
+  async getStatistics(userAddress: string) {
+    return this.executeWithErrorHandling(
+      async () => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
+
+        const [totalEntries, categories] = await Promise.all([
+          this.addressBookRepository.count({
+            userAddress: normalizedUserAddress,
+          }),
+          this.categoryRepository.findAll(normalizedUserAddress),
+        ]);
+
+        const recentEntries = await this.addressBookRepository.findMany({
+          userAddress: normalizedUserAddress,
+          createdAt: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+          },
+        });
+
+        const entriesByCategory: Record<string, number> = {};
+        for (const category of categories) {
+          const count = await this.addressBookRepository.count({
+            userAddress: normalizedUserAddress,
+            categoryId: category.id,
+          });
+          entriesByCategory[category.name] = count;
+        }
+
+        return {
+          totalEntries,
+          totalCategories: categories.length,
+          entriesByCategory,
+          recentlyAdded: recentEntries.length,
+        };
+      },
+      'getStatistics',
+      { userAddress },
+    );
+  }
+
+  /**
+   * Duplicate an existing entry
+   */
+  async duplicateEntry(id: number, userAddress: string): Promise<AddressBook> {
+    return this.executeInTransaction(
+      async (tx) => {
+        validateAddress(userAddress, 'userAddress');
+        const normalizedUserAddress = normalizeAddress(userAddress);
+
+        // Find the entry to duplicate
+        const originalEntry = await this.addressBookRepository.findOneOrFail(
+          { id, userAddress: normalizedUserAddress },
+          tx,
+        );
+
+        // Create a copy with modified name
+        const duplicatedEntry = await this.addressBookRepository.create(
+          {
+            userAddress: normalizedUserAddress,
+            name: `${originalEntry.name} (Copy)`,
+            address: originalEntry.address,
+            email: originalEntry.email,
+            token: originalEntry.token,
+            categories: {
+              connect: { id: originalEntry.categoryId },
+            },
+            order: await this.addressBookRepository.getNextOrderForCategory(
+              normalizedUserAddress,
+              originalEntry.categoryId,
+              tx,
+            ),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          tx,
+        );
+
+        this.logger.log(
+          `Duplicated entry ${id} to ${duplicatedEntry.id} for user: ${normalizedUserAddress}`,
+        );
+        return duplicatedEntry;
+      },
+      'duplicateEntry',
+      { id, userAddress },
+    );
+  }
+
+  // *************************************************
+  // **************** VALIDATION HELPERS ************
+  // *************************************************
+
+  /**
+   * Check if address book name is duplicate in category
+   */
+  async isAddressBookNameDuplicate(
     userAddress: string,
     name: string,
     category: string,
   ): Promise<boolean> {
-    const existingEntry = await this.addressBookRepository.findOne({
-      userAddress,
-      name,
-      categories: {
-        name: category,
+    return this.executeWithErrorHandling(
+      async () => {
+        validateAddress(userAddress, 'userAddress');
+        validateName(name, 'name');
+        validateCategory(category, 'category');
+
+        const normalizedUserAddress = normalizeAddress(userAddress);
+        const sanitizedName = sanitizeString(name);
+        const sanitizedCategory = sanitizeString(category);
+
+        const categoryObj =
+          await this.categoryRepository.findByName(sanitizedCategory);
+        if (!categoryObj) {
+          return false;
+        }
+
+        return this.addressBookRepository.isNameDuplicateInCategory(
+          normalizedUserAddress,
+          sanitizedName,
+          categoryObj.id,
+        );
       },
-    });
-    return existingEntry !== null;
+      'isAddressBookNameDuplicate',
+      { userAddress, name, category },
+    );
   }
 
-  private async isAddressBookAddressDuplicate(
+  /**
+   * Check if address book address is duplicate in category
+   */
+  async isAddressBookAddressDuplicate(
     userAddress: string,
     address: string,
     category: string,
   ): Promise<boolean> {
-    const existingEntry = await this.addressBookRepository.findOne({
-      userAddress,
-      address,
-      categories: {
-        name: category,
+    return this.executeWithErrorHandling(
+      async () => {
+        validateAddress(userAddress, 'userAddress');
+        validateAddress(address, 'address');
+        validateCategory(category, 'category');
+
+        const normalizedUserAddress = normalizeAddress(userAddress);
+        const normalizedAddress = normalizeAddress(address);
+        const sanitizedCategory = sanitizeString(category);
+
+        const categoryObj =
+          await this.categoryRepository.findByName(sanitizedCategory);
+        if (!categoryObj) {
+          return false;
+        }
+
+        return this.addressBookRepository.isAddressDuplicateInCategory(
+          normalizedUserAddress,
+          normalizedAddress,
+          categoryObj.id,
+        );
       },
-    });
-    return existingEntry !== null;
+      'isAddressBookAddressDuplicate',
+      { userAddress, address, category },
+    );
   }
 
-  private async isAddressBookNameDuplicateForUpdate(
-    userAddress: string,
-    name: string,
-    categoryId: number,
-    excludeId: number,
-  ): Promise<boolean> {
-    const existingEntry = await this.addressBookRepository.findOne({
-      userAddress,
-      name,
-      categoryId,
-      id: {
-        not: excludeId,
-      },
-    });
-    return existingEntry !== null;
-  }
+  /**
+   * Check if category exists
+   */
+  async checkIfCategoryExists(userAddress: string, category: string) {
+    return this.executeWithErrorHandling(
+      async () => {
+        validateAddress(userAddress, 'userAddress');
+        validateCategory(category, 'category');
 
-  private async isAddressBookAddressDuplicateForUpdate(
-    userAddress: string,
-    address: string,
-    categoryId: number,
-    excludeId: number,
-  ): Promise<boolean> {
-    const existingEntry = await this.addressBookRepository.findOne({
-      userAddress,
-      address,
-      categoryId,
-      id: {
-        not: excludeId,
+        const sanitizedCategory = sanitizeString(category);
+        const categoryObj =
+          await this.categoryRepository.findByName(sanitizedCategory);
+
+        return !!categoryObj;
       },
-    });
-    return existingEntry !== null;
+      'checkIfCategoryExists',
+      { userAddress, category },
+    );
   }
 }

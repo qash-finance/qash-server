@@ -13,7 +13,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { PaymentLinkStatusEnum } from '@prisma/client';
+import { PaymentLinkStatusEnum } from 'src/database/generated/enums';
 
 export class TokenMetadataDto {
   @ApiProperty({
@@ -251,7 +251,8 @@ export class PaymentLinkOrderDto {
 
 export class DeletePaymentLinksDto {
   @ApiProperty({
-    description: 'Array of payment link codes to delete (use single item array for single deletion)',
+    description:
+      'Array of payment link codes to delete (use single item array for single deletion)',
     example: ['ABC123', 'DEF456', 'GHI789'],
     type: [String],
   })
@@ -264,4 +265,3 @@ export class DeletePaymentLinksDto {
   })
   codes: string[];
 }
-

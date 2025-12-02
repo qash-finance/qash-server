@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { Categories, CategoryShapeEnum, Prisma } from '@prisma/client';
-import { BaseRepository } from '../../database/base.repository';
+import {
+  Categories,
+  CategoryShapeEnum,
+  Prisma,
+} from 'src/database/generated/client';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from '../../database/base.repository';
 
 @Injectable()
 export class CategoryRepository extends BaseRepository<
@@ -14,80 +21,94 @@ export class CategoryRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel() {
-    return this.prisma.categories;
+  protected getModel(tx?: PrismaTransactionClient) {
+    return tx ? tx.categories : this.prisma.categories;
+  }
+
+  protected getModelName(): string {
+    return 'Categories';
   }
 
   /**
-   * Find all categories
+   * Find all categories for owner
    */
-  async findAll(ownerAddress: string): Promise<Categories[]> {
-    return this.findMany({
-      ownerAddress,
-    }, {
-      orderBy: {
-        order: 'asc',
+  async findAll(
+    ownerAddress: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<Categories[]> {
+    return this.findMany(
+      {
+        ownerAddress,
       },
-    });
-  }
-
-  /**
-   * Find category by ID
-   */
-  async findById(id: number): Promise<Categories | null> {
-    return this.findOne({ id });
+      {
+        orderBy: {
+          order: 'asc',
+        },
+      },
+      tx,
+    );
   }
 
   /**
    * Find category by name
    */
-  async findByName(name: string): Promise<Categories | null> {
-    return this.findOne({ name });
+  async findByName(
+    name: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<Categories | null> {
+    return this.findOne({ name }, tx);
   }
 
   /**
-   * Create category with name
+   * Get next order value for owner
    */
-  async createByName(ownerAddress: string, name: string, color: string, shape: CategoryShapeEnum): Promise<Categories> {
-    const now = new Date();
-    return this.create({
-      name,
-      color,
-      shape,
-      ownerAddress,
-      createdAt: now,
-      updatedAt: now
+  async getNextOrder(
+    ownerAddress: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<number> {
+    const model = this.getModel(tx);
+
+    const lastCategory = await model.findFirst({
+      where: { ownerAddress },
+      orderBy: { order: 'desc' },
+      select: { order: true },
     });
+
+    return (lastCategory?.order || 0) + 1;
   }
 
   /**
-   * Update category name
+   * Update category order in batch
    */
-  async updateName(id: number, name: string): Promise<Categories> {
-    return this.update({ id }, { name });
-  }
+  async updateCategoryOrder(
+    ownerAddress: string,
+    categoryIds: number[],
+    tx?: PrismaTransactionClient,
+  ): Promise<Categories[]> {
+    const model = this.getModel(tx);
 
-  /**
-   * Delete category by ID
-   */
-  async deleteById(id: number): Promise<Categories> {
-    return this.delete({ id });
-  }
-
-  /**
-   * Update category order
-   */
-  async updateCategoryOrder(ownerAddress: string, categoryIds: number[]): Promise<Categories[]> {
-    const updates = categoryIds.map((id, index) => 
-      this.update({ id, ownerAddress }, { order: index + 1 })
+    const updates = categoryIds.map((id, index) =>
+      model.update({
+        where: { id, ownerAddress },
+        data: {
+          order: index + 1,
+          updatedAt: new Date(),
+        },
+      }),
     );
-    
+
     await Promise.all(updates);
-    
+
     // Return updated categories in the new order
-    return this.findMany({
-      ownerAddress,
-      id: { in: categoryIds }
-    });
+    return this.findMany(
+      {
+        ownerAddress,
+        id: { in: categoryIds },
+      },
+      {
+        orderBy: { order: 'asc' },
+      },
+      tx,
+    );
   }
 }

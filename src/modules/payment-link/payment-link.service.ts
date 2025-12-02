@@ -14,9 +14,13 @@ import {
   sanitizeString,
 } from '../../common/utils/validation.util';
 import { ErrorPaymentLink } from '../../common/constants/errors';
-import { PaymentLinkRepository, PaymentLinkRecordRepository } from './payment-link.repository';
-import { PaymentLink, PaymentLinkStatusEnum } from '@prisma/client';
+import {
+  PaymentLinkRepository,
+  PaymentLinkRecordRepository,
+} from './payment-link.repository';
 import { randomBytes } from 'crypto';
+import { PaymentLinkStatusEnum } from 'src/database/generated/enums';
+import { PaymentLink } from 'src/database/generated/client';
 
 @Injectable()
 export class PaymentLinkService {
@@ -59,9 +63,8 @@ export class PaymentLinkService {
       }
 
       const sanitizedCode = sanitizeString(code);
-      const link = await this.paymentLinkRepository.findByCodeWithRecords(
-        sanitizedCode,
-      );
+      const link =
+        await this.paymentLinkRepository.findByCodeWithRecords(sanitizedCode);
 
       if (!link) {
         throw new BadRequestException(ErrorPaymentLink.NotFound);
@@ -86,9 +89,8 @@ export class PaymentLinkService {
       const normalizedPayeeAddress = normalizeAddress(payeeAddress);
       const sanitizedCode = sanitizeString(code);
 
-      const link = await this.paymentLinkRepository.findByCodeWithRecords(
-        sanitizedCode,
-      );
+      const link =
+        await this.paymentLinkRepository.findByCodeWithRecords(sanitizedCode);
 
       if (!link) {
         throw new BadRequestException(ErrorPaymentLink.NotFound);
@@ -517,9 +519,8 @@ export class PaymentLinkService {
       }
 
       // Delete all payment links
-      const result = await this.paymentLinkRepository.deleteByCodes(
-        sanitizedCodes,
-      );
+      const result =
+        await this.paymentLinkRepository.deleteByCodes(sanitizedCodes);
 
       return {
         message: `${result.count} payment link(s) deleted successfully`,
@@ -561,4 +562,3 @@ export class PaymentLinkService {
     return code!;
   }
 }
-
