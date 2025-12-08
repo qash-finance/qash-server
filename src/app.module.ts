@@ -12,12 +12,16 @@ import {
   othersConfig,
   serverConfig,
 } from './modules/shared/config/registration';
-import { AddressBookModule } from './modules/address-book/address-book.module';
+import { ContactModule } from './modules/contact/contact.module';
 import { AppConfigServiceModule } from './modules/shared/config/config.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PrismaModule } from './database/prisma.module';
 import { PaymentLinkModule } from './modules/payment-link/payment-link.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CompanyModule } from './modules/company/company.module';
+import { TeamMemberModule } from './modules/team-member/team-member.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { SharedModule } from './modules/shared/shared.module';
 import { envValidator } from './common/validators/env.validation';
 import { HttpValidationPipe } from './modules/shared/pipes/http-validation';
 
@@ -41,10 +45,15 @@ import { HttpValidationPipe } from './modules/shared/pipes/http-validation';
     PrismaModule,
     ScheduleModule.forRoot(),
     HealthModule,
-    AddressBookModule,
+    ContactModule,
     NotificationModule,
     PaymentLinkModule,
     AuthModule,
+    CompanyModule,
+    TeamMemberModule,
+    AdminModule,
+    SharedModule,
+    ContactModule,
   ],
   controllers: [AppController],
   providers: [

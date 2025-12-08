@@ -9,6 +9,14 @@
 * 🟢 You can import this file directly.
 */
 
+export const OtpTypeEnum = {
+  LOGIN: 'LOGIN',
+  EMAIL_VERIFICATION: 'EMAIL_VERIFICATION'
+} as const
+
+export type OtpTypeEnum = (typeof OtpTypeEnum)[keyof typeof OtpTypeEnum]
+
+
 export const CategoryShapeEnum = {
   CIRCLE: 'CIRCLE',
   DIAMOND: 'DIAMOND',
@@ -40,3 +48,46 @@ export const PaymentLinkStatusEnum = {
 } as const
 
 export type PaymentLinkStatusEnum = (typeof PaymentLinkStatusEnum)[keyof typeof PaymentLinkStatusEnum]
+
+
+export const CompanyTypeEnum = {
+  SOLE_PROPRIETORSHIP: 'SOLE_PROPRIETORSHIP',
+  PARTNERSHIP: 'PARTNERSHIP',
+  LLP: 'LLP',
+  LLC: 'LLC',
+  PRIVATE_LIMITED_COMPANY: 'PRIVATE_LIMITED_COMPANY',
+  CORPORATION: 'CORPORATION',
+  PUBLIC_LIMITED_COMPANY: 'PUBLIC_LIMITED_COMPANY',
+  NON_PROFIT: 'NON_PROFIT',
+  OTHER: 'OTHER'
+} as const
+
+export type CompanyTypeEnum = (typeof CompanyTypeEnum)[keyof typeof CompanyTypeEnum]
+
+
+export const CompanyVerificationStatusEnum = {
+  PENDING: 'PENDING',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  VERIFIED: 'VERIFIED',
+  REJECTED: 'REJECTED',
+  SUSPENDED: 'SUSPENDED'
+} as const
+
+export type CompanyVerificationStatusEnum = (typeof CompanyVerificationStatusEnum)[keyof typeof CompanyVerificationStatusEnum]
+
+
+export const TeamMemberRoleEnum = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  VIEWER: 'VIEWER'
+} as const
+
+export type TeamMemberRoleEnum = (typeof TeamMemberRoleEnum)[keyof typeof TeamMemberRoleEnum]
+
+
+export const UserRoleEnum = {
+  USER: 'USER',
+  ADMIN: 'ADMIN'
+} as const
+
+export type UserRoleEnum = (typeof UserRoleEnum)[keyof typeof UserRoleEnum]

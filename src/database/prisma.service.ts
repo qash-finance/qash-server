@@ -1,11 +1,18 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaClient } from './generated/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { AppConfigService } from '../modules/shared/config/config.service';
+import { handleError } from 'src/common/utils/errors';
 
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public client: PrismaClient;
+  private readonly logger = new Logger(PrismaService.name);
 
   constructor(private readonly appConfigService: AppConfigService) {
     const adapter = new PrismaPg({
@@ -23,12 +30,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     await this.client.$disconnect();
   }
 
-  get addressBook() {
-    return this.client.addressBook;
+  get companyContact() {
+    return this.client.companyContact;
   }
 
-  get categories() {
-    return this.client.categories;
+  get companyGroup() {
+    return this.client.companyGroup;
   }
 
   get paymentLink() {
@@ -43,6 +50,26 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.notifications;
   }
 
+  get user() {
+    return this.client.user;
+  }
+
+  get otpCode() {
+    return this.client.otpCode;
+  }
+
+  get userSession() {
+    return this.client.userSession;
+  }
+
+  get company() {
+    return this.client.company;
+  }
+
+  get teamMember() {
+    return this.client.teamMember;
+  }
+
   get $transaction() {
     return this.client.$transaction.bind(this.client);
   }
@@ -53,5 +80,45 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   get $disconnect() {
     return this.client.$disconnect.bind(this.client);
+  }
+
+  public async executeWithErrorHandling<T>(
+    operation: () => Promise<T>,
+    operationName: string,
+    context?: Record<string, any>,
+  ): Promise<T> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.debug(`Starting ${operationName}`, context);
+
+      const result = await operation();
+
+      const duration = Date.now() - startTime;
+      this.logger.debug(`Completed ${operationName} in ${duration}ms`, context);
+
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.error(
+        `Failed ${operationName} after ${duration}ms:`,
+        error,
+        context,
+      );
+      handleError(error, this.logger);
+      throw error;
+    }
+  }
+
+  public async executeInTransaction<T>(
+    operation: (tx: any) => Promise<T>,
+    operationName: string,
+    context?: Record<string, any>,
+  ): Promise<T> {
+    return this.executeWithErrorHandling(
+      () => this.$transaction(operation),
+      `${operationName} (transaction)`,
+      context,
+    );
   }
 }

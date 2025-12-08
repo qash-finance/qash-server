@@ -51,8 +51,13 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  AddressBook: 'AddressBook',
-  Categories: 'Categories',
+  OtpCode: 'OtpCode',
+  UserSession: 'UserSession',
+  User: 'User',
+  TeamMember: 'TeamMember',
+  Company: 'Company',
+  CompanyContact: 'CompanyContact',
+  CompanyGroup: 'CompanyGroup',
   PaymentLink: 'PaymentLink',
   PaymentLinkRecord: 'PaymentLinkRecord',
   Notifications: 'Notifications'
@@ -74,23 +79,108 @@ export const TransactionIsolationLevel = {
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const AddressBookScalarFieldEnum = {
+export const OtpCodeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  code: 'code',
+  type: 'type',
+  expiresAt: 'expiresAt',
+  isUsed: 'isUsed',
+  attempts: 'attempts',
+  createdAt: 'createdAt'
+} as const
+
+export type OtpCodeScalarFieldEnum = (typeof OtpCodeScalarFieldEnum)[keyof typeof OtpCodeScalarFieldEnum]
+
+
+export const UserSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  refreshToken: 'refreshToken',
+  userAgent: 'userAgent',
+  ipAddress: 'ipAddress',
+  isActive: 'isActive',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserSessionScalarFieldEnum = (typeof UserSessionScalarFieldEnum)[keyof typeof UserSessionScalarFieldEnum]
+
+
+export const UserScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  userAddress: 'userAddress',
-  name: 'name',
-  address: 'address',
   email: 'email',
-  token: 'token',
-  order: 'order',
-  categoryId: 'categoryId'
+  role: 'role',
+  isActive: 'isActive',
+  lastLogin: 'lastLogin'
 } as const
 
-export type AddressBookScalarFieldEnum = (typeof AddressBookScalarFieldEnum)[keyof typeof AddressBookScalarFieldEnum]
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
-export const CategoriesScalarFieldEnum = {
+export const TeamMemberScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  email: 'email',
+  position: 'position',
+  profilePicture: 'profilePicture',
+  role: 'role',
+  isActive: 'isActive',
+  companyId: 'companyId',
+  userId: 'userId',
+  invitedBy: 'invitedBy',
+  invitedAt: 'invitedAt',
+  joinedAt: 'joinedAt',
+  metadata: 'metadata'
+} as const
+
+export type TeamMemberScalarFieldEnum = (typeof TeamMemberScalarFieldEnum)[keyof typeof TeamMemberScalarFieldEnum]
+
+
+export const CompanyScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  companyName: 'companyName',
+  registrationNumber: 'registrationNumber',
+  companyType: 'companyType',
+  country: 'country',
+  address1: 'address1',
+  address2: 'address2',
+  city: 'city',
+  postalCode: 'postalCode',
+  verificationStatus: 'verificationStatus',
+  isActive: 'isActive',
+  metadata: 'metadata'
+} as const
+
+export type CompanyScalarFieldEnum = (typeof CompanyScalarFieldEnum)[keyof typeof CompanyScalarFieldEnum]
+
+
+export const CompanyContactScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  companyId: 'companyId',
+  name: 'name',
+  walletAddress: 'walletAddress',
+  email: 'email',
+  token: 'token',
+  network: 'network',
+  order: 'order',
+  groupId: 'groupId'
+} as const
+
+export type CompanyContactScalarFieldEnum = (typeof CompanyContactScalarFieldEnum)[keyof typeof CompanyContactScalarFieldEnum]
+
+
+export const CompanyGroupScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
@@ -98,10 +188,10 @@ export const CategoriesScalarFieldEnum = {
   shape: 'shape',
   color: 'color',
   order: 'order',
-  ownerAddress: 'ownerAddress'
+  companyId: 'companyId'
 } as const
 
-export type CategoriesScalarFieldEnum = (typeof CategoriesScalarFieldEnum)[keyof typeof CategoriesScalarFieldEnum]
+export type CompanyGroupScalarFieldEnum = (typeof CompanyGroupScalarFieldEnum)[keyof typeof CompanyGroupScalarFieldEnum]
 
 
 export const PaymentLinkScalarFieldEnum = {
@@ -169,12 +259,27 @@ export const NullableJsonNullValueInput = {
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
+export const JsonNullValueInput = {
+  JsonNull: 'JsonNull'
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
 export const QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
 } as const
 
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 export const JsonNullValueFilter = {
@@ -184,12 +289,4 @@ export const JsonNullValueFilter = {
 } as const
 
 export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
-
-
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 

@@ -27,8 +27,8 @@ export * from "./enums.js"
  * @example
  * ```
  * const prisma = new PrismaClient()
- * // Fetch zero or more AddressBooks
- * const addressBooks = await prisma.addressBook.findMany()
+ * // Fetch zero or more OtpCodes
+ * const otpCodes = await prisma.otpCode.findMany()
  * ```
  * 
  * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
@@ -38,15 +38,40 @@ export type PrismaClient<LogOpts extends Prisma.LogLevel = never, OmitOpts exten
 export { Prisma }
 
 /**
- * Model AddressBook
+ * Model OtpCode
  * 
  */
-export type AddressBook = Prisma.AddressBookModel
+export type OtpCode = Prisma.OtpCodeModel
 /**
- * Model Categories
+ * Model UserSession
  * 
  */
-export type Categories = Prisma.CategoriesModel
+export type UserSession = Prisma.UserSessionModel
+/**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel
+/**
+ * Model TeamMember
+ * 
+ */
+export type TeamMember = Prisma.TeamMemberModel
+/**
+ * Model Company
+ * 
+ */
+export type Company = Prisma.CompanyModel
+/**
+ * Model CompanyContact
+ * 
+ */
+export type CompanyContact = Prisma.CompanyContactModel
+/**
+ * Model CompanyGroup
+ * 
+ */
+export type CompanyGroup = Prisma.CompanyGroupModel
 /**
  * Model PaymentLink
  * 

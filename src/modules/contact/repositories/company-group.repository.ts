@@ -1,28 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
+import { PrismaService } from '../../../database/prisma.service';
 import {
-  Categories,
+  CompanyGroup,
   CategoryShapeEnum,
   Prisma,
 } from 'src/database/generated/client';
 import {
   BaseRepository,
   PrismaTransactionClient,
-} from '../../database/base.repository';
+} from '../../../database/base.repository';
 
 @Injectable()
-export class CategoryRepository extends BaseRepository<
-  Categories,
-  Prisma.CategoriesWhereInput,
-  Prisma.CategoriesCreateInput,
-  Prisma.CategoriesUpdateInput
+export class CompanyGroupRepository extends BaseRepository<
+  CompanyGroup,
+  Prisma.CompanyGroupWhereInput,
+  Prisma.CompanyGroupCreateInput,
+  Prisma.CompanyGroupUpdateInput
 > {
   constructor(prisma: PrismaService) {
     super(prisma);
   }
 
   protected getModel(tx?: PrismaTransactionClient) {
-    return tx ? tx.categories : this.prisma.categories;
+    return tx ? tx.categories : this.prisma.company;
   }
 
   protected getModelName(): string {
@@ -30,46 +30,27 @@ export class CategoryRepository extends BaseRepository<
   }
 
   /**
-   * Find all categories for owner
-   */
-  async findAll(
-    ownerAddress: string,
-    tx?: PrismaTransactionClient,
-  ): Promise<Categories[]> {
-    return this.findMany(
-      {
-        ownerAddress,
-      },
-      {
-        orderBy: {
-          order: 'asc',
-        },
-      },
-      tx,
-    );
-  }
-
-  /**
-   * Find category by name
+   * Find group by name and company
    */
   async findByName(
+    companyId: number,
     name: string,
     tx?: PrismaTransactionClient,
-  ): Promise<Categories | null> {
-    return this.findOne({ name }, tx);
+  ): Promise<CompanyGroup | null> {
+    return this.findOne({ companyId, name }, tx);
   }
 
   /**
-   * Get next order value for owner
+   * Get next order value for company
    */
   async getNextOrder(
-    ownerAddress: string,
+    companyId: number,
     tx?: PrismaTransactionClient,
   ): Promise<number> {
     const model = this.getModel(tx);
 
     const lastCategory = await model.findFirst({
-      where: { ownerAddress },
+      where: { companyId },
       orderBy: { order: 'desc' },
       select: { order: true },
     });
@@ -81,15 +62,15 @@ export class CategoryRepository extends BaseRepository<
    * Update category order in batch
    */
   async updateCategoryOrder(
-    ownerAddress: string,
+    companyId: number,
     categoryIds: number[],
     tx?: PrismaTransactionClient,
-  ): Promise<Categories[]> {
+  ): Promise<CompanyGroup[]> {
     const model = this.getModel(tx);
 
     const updates = categoryIds.map((id, index) =>
       model.update({
-        where: { id, ownerAddress },
+        where: { id, companyId },
         data: {
           order: index + 1,
           updatedAt: new Date(),
@@ -102,7 +83,7 @@ export class CategoryRepository extends BaseRepository<
     // Return updated categories in the new order
     return this.findMany(
       {
-        ownerAddress,
+        companyId,
         id: { in: categoryIds },
       },
       {

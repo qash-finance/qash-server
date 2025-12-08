@@ -143,7 +143,7 @@ pnpm run prisma:generate --schema ./src/database/prisma/schema.prisma
 Access your database through a web interface:
 
 ```bash
-npx prisma studio --schema ./src/database/prisma/schema.prisma
+pnpm run prisma:studio
 ```
 
 # [Testing] Running tests

@@ -18,4 +18,7 @@ export const envValidator = Joi.object({
   JWT_SECRET: Joi.string().default('jwt_secret'),
   JWT_ACCESS_TOKEN_EXPIRES_IN: Joi.string().default('1000000000000000'),
   JWT_REFRESH_TOKEN_EXPIRES_IN: Joi.string().default('1000000000000000'),
+
+  // Admin
+  ADMIN_EMAIL: Joi.string().email().required(),
 });

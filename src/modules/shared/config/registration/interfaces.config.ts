@@ -3,7 +3,7 @@ export interface DatabaseConfig {
   port: number;
   username: string;
   password: string;
-  database: string; // this is the database name
+  database: string;
   ssl: {
     rejectUnauthorized: boolean;
     require: boolean;
@@ -16,7 +16,6 @@ export interface MailConfig {
     domain: string;
     apiKey: string;
     from: {
-      email: string;
       name: string;
     };
   };
@@ -31,7 +30,6 @@ export interface AuthConfig {
   };
   admin: {
     email: string;
-    password: string;
   };
   apiKey: string;
   google: {

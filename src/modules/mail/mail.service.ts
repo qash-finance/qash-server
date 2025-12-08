@@ -7,27 +7,25 @@ import { AppConfigService } from '../shared/config/config.service';
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private readonly mailgundefaultFromEmail: string | Address;
   private readonly mailgundefaultFromName: string;
 
   constructor(
     private mailgunService: MailgunService,
     private readonly appConfigService: AppConfigService,
   ) {
-    this.mailgundefaultFromEmail =
-      this.appConfigService.mailConfig.mailgun.from.email;
     this.mailgundefaultFromName =
       this.appConfigService.mailConfig.mailgun.from.name;
   }
 
   async sendEmail({
     to,
+    fromEmail,
     ...filledTemplate
   }: MailgunMessageData): Promise<void> {
     try {
       const domain = this.appConfigService.mailConfig.mailgun.domain;
       const data: MailgunMessageData = {
-        from: `"${this.mailgundefaultFromName}" ${this.mailgundefaultFromEmail}`,
+        from: `"${this.mailgundefaultFromName}" ${fromEmail}`,
         to,
         ...filledTemplate,
       };

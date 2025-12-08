@@ -39,7 +39,15 @@ export class AppConfigService {
     };
   }
 
+  get jwtConfig() {
+    return this.authConfig.jwt;
+  }
+
   get nodeEnv() {
     return this.configService.get('NODE_ENV');
+  }
+
+  get adminConfig() {
+    return this.authConfig.admin;
   }
 }

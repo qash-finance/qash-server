@@ -8,8 +8,6 @@ export default registerAs('auth', () => ({
   },
   admin: {
     email: process.env.ADMIN_EMAIL,
-    password: process.env.ADMIN_PASSWORD,
-    address: process.env.ADMIN_ADDRESS,
   },
   apiKey: process.env.X_API_KEY,
   google: {

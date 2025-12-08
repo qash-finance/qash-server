@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated"
+  provider     = "prisma-client"
+  output       = "../generated"
   moduleFormat = "cjs"
 }
 
@@ -8,35 +8,182 @@ datasource db {
   provider = "postgresql"
 }
 
-model AddressBook {
-  id          Int        @id() @default(autoincrement())
-  createdAt   DateTime   @map("created_at") @db.Timestamp(6)
-  updatedAt   DateTime   @map("updated_at") @db.Timestamp(6)
-  userAddress String     @map("user_address") @db.VarChar
-  name        String     @db.VarChar
-  address     String     @db.VarChar
-  email       String?    @db.VarChar
-  token       Json?      @db.Json
-  order       Int        @default(autoincrement())
-  categoryId  Int        @map("categoryId")
-  categories  Categories @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+model OtpCode {
+  id        Int         @id @default(autoincrement())
+  userId    Int         @map("user_id")
+  code      String      @db.VarChar(6)
+  type      OtpTypeEnum @default(LOGIN)
+  expiresAt DateTime    @map("expires_at") @db.Timestamp(6)
+  isUsed    Boolean     @default(false) @map("is_used")
+  attempts  Int         @default(0)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
 
-  @@map("address_book")
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@index([expiresAt])
+  @@map("otp_codes")
 }
 
-model Categories {
-  id           Int               @id() @default(autoincrement())
-  createdAt    DateTime          @map("created_at") @db.Timestamp(6)
-  updatedAt    DateTime          @map("updated_at") @db.Timestamp(6)
-  name         String            @unique() @db.VarChar
-  shape        CategoryShapeEnum @default(CIRCLE)
-  color        String            @db.VarChar
-  order        Int               @default(autoincrement())
-  ownerAddress String            @map("owner_address") @db.VarChar
-  addressBook  AddressBook[]
+model UserSession {
+  id           String   @id @default(cuid())
+  userId       Int      @map("user_id")
+  refreshToken String   @unique @map("refresh_token") @db.VarChar(500)
+  userAgent    String?  @map("user_agent") @db.Text
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  isActive     Boolean  @default(true) @map("is_active")
+  expiresAt    DateTime @map("expires_at") @db.Timestamp(6)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+model User {
+  id        Int          @id @default(autoincrement())
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamp(6)
+  email     String       @unique @db.VarChar(255)
+  role      UserRoleEnum @default(USER)
+  isActive  Boolean      @default(true) @map("is_active")
+  lastLogin DateTime?    @map("last_login") @db.Timestamp(6)
+
+  otpCodes       OtpCode[]
+  sessions       UserSession[]
+  teamMembership TeamMember? // 1:1 relationship - each user has one team membership
+  invitedMembers TeamMember[]  @relation("TeamMemberInviter")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model TeamMember {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Personal Information
+  firstName      String  @map("first_name") @db.VarChar(100)
+  lastName       String  @map("last_name") @db.VarChar(100)
+  email          String  @unique @db.VarChar(255) // Made unique since each user = team member
+  position       String? @db.VarChar(100)
+  profilePicture String? @map("profile_picture") @db.Text
+
+  // Role and Permissions
+  role     TeamMemberRoleEnum
+  isActive Boolean            @default(true) @map("is_active")
+
+  // Company Association
+  companyId Int     @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // User Association (1:1 relationship - each team member is a user)
+  userId Int  @unique @map("user_id") // Made required and unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Invitation and Status
+  invitedBy Int?      @map("invited_by")
+  inviter   User?     @relation("TeamMemberInviter", fields: [invitedBy], references: [id])
+  invitedAt DateTime? @map("invited_at") @db.Timestamp(6)
+  joinedAt  DateTime? @map("joined_at") @db.Timestamp(6)
+
+  // Metadata
+  metadata Json? @db.Json
+
+  @@unique([companyId, email])
+  @@index([companyId])
+  @@index([email])
+  @@index([role])
+  @@index([userId])
+  @@map("team_members")
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Company Information
+  companyName        String          @map("company_name") @db.VarChar(255)
+  registrationNumber String          @unique @map("registration_number") @db.VarChar(100)
+  companyType        CompanyTypeEnum @map("company_type")
+
+  // Address Information
+  country    String  @db.VarChar(100)
+  address1   String  @map("address_1") @db.VarChar(255)
+  address2   String? @map("address_2") @db.VarChar(255)
+  city       String  @db.VarChar(100)
+  postalCode String  @map("postal_code") @db.VarChar(20)
+
+  // Status and Verification
+  verificationStatus CompanyVerificationStatusEnum @default(PENDING) @map("verification_status")
+  isActive           Boolean                       @default(true) @map("is_active")
+
+  // Metadata
+  metadata Json? @db.Json
+
+  // Relations
+  teamMembers TeamMember[]
+  contacts    CompanyContact[]
+  groups      CompanyGroup[]
+
+  @@index([registrationNumber])
+  @@index([companyName])
+  @@index([verificationStatus])
+  @@map("companies")
+}
+
+model CompanyContact {
+  id        Int      @id() @default(autoincrement())
+  createdAt DateTime @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @map("updated_at") @db.Timestamp(6)
+
+  companyId Int     @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name          String @db.VarChar
+  walletAddress String @db.VarChar
+  email         String @db.VarChar
+  token         Json   @db.Json
+  network       Json   @db.Json
+
+  order   Int          @default(autoincrement())
+  groupId Int          @map("groupId")
+  group   CompanyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([companyId])
+  @@index([groupId])
+  @@map("company_contacts")
+}
+
+model CompanyGroup {
+  id        Int      @id() @default(autoincrement())
+  createdAt DateTime @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @map("updated_at") @db.Timestamp(6)
+
+  name  String            @db.VarChar
+  shape CategoryShapeEnum @default(CIRCLE)
+  color String            @db.VarChar
+  order Int               @default(autoincrement())
+
+  companyId Int     @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  contacts CompanyContact[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
   @@index([order])
-  @@map("categories")
+  @@map("company_groups")
 }
 
 model PaymentLink {
@@ -95,6 +242,11 @@ model Notifications {
   @@map("notifications")
 }
 
+enum OtpTypeEnum {
+  LOGIN
+  EMAIL_VERIFICATION
+}
+
 enum CategoryShapeEnum {
   CIRCLE
   DIAMOND
@@ -114,4 +266,35 @@ enum NotificationsTypeEnum {
 enum PaymentLinkStatusEnum {
   ACTIVE
   DEACTIVATED
+}
+
+enum CompanyTypeEnum {
+  SOLE_PROPRIETORSHIP
+  PARTNERSHIP
+  LLP
+  LLC
+  PRIVATE_LIMITED_COMPANY
+  CORPORATION
+  PUBLIC_LIMITED_COMPANY
+  NON_PROFIT
+  OTHER
+}
+
+enum CompanyVerificationStatusEnum {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum TeamMemberRoleEnum {
+  OWNER
+  ADMIN
+  VIEWER
+}
+
+enum UserRoleEnum {
+  USER
+  ADMIN
 }

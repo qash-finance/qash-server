@@ -14,10 +14,62 @@ import {
   IsNumber,
 } from 'class-validator';
 
-export class AddressBookDto {
+export class TokenDto {
   @ApiProperty({
-    description: 'The category of the address book entry',
-    example: 'Company',
+    description: 'The address of the token',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+  })
+  @IsString()
+  @IsNotEmpty()
+  address: string;
+
+  @ApiProperty({
+    description: 'The symbol of the token',
+    example: 'USDC',
+  })
+  @IsString()
+  @IsNotEmpty()
+  symbol: string;
+
+  @ApiProperty({
+    description: 'The decimals of the token',
+    example: 18,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  decimals: number;
+
+  @ApiProperty({
+    description: 'The name of the token',
+    example: 'USDC',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+}
+
+export class NetworkDto {
+  @ApiProperty({
+    description: 'The name of the network',
+    example: 'Ethereum',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({
+    description: 'The chain ID of the network',
+    example: 1,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  chainId: number;
+}
+
+export class CreateContactDto {
+  @ApiProperty({
+    description: 'The group name',
+    example: 'Employee',
   })
   @IsString()
   @IsNotEmpty()
@@ -25,11 +77,11 @@ export class AddressBookDto {
   @Matches(/^[a-zA-Z0-9\s\-]+$/, {
     message: 'category can only contain letters, numbers, spaces, and hyphens',
   })
-  category: string;
+  group: string;
 
   @ApiProperty({
-    description: 'The name of the address book entry',
-    example: 'JuPENG',
+    description: 'The name of new contact',
+    example: 'John',
   })
   @IsString()
   @IsNotEmpty()
@@ -47,17 +99,16 @@ export class AddressBookDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(3, { message: 'address is too short' })
-  address: string;
+  walletAddress: string;
 
   @ApiProperty({
     description: 'The email of the address book entry',
     example: 'user@example.com',
     required: false,
   })
-  @IsOptional()
   @IsEmail({}, { message: 'email must be a valid email address' })
   @MaxLength(255, { message: 'email cannot be longer than 255 characters' })
-  email?: string;
+  email: string;
 
   @ApiProperty({
     description: 'The token information of the address book entry',
@@ -67,12 +118,23 @@ export class AddressBookDto {
     },
     required: false,
   })
-  @IsOptional()
   @IsObject()
-  token?: any;
+  @IsNotEmpty()
+  token: TokenDto;
+
+  @ApiProperty({
+    description: 'The network information of the address book entry',
+    example: {
+      name: 'Ethereum',
+      chainId: 1,
+    },
+  })
+  @IsObject()
+  @IsNotEmpty()
+  network: NetworkDto;
 }
 
-export class CategoryDto {
+export class CreateCompanyGroupDto {
   @ApiProperty({
     description: 'The name of the category',
     example: 'Company',

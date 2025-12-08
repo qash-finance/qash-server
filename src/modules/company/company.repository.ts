@@ -1,0 +1,304 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
+import { CompanyModel } from '../../database/generated/models/Company';
+import {
+  CompanyTypeEnum,
+  CompanyVerificationStatusEnum,
+  TeamMemberRoleEnum,
+} from '../../database/generated/client';
+
+export interface CreateCompanyData {
+  companyName: string;
+  registrationNumber: string;
+  companyType: CompanyTypeEnum;
+  country: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  postalCode: string;
+  metadata?: any;
+}
+
+export interface UpdateCompanyData {
+  companyName?: string;
+  companyType?: CompanyTypeEnum;
+  country?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  postalCode?: string;
+  verificationStatus?: CompanyVerificationStatusEnum;
+  isActive?: boolean;
+  metadata?: any;
+}
+
+export interface CompanyWithRelations extends CompanyModel {
+  teamMembers?: any[];
+  creator?: any;
+}
+
+export interface CompanyFilters {
+  verificationStatus?: CompanyVerificationStatusEnum;
+  companyType?: CompanyTypeEnum;
+  country?: string;
+  isActive?: boolean;
+  search?: string; // Search in company name or registration number
+}
+
+@Injectable()
+export class CompanyRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Create new company
+   */
+  async create(data: CreateCompanyData): Promise<CompanyModel> {
+    return this.prisma.company.create({
+      data,
+    });
+  }
+
+  /**
+   * Find company by ID
+   */
+  async findById(id: number): Promise<CompanyModel | null> {
+    return this.prisma.company.findUnique({
+      where: { id },
+    });
+  }
+
+  /**
+   * Find company by registration number
+   */
+  async findByRegistrationNumber(
+    registrationNumber: string,
+  ): Promise<CompanyModel | null> {
+    return this.prisma.company.findUnique({
+      where: { registrationNumber },
+    });
+  }
+
+  /**
+   * Find company with team members
+   */
+  async findByIdWithTeamMembers(
+    id: number,
+  ): Promise<CompanyWithRelations | null> {
+    return this.prisma.company.findUnique({
+      where: { id },
+      include: {
+        teamMembers: {
+          where: { isActive: true },
+          orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            position: true,
+            profilePicture: true,
+            role: true,
+            isActive: true,
+            joinedAt: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Find companies by user (created by user)
+   */
+  async findByOwner(
+    userId: number,
+    filters?: CompanyFilters,
+  ): Promise<CompanyModel[]> {
+    const whereClause: any = {
+      teamMembers: {
+        some: {
+          userId,
+          role: TeamMemberRoleEnum.OWNER,
+          isActive: true,
+        },
+      },
+    };
+
+    if (filters) {
+      if (filters.verificationStatus) {
+        whereClause.verificationStatus = filters.verificationStatus;
+      }
+      if (filters.companyType) {
+        whereClause.companyType = filters.companyType;
+      }
+      if (filters.country) {
+        whereClause.country = filters.country;
+      }
+      if (typeof filters.isActive === 'boolean') {
+        whereClause.isActive = filters.isActive;
+      }
+      if (filters.search) {
+        whereClause.OR = [
+          { companyName: { contains: filters.search, mode: 'insensitive' } },
+          {
+            registrationNumber: {
+              contains: filters.search,
+              mode: 'insensitive',
+            },
+          },
+        ];
+      }
+    }
+
+    return this.prisma.company.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Update company by ID
+   */
+  async updateById(id: number, data: UpdateCompanyData): Promise<CompanyModel> {
+    return this.prisma.company.update({
+      where: { id },
+      data,
+    });
+  }
+
+  /**
+   * Check if user owns company (through TeamMember OWNER role)
+   */
+  async isCompanyOwner(companyId: number, userId: number): Promise<boolean> {
+    const teamMember = await this.prisma.teamMember.findFirst({
+      where: {
+        companyId,
+        userId,
+        role: 'OWNER',
+        isActive: true,
+      },
+    });
+    return !!teamMember;
+  }
+
+  /**
+   * Get company statistics
+   */
+  async getStats(userId?: number) {
+    // If userId is provided, filter by companies where user is OWNER
+    const whereClause = userId
+      ? {
+          teamMembers: {
+            some: {
+              userId,
+              role: TeamMemberRoleEnum.OWNER,
+              isActive: true,
+            },
+          },
+        }
+      : {};
+
+    const [total, verified, pending, underReview, rejected] = await Promise.all(
+      [
+        this.prisma.company.count({ where: whereClause }),
+        this.prisma.company.count({
+          where: { ...whereClause, verificationStatus: 'VERIFIED' },
+        }),
+        this.prisma.company.count({
+          where: { ...whereClause, verificationStatus: 'PENDING' },
+        }),
+        this.prisma.company.count({
+          where: { ...whereClause, verificationStatus: 'UNDER_REVIEW' },
+        }),
+        this.prisma.company.count({
+          where: { ...whereClause, verificationStatus: 'REJECTED' },
+        }),
+      ],
+    );
+
+    return {
+      total,
+      verified,
+      pending,
+      underReview,
+      rejected,
+    };
+  }
+
+  /**
+   * Search companies (admin function)
+   */
+  async searchCompanies(
+    filters: CompanyFilters & { skip?: number; take?: number },
+  ) {
+    const { skip = 0, take = 20, ...searchFilters } = filters;
+    const whereClause: any = {};
+
+    if (searchFilters.verificationStatus) {
+      whereClause.verificationStatus = searchFilters.verificationStatus;
+    }
+    if (searchFilters.companyType) {
+      whereClause.companyType = searchFilters.companyType;
+    }
+    if (searchFilters.country) {
+      whereClause.country = searchFilters.country;
+    }
+    if (typeof searchFilters.isActive === 'boolean') {
+      whereClause.isActive = searchFilters.isActive;
+    }
+    if (searchFilters.search) {
+      whereClause.OR = [
+        {
+          companyName: { contains: searchFilters.search, mode: 'insensitive' },
+        },
+        {
+          registrationNumber: {
+            contains: searchFilters.search,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
+    const [companies, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where: whereClause,
+        include: {
+          _count: {
+            select: { teamMembers: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.company.count({ where: whereClause }),
+    ]);
+
+    return {
+      companies,
+      total,
+      hasMore: skip + take < total,
+    };
+  }
+
+  /**
+   * Delete company (soft delete by deactivating)
+   */
+  async deactivate(id: number): Promise<CompanyModel> {
+    return this.prisma.company.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  }
+
+  /**
+   * Activate company
+   */
+  async activate(id: number): Promise<CompanyModel> {
+    return this.prisma.company.update({
+      where: { id },
+      data: { isActive: true },
+    });
+  }
+}

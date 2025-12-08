@@ -480,10 +480,6 @@ export type EnumNotificationsStatusEnumFieldUpdateOperationsInput = {
   set?: $Enums.NotificationsStatusEnum
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 
 
 export type NotificationsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
