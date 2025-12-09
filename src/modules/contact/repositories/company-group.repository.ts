@@ -22,11 +22,11 @@ export class CompanyGroupRepository extends BaseRepository<
   }
 
   protected getModel(tx?: PrismaTransactionClient) {
-    return tx ? tx.categories : this.prisma.company;
+    return tx ? tx.companyGroup : this.prisma.companyGroup;
   }
 
   protected getModelName(): string {
-    return 'Categories';
+    return 'CompanyGroup';
   }
 
   /**

@@ -59,13 +59,8 @@ export abstract class BaseRepository<
       const model = this.getModel(tx);
       const result = await model.findFirst({ where });
 
-      this.logger.debug(`Found ${this.getModelName()} record:`, {
-        where,
-        found: !!result,
-      });
       return result;
     } catch (error) {
-      this.logger.error(`Error finding ${this.getModelName()} record:`, error);
       throw error;
     }
   }
@@ -91,12 +86,8 @@ export abstract class BaseRepository<
         ...options,
       });
 
-      this.logger.debug(
-        `Found ${result.length} ${this.getModelName()} records`,
-      );
       return result;
     } catch (error) {
-      this.logger.error(`Error finding ${this.getModelName()} records:`, error);
       throw error;
     }
   }
@@ -145,10 +136,6 @@ export abstract class BaseRepository<
         },
       };
     } catch (error) {
-      this.logger.error(
-        `Error finding paginated ${this.getModelName()} records:`,
-        error,
-      );
       throw error;
     }
   }
@@ -172,12 +159,8 @@ export abstract class BaseRepository<
         },
       });
 
-      this.logger.debug(`Created ${this.getModelName()} record:`, {
-        id: (result as any).id,
-      });
       return result;
     } catch (error) {
-      this.logger.error(`Error creating ${this.getModelName()} record:`, error);
       throw error;
     }
   }
@@ -204,15 +187,8 @@ export abstract class BaseRepository<
         skipDuplicates: false,
       });
 
-      this.logger.debug(
-        `Created ${result.count} ${this.getModelName()} records`,
-      );
       return result;
     } catch (error) {
-      this.logger.error(
-        `Error creating multiple ${this.getModelName()} records:`,
-        error,
-      );
       throw error;
     }
   }
@@ -244,12 +220,8 @@ export abstract class BaseRepository<
         },
       });
 
-      this.logger.debug(`Updated ${this.getModelName()} record:`, {
-        id: (result as any).id,
-      });
       return result;
     } catch (error) {
-      this.logger.error(`Error updating ${this.getModelName()} record:`, error);
       throw error;
     }
   }
@@ -272,16 +244,8 @@ export abstract class BaseRepository<
           updatedAt: new Date(),
         },
       });
-
-      this.logger.debug(
-        `Updated ${result.count} ${this.getModelName()} records`,
-      );
       return result;
     } catch (error) {
-      this.logger.error(
-        `Error updating multiple ${this.getModelName()} records:`,
-        error,
-      );
       throw error;
     }
   }
@@ -312,15 +276,8 @@ export abstract class BaseRepository<
         },
       });
 
-      this.logger.debug(`Upserted ${this.getModelName()} record:`, {
-        id: (result as any).id,
-      });
       return result;
     } catch (error) {
-      this.logger.error(
-        `Error upserting ${this.getModelName()} record:`,
-        error,
-      );
       throw error;
     }
   }
@@ -347,12 +304,8 @@ export abstract class BaseRepository<
         where: { id: (existing as any).id },
       });
 
-      this.logger.debug(`Deleted ${this.getModelName()} record:`, {
-        id: (result as any).id,
-      });
       return result;
     } catch (error) {
-      this.logger.error(`Error deleting ${this.getModelName()} record:`, error);
       throw error;
     }
   }
@@ -366,18 +319,10 @@ export abstract class BaseRepository<
   ): Promise<{ count: number }> {
     try {
       const model = this.getModel(tx);
-
       const result = await model.deleteMany({ where });
 
-      this.logger.debug(
-        `Deleted ${result.count} ${this.getModelName()} records`,
-      );
       return result;
     } catch (error) {
-      this.logger.error(
-        `Error deleting multiple ${this.getModelName()} records:`,
-        error,
-      );
       throw error;
     }
   }
@@ -393,13 +338,8 @@ export abstract class BaseRepository<
       const model = this.getModel(tx);
       const result = await model.count({ where });
 
-      this.logger.debug(`Counted ${result} ${this.getModelName()} records`);
       return result;
     } catch (error) {
-      this.logger.error(
-        `Error counting ${this.getModelName()} records:`,
-        error,
-      );
       throw error;
     }
   }
@@ -415,10 +355,6 @@ export abstract class BaseRepository<
       const count = await this.count(where, tx);
       return count > 0;
     } catch (error) {
-      this.logger.error(
-        `Error checking ${this.getModelName()} existence:`,
-        error,
-      );
       throw error;
     }
   }

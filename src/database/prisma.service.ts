@@ -87,24 +87,11 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     operationName: string,
     context?: Record<string, any>,
   ): Promise<T> {
-    const startTime = Date.now();
-
     try {
-      this.logger.debug(`Starting ${operationName}`, context);
-
       const result = await operation();
-
-      const duration = Date.now() - startTime;
-      this.logger.debug(`Completed ${operationName} in ${duration}ms`, context);
-
       return result;
     } catch (error) {
-      const duration = Date.now() - startTime;
-      this.logger.error(
-        `Failed ${operationName} after ${duration}ms:`,
-        error,
-        context,
-      );
+      this.logger.error(`Failed ${operationName} :`, error, context);
       handleError(error, this.logger);
       throw error;
     }

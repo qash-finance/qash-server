@@ -12,7 +12,9 @@ import {
   IsObject,
   IsArray,
   IsNumber,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class TokenDto {
   @ApiProperty({
@@ -66,18 +68,55 @@ export class NetworkDto {
   chainId: number;
 }
 
-export class CreateContactDto {
+export class CreateCompanyGroupDto {
   @ApiProperty({
-    description: 'The group name',
-    example: 'Employee',
+    description: 'The name of the category',
+    example: 'Company',
   })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(50, { message: 'category cannot be longer than 50 characters' })
-  @Matches(/^[a-zA-Z0-9\s\-]+$/, {
-    message: 'category can only contain letters, numbers, spaces, and hyphens',
+  @MaxLength(100, { message: 'name cannot be longer than 100 characters' })
+  @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
+    message:
+      'name can only contain letters, numbers, spaces, hyphens, and underscores',
   })
-  group: string;
+  name: string;
+
+  @ApiProperty({
+    description: 'The shape of the category',
+    example: 'CIRCLE',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @IsEnum(CategoryShapeEnum)
+  shape: CategoryShapeEnum;
+
+  @ApiProperty({
+    description: 'The color of the category',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50, { message: 'color cannot be longer than 50 characters' })
+  @Matches(/^#([0-9a-fA-F]{6})$/, {
+    message: 'color must be a valid hex color',
+  })
+  color: string;
+}
+
+export class CreateContactDto {
+  @ApiProperty({
+    description: 'The group information',
+    example: {
+      name: 'Employee',
+      shape: 'CIRCLE',
+      color: '#000000',
+    },
+  })
+  @IsNotEmpty()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CreateCompanyGroupDto)
+  group: CreateCompanyGroupDto;
 
   @ApiProperty({
     description: 'The name of new contact',
@@ -132,41 +171,6 @@ export class CreateContactDto {
   @IsObject()
   @IsNotEmpty()
   network: NetworkDto;
-}
-
-export class CreateCompanyGroupDto {
-  @ApiProperty({
-    description: 'The name of the category',
-    example: 'Company',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100, { message: 'name cannot be longer than 100 characters' })
-  @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
-    message:
-      'name can only contain letters, numbers, spaces, hyphens, and underscores',
-  })
-  name: string;
-
-  @ApiProperty({
-    description: 'The shape of the category',
-    example: 'CIRCLE',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @IsEnum(CategoryShapeEnum)
-  shape: CategoryShapeEnum;
-
-  @ApiProperty({
-    description: 'The color of the category',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(50, { message: 'color cannot be longer than 50 characters' })
-  @Matches(/^#([0-9a-fA-F]{6})$/, {
-    message: 'color must be a valid hex color',
-  })
-  color: string;
 }
 
 export class AddressBookNameDuplicateDto {
@@ -301,4 +305,119 @@ export class CategoryOrderDto {
   @IsNotEmpty()
   @IsNumber({}, { each: true })
   categoryIds: number[];
+}
+
+export class PaginationMetaDto {
+  @ApiProperty({ description: 'Current page number', example: 1 })
+  page: number;
+
+  @ApiProperty({ description: 'Number of items per page', example: 20 })
+  limit: number;
+
+  @ApiProperty({ description: 'Total number of items', example: 150 })
+  total: number;
+
+  @ApiProperty({ description: 'Total number of pages', example: 8 })
+  totalPages: number;
+
+  @ApiProperty({ description: 'Whether there is a next page', example: true })
+  hasNext: boolean;
+
+  @ApiProperty({
+    description: 'Whether there is a previous page',
+    example: false,
+  })
+  hasPrev: boolean;
+}
+
+export class CompanyContactResponseDto {
+  @ApiProperty({ description: 'Contact ID', example: 1 })
+  id: number;
+
+  @ApiProperty({ description: 'Contact name', example: 'John Doe' })
+  name: string;
+
+  @ApiProperty({ description: 'Contact address', example: '0x1234...abcd' })
+  walletAddress: string;
+
+  @ApiProperty({
+    description: 'Contact description',
+    example: 'Business partner',
+  })
+  description?: string;
+
+  @ApiProperty({ description: 'Token information' })
+  token: any;
+
+  @ApiProperty({ description: 'Network information' })
+  network: any;
+
+  @ApiProperty({ description: 'Group ID', example: 1 })
+  groupId: number;
+
+  @ApiProperty({ description: 'Company ID', example: 1 })
+  companyId: number;
+
+  @ApiProperty({ description: 'Creation timestamp' })
+  createdAt: Date;
+
+  @ApiProperty({ description: 'Last update timestamp' })
+  updatedAt: Date;
+}
+
+export class PaginatedContactsResponseDto {
+  @ApiProperty({
+    description: 'Array of contacts',
+    type: [CompanyContactResponseDto],
+  })
+  data: CompanyContactResponseDto[];
+
+  @ApiProperty({
+    description: 'Pagination metadata',
+    type: PaginationMetaDto,
+  })
+  pagination: PaginationMetaDto;
+}
+
+export class CompanyGroupResponseDto {
+  @ApiProperty({ description: 'Group ID', example: 1 })
+  id: number;
+
+  @ApiProperty({ description: 'Group name', example: 'Employees' })
+  name: string;
+
+  @ApiProperty({
+    description: 'Group shape',
+    enum: ['CIRCLE', 'DIAMOND', 'SQUARE', 'TRIANGLE'],
+  })
+  shape: string;
+
+  @ApiProperty({ description: 'Group color', example: '#FF5733' })
+  color: string;
+
+  @ApiProperty({ description: 'Display order', example: 1 })
+  order: number;
+
+  @ApiProperty({ description: 'Company ID', example: 1 })
+  companyId: number;
+
+  @ApiProperty({ description: 'Creation timestamp' })
+  createdAt: Date;
+
+  @ApiProperty({ description: 'Last update timestamp' })
+  updatedAt: Date;
+}
+
+export class PaginatedGroupsResponseDto {
+  @ApiProperty({
+    description: 'Array of groups',
+    type: [CompanyGroupResponseDto],
+  })
+  data: CompanyGroupResponseDto[];
+
+  @ApiProperty({
+    description: 'Pagination metadata',
+    type: PaginationMetaDto,
+  })
+  pagination: PaginationMetaDto;
 }

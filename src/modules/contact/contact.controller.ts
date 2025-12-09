@@ -18,7 +18,6 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
-  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CompanyContactService } from './services/company-contact.service';
 import {
@@ -26,15 +25,18 @@ import {
   UpdateAddressBookDto,
   AddressBookOrderDto,
   CreateCompanyGroupDto,
+  PaginatedContactsResponseDto,
+  PaginatedGroupsResponseDto,
+  CompanyContactResponseDto,
+  CompanyGroupResponseDto,
 } from './contact.dto';
 import { PaginationOptions } from '../../database/base.repository';
 import {
   CurrentUser,
   UserWithCompany,
 } from '../auth/decorators/current-user.decorator';
-import { JwtPayload } from 'src/common/interfaces';
-import { Auth } from '../auth/decorators/auth.decorator';
 import { CompanyAuth } from '../auth/decorators/company-auth.decorator';
+import { CompanyGroupService } from './services/company-group.service';
 
 @ApiTags('Contacts')
 @CompanyAuth()
@@ -42,207 +44,345 @@ import { CompanyAuth } from '../auth/decorators/company-auth.decorator';
 export class ContactController {
   private readonly logger = new Logger(ContactController.name);
 
-  constructor(private readonly contactService: CompanyContactService) {}
+  constructor(
+    private readonly companyContactService: CompanyContactService,
+    private readonly companyGroupService: CompanyGroupService,
+  ) {}
 
   //#region GET METHODS
   // *************************************************
   // **************** GET METHODS ********************
   // *************************************************
 
-  // @Get()
-  // @ApiOperation({
-  //   summary: 'Get all contacts',
-  //   description:
-  //     'Retrieve all contacts for the authenticated user with optional pagination',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Address book entries retrieved successfully',
-  //   type: [AddressBookDto],
-  // })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // @ApiQuery({
-  //   name: 'page',
-  //   required: false,
-  //   description: 'Page number (1-based)',
-  // })
-  // @ApiQuery({
-  //   name: 'limit',
-  //   required: false,
-  //   description: 'Items per page (max 100)',
-  // })
-  // async getAllEntries(
-  //   @UserAddress() userAddress: string,
-  //   @Query('page', new ParseIntPipe({ optional: true })) page?: number,
-  //   @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-  // ) {
-  //   this.logger.log(
-  //     `Getting all address book entries for user: ${userAddress}`,
-  //   );
+  @Get()
+  @ApiOperation({
+    summary: 'Get all contacts',
+    description:
+      'Retrieve all contacts for the authenticated user with optional pagination',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Contacts retrieved successfully',
+    type: PaginatedContactsResponseDto,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (1-based)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (max 100)',
+  })
+  async getAllCompanyContacts(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Query('page', new ParseIntPipe({ optional: true })) page: number = 1,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 10,
+  ) {
+    const pagination: PaginationOptions = { page, limit };
+    return this.companyContactService.getAllCompanyContacts(
+      user.company,
+      pagination,
+    );
+  }
 
-  //   const pagination: PaginationOptions | undefined =
-  //     page || limit
-  //       ? {
-  //           page: page || 1,
-  //           limit: limit || 10,
-  //         }
-  //       : undefined;
+  @Get('groups')
+  @ApiOperation({
+    summary: 'Get all groups',
+    description: "Retrieve all groups for the authenticated user's company",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Groups retrieved successfully',
+    type: [CompanyGroupResponseDto],
+  })
+  async getAllCompanyGroups(@CurrentUser('withCompany') user: UserWithCompany) {
+    return this.companyGroupService.getAllCompanyGroups(user.company.id);
+  }
 
-  //   return this.contactService.getAllAddressBookEntries(
-  //     userAddress,
-  //     pagination,
-  //   );
-  // }
+  @Get('search')
+  @ApiOperation({
+    summary: 'Search company contacts',
+    description:
+      'Search contacts by name, address, or description within the company',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Search results retrieved successfully',
+    type: PaginatedContactsResponseDto,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: true,
+    description: 'Search term (min 2 characters)',
+    example: 'john',
+  })
+  @ApiQuery({
+    name: 'groupId',
+    required: false,
+    description: 'Filter by group ID',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number for pagination',
+    type: Number,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of results per page',
+    type: Number,
+    example: 20,
+  })
+  async searchCompanyContacts(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Query('search') searchTerm: string,
+    @Query('groupId', new ParseIntPipe({ optional: true }))
+    groupId?: number,
+    @Query('page', new ParseIntPipe({ optional: true }))
+    page: number = 1,
+    @Query('limit', new ParseIntPipe({ optional: true }))
+    limit: number = 20,
+  ) {
+    return this.companyContactService.searchCompanyContacts(
+      user.company.id,
+      searchTerm,
+      { groupId, page, limit },
+    );
+  }
 
-  // @Get('categories')
-  // @ApiOperation({
-  //   summary: 'Get all categories',
-  //   description: 'Retrieve all categories for the authenticated user',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Categories retrieved successfully',
-  //   type: [CategoryDto],
-  // })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // async getAllCategories(@UserAddress() userAddress: string) {
-  //   this.logger.log(`Getting all categories for user: ${userAddress}`);
-  //   return this.contactService.getAllCategories(userAddress);
-  // }
+  @Get('group/:groupId')
+  @ApiOperation({
+    summary: 'Get contacts by group',
+    description:
+      'Retrieve all contacts for a specific group within the company',
+  })
+  @ApiParam({
+    name: 'groupId',
+    description: 'Group ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Group contacts retrieved successfully',
+    type: PaginatedContactsResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Group not found or access denied',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number for pagination',
+    type: Number,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of contacts per page',
+    type: Number,
+    example: 20,
+  })
+  async getContactsByCompanyGroup(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Query('page', new ParseIntPipe({ optional: true }))
+    page: number = 1,
+    @Query('limit', new ParseIntPipe({ optional: true }))
+    limit: number = 20,
+  ) {
+    return this.companyContactService.getContactsByCompanyGroup(
+      user.company.id,
+      groupId,
+      {
+        page,
+        limit,
+      },
+    );
+  }
 
-  // @Get('search')
-  // @ApiOperation({
-  //   summary: 'Search address book entries',
-  //   description: 'Search entries by name, address, or email',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Search results retrieved successfully',
-  //   type: [AddressBookDto],
-  // })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // @ApiQuery({
-  //   name: 'search',
-  //   required: true,
-  //   description: 'Search term (min 2 characters)',
-  // })
-  // @ApiQuery({
-  //   name: 'categoryId',
-  //   required: false,
-  //   description: 'Filter by category ID',
-  // })
-  // async searchEntries(
-  //   @UserAddress() userAddress: string,
-  //   @Query('search') searchTerm: string,
-  //   @Query('categoryId', new ParseIntPipe({ optional: true }))
-  //   categoryId?: number,
-  // ) {
-  //   this.logger.log(
-  //     `Searching entries for user: ${userAddress}, term: ${searchTerm}`,
-  //   );
-  //   return this.contactService.searchEntries(
-  //     userAddress,
-  //     searchTerm,
-  //     categoryId,
-  //   );
-  // }
+  @Get('stats')
+  @ApiOperation({
+    summary: 'Get company contact statistics',
+    description: "Get summary statistics for the company's contacts and groups",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        totalContacts: { type: 'number' },
+        totalGroups: { type: 'number' },
+        contactsByGroup: {
+          type: 'object',
+          additionalProperties: { type: 'number' },
+        },
+      },
+    },
+  })
+  async getCompanyContactStatistics(
+    @CurrentUser('withCompany') user: UserWithCompany,
+  ) {
+    return this.companyContactService.getCompanyContactStatistics(
+      user.company.id,
+    );
+  }
 
-  // @Get('category/:categoryId')
-  // @ApiOperation({
-  //   summary: 'Get entries by category',
-  //   description: 'Retrieve all address book entries for a specific category',
-  // })
-  // @ApiParam({ name: 'categoryId', description: 'Category ID' })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Category entries retrieved successfully',
-  //   type: [AddressBookDto],
-  // })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // async getEntriesByCategory(
-  //   @UserAddress() userAddress: string,
-  //   @Param('categoryId', ParseIntPipe) categoryId: number,
-  // ) {
-  //   this.logger.log(
-  //     `Getting entries by category ${categoryId} for user: ${userAddress}`,
-  //   );
-  //   return this.contactService.getEntriesByCategory(userAddress, categoryId);
-  // }
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get contact by ID',
+    description: 'Retrieve a specific contact by its ID within the company',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Contact ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Contact retrieved successfully',
+    type: CompanyContactResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Contact not found or access denied',
+  })
+  async getCompanyContactById(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.companyContactService.getCompanyContactById(
+      user.company.id,
+      id,
+    );
+  }
 
-  // @Get('stats')
-  // @ApiOperation({
-  //   summary: 'Get address book statistics',
-  //   description: "Get summary statistics for the user's address book",
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Statistics retrieved successfully',
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       totalEntries: { type: 'number' },
-  //       totalCategories: { type: 'number' },
-  //       entriesByCategory: {
-  //         type: 'object',
-  //         additionalProperties: { type: 'number' },
-  //       },
-  //       recentlyAdded: { type: 'number' },
-  //     },
-  //   },
-  // })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // async getStatistics(@UserAddress() userAddress: string) {
-  //   this.logger.log(`Getting statistics for user: ${userAddress}`);
-  //   return this.contactService.getStatistics(userAddress);
-  // }
+  @Get('validate/name-duplicate')
+  @ApiOperation({
+    summary: 'Check if contact name is duplicate in group',
+    description:
+      'Validate if a contact name already exists in a specific group within the company',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Validation result',
+    schema: {
+      type: 'object',
+      properties: { isDuplicate: { type: 'boolean' } },
+    },
+  })
+  @ApiQuery({
+    name: 'name',
+    required: true,
+    description: 'Contact name to check',
+    example: 'John Doe',
+  })
+  @ApiQuery({
+    name: 'groupId',
+    required: true,
+    description: 'Group ID',
+    type: Number,
+    example: 1,
+  })
+  async checkCompanyContactNameDuplicate(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Query('name') name: string,
+    @Query('groupId', ParseIntPipe) groupId: number,
+  ) {
+    const isDuplicate =
+      await this.companyContactService.isCompanyContactNameDuplicate(
+        user.company.id,
+        name,
+        groupId,
+      );
+    return { isDuplicate };
+  }
 
-  // @Get(':id')
-  // @ApiOperation({
-  //   summary: 'Get address book entry by ID',
-  //   description: 'Retrieve a specific address book entry by its ID',
-  // })
-  // @ApiParam({ name: 'id', description: 'Address book entry ID' })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Entry retrieved successfully',
-  //   type: AddressBookDto,
-  // })
-  // @ApiResponse({ status: 404, description: 'Entry not found' })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // async getEntryById(
-  //   @UserAddress() userAddress: string,
-  //   @Param('id', ParseIntPipe) id: number,
-  // ) {
-  //   this.logger.log(`Getting entry ${id} for user: ${userAddress}`);
-  //   return this.contactService.getEntryById(id, userAddress);
-  // }
+  @Get('validate/address-duplicate')
+  @ApiOperation({
+    summary: 'Check if address is duplicate in group',
+    description:
+      'Validate if an address already exists in a specific group within the company',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Validation result',
+    schema: {
+      type: 'object',
+      properties: { isDuplicate: { type: 'boolean' } },
+    },
+  })
+  @ApiQuery({
+    name: 'address',
+    required: true,
+    description: 'Address to check',
+    example: '0x1234567890abcdef...',
+  })
+  @ApiQuery({
+    name: 'groupId',
+    required: true,
+    description: 'Group ID',
+    type: Number,
+    example: 1,
+  })
+  async checkCompanyContactAddressDuplicate(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Query('address') address: string,
+    @Query('groupId', ParseIntPipe) groupId: number,
+  ) {
+    const isDuplicate =
+      await this.companyContactService.isCompanyContactAddressDuplicate(
+        user.company.id,
+        address,
+        groupId,
+      );
+    return { isDuplicate };
+  }
+
+  @Get('validate/group-exists')
+  @ApiOperation({
+    summary: 'Check if group exists',
+    description: 'Validate if a group exists within the company',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Validation result',
+    schema: {
+      type: 'object',
+      properties: { exists: { type: 'boolean' } },
+    },
+  })
+  @ApiQuery({
+    name: 'groupName',
+    required: true,
+    description: 'Group name to check',
+    example: 'Employees',
+  })
+  async checkCompanyGroupExists(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Query('groupName') groupName: string,
+  ) {
+    const exists = await this.companyContactService.isCompanyGroupExists(
+      user.company.id,
+      groupName,
+    );
+    return { exists };
+  }
   //#endregion GET METHODS
 
   //#region POST METHODS
+  // *************************************************
+  // **************** POST METHODS *******************
+  // *************************************************
   @Post('group')
   @ApiOperation({
     summary: 'Create new group',
@@ -250,8 +390,8 @@ export class ContactController {
   })
   @ApiResponse({
     status: 201,
-    description: 'Category created successfully',
-    type: CreateCompanyGroupDto,
+    description: 'Group created successfully',
+    type: CompanyGroupResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -261,10 +401,10 @@ export class ContactController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Body() dto: CreateCompanyGroupDto,
   ) {
-    return this.contactService.createNewCompanyGroup(dto, user.company);
+    return this.companyGroupService.createNewCompanyGroup(dto, user.company);
   }
 
-  @Post('contact')
+  @Post('new-contact')
   @ApiOperation({
     summary: 'Create new contact for a company',
     description:
@@ -273,7 +413,7 @@ export class ContactController {
   @ApiResponse({
     status: 201,
     description: 'Contact created successfully',
-    type: CreateContactDto,
+    type: CompanyContactResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -283,275 +423,153 @@ export class ContactController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Body() dto: CreateContactDto,
   ) {
-    // Company info is automatically available!
-    return this.contactService.createNewCompanyGroupContact(dto, user.company);
+    return this.companyContactService.createNewCompanyGroupContact(
+      dto,
+      user.company,
+    );
   }
-
-  // @Post('bulk-import')
-  // @ApiOperation({
-  //   summary: 'Bulk import address book entries',
-  //   description: 'Import multiple address book entries at once',
-  // })
-  // @ApiResponse({
-  //   status: 201,
-  //   description: 'Entries imported successfully',
-  //   type: [AddressBookDto],
-  // })
-  // @ApiResponse({ status: 400, description: 'Invalid input data' })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // async bulkImport(
-  //   @UserAddress() userAddress: string,
-  //   @Body() entries: AddressBookDto[],
-  // ) {
-  //   this.logger.log(
-  //     `Bulk importing ${entries.length} entries for user: ${userAddress}`,
-  //   );
-  //   return this.contactService.bulkImportEntries(entries, userAddress);
-  // }
-
-  // @Post(':id/duplicate')
-  // @ApiOperation({
-  //   summary: 'Duplicate address book entry',
-  //   description: 'Create a copy of an existing address book entry',
-  // })
-  // @ApiParam({ name: 'id', description: 'Address book entry ID to duplicate' })
-  // @ApiResponse({
-  //   status: 201,
-  //   description: 'Entry duplicated successfully',
-  //   type: AddressBookDto,
-  // })
-  // @ApiResponse({ status: 404, description: 'Entry not found' })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // async duplicateEntry(
-  //   @UserAddress() userAddress: string,
-  //   @Param('id', ParseIntPipe) id: number,
-  // ) {
-  //   this.logger.log(`Duplicating entry ${id} for user: ${userAddress}`);
-  //   return this.contactService.duplicateEntry(id, userAddress);
-  // }
   //#endregion POST METHODS
 
-  // // *************************************************
-  // // **************** PUT METHODS *******************
-  // // *************************************************
+  //#region PUT METHODS
+  // *************************************************
+  // **************** PUT METHODS ********************
+  // *************************************************
 
-  // @Put(':id')
-  // @ApiOperation({
-  //   summary: 'Update address book entry',
-  //   description: 'Update an existing address book entry',
-  // })
-  // @ApiParam({ name: 'id', description: 'Address book entry ID' })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Entry updated successfully',
-  //   type: AddressBookDto,
-  // })
-  // @ApiResponse({ status: 404, description: 'Entry not found' })
-  // @ApiResponse({
-  //   status: 400,
-  //   description: 'Invalid input data or duplicate entry',
-  // })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // async updateEntry(
-  //   @UserAddress() userAddress: string,
-  //   @Param('id', ParseIntPipe) id: number,
-  //   @Body() updateDto: UpdateAddressBookDto,
-  // ) {
-  //   this.logger.log(`Updating entry ${id} for user: ${userAddress}`);
-  //   return this.contactService.updateAddressBookEntry(
-  //     id,
-  //     updateDto,
-  //     userAddress,
-  //   );
-  // }
+  @Put(':id')
+  @ApiOperation({
+    summary: 'Update company contact',
+    description: 'Update an existing contact within the company',
+  })
+  @ApiParam({ name: 'id', description: 'Contact ID', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Contact updated successfully',
+    type: CompanyContactResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Contact not found or access denied',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data or duplicate contact',
+  })
+  async updateCompanyContact(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: UpdateAddressBookDto,
+  ): Promise<CompanyContactResponseDto> {
+    return this.companyContactService.updateCompanyContact(
+      user.company.id,
+      id,
+      updateDto,
+    );
+  }
 
-  // @Put('order/bulk')
-  // @ApiOperation({
-  //   summary: 'Update order of multiple entries',
-  //   description: 'Update the display order of multiple address book entries',
-  // })
-  // @ApiResponse({ status: 200, description: 'Order updated successfully' })
-  // @ApiResponse({ status: 400, description: 'Invalid input data' })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // @HttpCode(HttpStatus.OK)
-  // async updateEntriesOrder(
-  //   @UserAddress() userAddress: string,
-  //   @Body() orderUpdates: AddressBookOrderDto[],
-  // ) {
-  //   this.logger.log(
-  //     `Updating order for ${orderUpdates.length} entries for user: ${userAddress}`,
-  //   );
-  //   await this.contactService.updateEntriesOrder(orderUpdates, userAddress);
-  //   return { message: 'Order updated successfully' };
-  // }
+  @Put('order/bulk')
+  @ApiOperation({
+    summary: 'Update order of multiple contacts',
+    description:
+      'Update the display order of multiple contacts within the company',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Contact order updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Contact order updated successfully',
+        },
+        updatedCount: { type: 'number', example: 5 },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @HttpCode(HttpStatus.OK)
+  async updateCompanyContactsOrder(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Body() orderUpdates: AddressBookOrderDto[],
+  ): Promise<{ message: string; updatedCount: number }> {
+    const updatedCount =
+      await this.companyContactService.updateCompanyContactsOrder(
+        user.company.id,
+        orderUpdates,
+      );
+    return {
+      message: 'Contact order updated successfully',
+      updatedCount,
+    };
+  }
+  //#endregion PUT METHODS
 
-  // // *************************************************
-  // // **************** DELETE METHODS ****************
-  // // *************************************************
+  //#region DELETE METHODS
+  // *************************************************
+  // **************** DELETE METHODS *****************
+  // *************************************************
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete contact',
+    description: 'Delete a contact by ID within the company',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Contact ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Contact deleted successfully',
+    schema: {
+      type: 'object',
+      properties: { message: { type: 'string' } },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Contact not found or access denied',
+  })
+  async deleteCompanyContact(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    await this.companyContactService.deleteCompanyContact(user.company.id, id);
+    return { message: 'Contact deleted successfully' };
+  }
 
-  // @Delete(':id')
-  // @ApiOperation({
-  //   summary: 'Delete address book entry',
-  //   description: 'Delete an address book entry by ID',
-  // })
-  // @ApiParam({ name: 'id', description: 'Address book entry ID' })
-  // @ApiResponse({ status: 200, description: 'Entry deleted successfully' })
-  // @ApiResponse({ status: 404, description: 'Entry not found' })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // async deleteEntry(
-  //   @UserAddress() userAddress: string,
-  //   @Param('id', ParseIntPipe) id: number,
-  // ) {
-  //   this.logger.log(`Deleting entry ${id} for user: ${userAddress}`);
-  //   await this.contactService.deleteAddressBookEntry(id, userAddress);
-  //   return { message: 'Entry deleted successfully' };
-  // }
-
-  // @Delete('bulk')
-  // @ApiOperation({
-  //   summary: 'Bulk delete address book entries',
-  //   description: 'Delete multiple address book entries at once',
-  // })
-  // @ApiResponse({ status: 200, description: 'Entries deleted successfully' })
-  // @ApiResponse({ status: 400, description: 'Invalid input data' })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // @HttpCode(HttpStatus.OK)
-  // async bulkDelete(
-  //   @UserAddress() userAddress: string,
-  //   @Body('ids') ids: number[],
-  // ) {
-  //   this.logger.log(
-  //     `Bulk deleting ${ids.length} entries for user: ${userAddress}`,
-  //   );
-  //   await this.contactService.bulkDeleteEntries(ids, userAddress);
-  //   return { message: `${ids.length} entries deleted successfully` };
-  // }
-
-  // // *************************************************
-  // // **************** VALIDATION ENDPOINTS **********
-  // // *************************************************
-
-  // @Get('validate/name-duplicate')
-  // @ApiOperation({
-  //   summary: 'Check if name is duplicate in category',
-  //   description: 'Validate if a name already exists in a specific category',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Validation result',
-  //   schema: {
-  //     type: 'object',
-  //     properties: { isDuplicate: { type: 'boolean' } },
-  //   },
-  // })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // @ApiQuery({ name: 'name', required: true, description: 'Name to check' })
-  // @ApiQuery({ name: 'category', required: true, description: 'Category name' })
-  // async checkNameDuplicate(
-  //   @UserAddress() userAddress: string,
-  //   @Query('name') name: string,
-  //   @Query('category') category: string,
-  // ) {
-  //   this.logger.log(`Checking name duplicate for user: ${userAddress}`);
-  //   const isDuplicate = await this.contactService.isAddressBookNameDuplicate(
-  //     userAddress,
-  //     name,
-  //     category,
-  //   );
-  //   return { isDuplicate };
-  // }
-
-  // @Get('validate/address-duplicate')
-  // @ApiOperation({
-  //   summary: 'Check if address is duplicate in category',
-  //   description: 'Validate if an address already exists in a specific category',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Validation result',
-  //   schema: {
-  //     type: 'object',
-  //     properties: { isDuplicate: { type: 'boolean' } },
-  //   },
-  // })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // @ApiQuery({
-  //   name: 'address',
-  //   required: true,
-  //   description: 'Address to check',
-  // })
-  // @ApiQuery({ name: 'category', required: true, description: 'Category name' })
-  // async checkAddressDuplicate(
-  //   @UserAddress() userAddress: string,
-  //   @Query('address') address: string,
-  //   @Query('category') category: string,
-  // ) {
-  //   this.logger.log(`Checking address duplicate for user: ${userAddress}`);
-  //   const isDuplicate = await this.contactService.isAddressBookAddressDuplicate(
-  //     userAddress,
-  //     address,
-  //     category,
-  //   );
-  //   return { isDuplicate };
-  // }
-
-  // @Get('validate/category-exists')
-  // @ApiOperation({
-  //   summary: 'Check if category exists',
-  //   description: 'Validate if a category exists for the user',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Validation result',
-  //   schema: { type: 'object', properties: { exists: { type: 'boolean' } } },
-  // })
-  // @ApiQuery({
-  //   name: 'userAddress',
-  //   required: true,
-  //   description: 'User wallet address',
-  // })
-  // @ApiQuery({ name: 'category', required: true, description: 'Category name' })
-  // async checkCategoryExists(
-  //   @UserAddress() userAddress: string,
-  //   @Query('category') category: string,
-  // ) {
-  //   this.logger.log(`Checking category exists for user: ${userAddress}`);
-  //   const exists = await this.contactService.checkIfCategoryExists(
-  //     userAddress,
-  //     category,
-  //   );
-  //   return { exists };
-  // }
+  @Delete('bulk')
+  @ApiOperation({
+    summary: 'Bulk delete contacts',
+    description: 'Delete multiple contacts at once within the company',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Contacts deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        deletedCount: { type: 'number' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @HttpCode(HttpStatus.OK)
+  async bulkDeleteContacts(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Body('ids') ids: number[],
+  ) {
+    const deletedCount =
+      await this.companyContactService.bulkDeleteCompanyContacts(
+        user.company.id,
+        ids,
+      );
+    return {
+      message: `${deletedCount} contacts deleted successfully`,
+      deletedCount,
+    };
+  }
+  //#endregion DELETE METHODS
 }

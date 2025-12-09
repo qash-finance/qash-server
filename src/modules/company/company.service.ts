@@ -16,6 +16,7 @@ import {
 import { TeamMemberRoleEnum } from '../../database/generated/client';
 import { CompanyModel } from 'src/database/generated/models';
 import { UserRepository } from '../auth/repositories/user.repository';
+import { handleError } from 'src/common/utils/errors';
 
 @Injectable()
 export class CompanyService {
@@ -43,14 +44,24 @@ export class CompanyService {
     }
 
     try {
+      // get user email by userId
+      const user = await this.userRepository.findById(userId);
+
+      // Find if the user is already a team member of any company
+      const existingTeamMember =
+        await this.teamMemberRepository.findByUserId(userId);
+      console.log('existingTeamMember', existingTeamMember);
+      if (existingTeamMember) {
+        throw new ConflictException(
+          'User is already a team member of another company',
+        );
+      }
+
       const company = await this.companyRepository.create({
         ...(({ companyOwnerFirstName, companyOwnerLastName, ...rest }) => rest)(
           dto,
         ),
       });
-
-      // get user email by userId
-      const user = await this.userRepository.findById(userId);
 
       await this.teamMemberRepository.create({
         firstName: dto.companyOwnerFirstName,
@@ -63,14 +74,39 @@ export class CompanyService {
 
       return company;
     } catch (error) {
-      this.logger.error(`Failed to create company:`, error);
-      throw new BadRequestException('Failed to create company');
+      handleError(error, this.logger);
     }
+  }
+
+  /**
+   * Get company by ID
+   */
+  async getCompanyById(companyId: number, userId?: number) {
+    const company = await this.companyRepository.findById(companyId);
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    // Check if user has access to this company
+    if (userId) {
+      const hasAccess = await this.hasCompanyAccess(companyId, userId);
+      if (!hasAccess) {
+        throw new ForbiddenException('Access denied to this company');
+      }
+    }
+
+    return company;
   }
 
   async getMyCompany(companyId: number): Promise<CompanyModel | null> {
     // find company details, its team members and creator
     return this.companyRepository.findByIdWithTeamMembers(companyId);
+  }
+
+  async getCompanyByUserId(userId: number): Promise<CompanyModel | null> {
+    const teamMember = await this.teamMemberRepository.findByUserId(userId);
+    return teamMember?.company || null;
   }
 
   /**
@@ -135,6 +171,22 @@ export class CompanyService {
 
     this.logger.log(`Activating company ${companyId} by owner ${userId}`);
     return this.companyRepository.activate(companyId);
+  }
+
+  /**
+   * Get company statistics
+   */
+  async getCompanyStats(userId?: number) {
+    return this.companyRepository.getStats(userId);
+  }
+
+  /**
+   * Search companies (admin function)
+   */
+  async searchCompanies(
+    filters: CompanySearchQueryDto & { skip?: number; take?: number },
+  ) {
+    return this.companyRepository.searchCompanies(filters);
   }
 
   /**
