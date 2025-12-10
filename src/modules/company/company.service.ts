@@ -15,8 +15,8 @@ import {
 } from './company.dto';
 import { TeamMemberRoleEnum } from '../../database/generated/client';
 import { CompanyModel } from 'src/database/generated/models';
-import { UserRepository } from '../auth/repositories/user.repository';
-import { handleError } from 'src/common/utils/errors';
+import { PrismaService } from 'src/database/prisma.service';
+import { ErrorCompany } from 'src/common/constants/errors';
 
 @Injectable()
 export class CompanyService {
@@ -25,36 +25,36 @@ export class CompanyService {
   constructor(
     private readonly companyRepository: CompanyRepository,
     private readonly teamMemberRepository: TeamMemberRepository,
-    private readonly userRepository: UserRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
    * Create new company
    */
-  async createCompany(userId: number, dto: CreateCompanyDto) {
-    const existingCompany =
-      await this.companyRepository.findByRegistrationNumber(
-        dto.registrationNumber,
-      );
+  async createCompany(
+    userId: number,
+    dto: CreateCompanyDto,
+  ): Promise<CompanyModel> {
+    return this.prisma.executeInTransaction(async (tx) => {
+      const existingCompany =
+        await this.companyRepository.findByRegistrationNumber(
+          dto.registrationNumber,
+          tx,
+        );
 
-    if (existingCompany) {
-      throw new ConflictException(
-        'Company with this registration number already exists',
-      );
-    }
-
-    try {
-      // get user email by userId
-      const user = await this.userRepository.findById(userId);
+      if (existingCompany) {
+        throw new ConflictException(
+          ErrorCompany.RegistrationNumberAlreadyExists,
+        );
+      }
 
       // Find if the user is already a team member of any company
-      const existingTeamMember =
-        await this.teamMemberRepository.findByUserId(userId);
-      console.log('existingTeamMember', existingTeamMember);
+      const existingTeamMember = await this.teamMemberRepository.findByUserId(
+        userId,
+        tx,
+      );
       if (existingTeamMember) {
-        throw new ConflictException(
-          'User is already a team member of another company',
-        );
+        throw new ConflictException(ErrorCompany.UserAlreadyTeamMember);
       }
 
       const company = await this.companyRepository.create({
@@ -66,37 +66,21 @@ export class CompanyService {
       await this.teamMemberRepository.create({
         firstName: dto.companyOwnerFirstName,
         lastName: dto.companyOwnerLastName,
-        email: user.email,
         role: TeamMemberRoleEnum.OWNER,
-        companyId: company.id,
-        userId,
+        company: {
+          connect: {
+            id: company.id,
+          },
+        },
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
       });
 
       return company;
-    } catch (error) {
-      handleError(error, this.logger);
-    }
-  }
-
-  /**
-   * Get company by ID
-   */
-  async getCompanyById(companyId: number, userId?: number) {
-    const company = await this.companyRepository.findById(companyId);
-
-    if (!company) {
-      throw new NotFoundException('Company not found');
-    }
-
-    // Check if user has access to this company
-    if (userId) {
-      const hasAccess = await this.hasCompanyAccess(companyId, userId);
-      if (!hasAccess) {
-        throw new ForbiddenException('Access denied to this company');
-      }
-    }
-
-    return company;
+    }, 'createCompany');
   }
 
   async getMyCompany(companyId: number): Promise<CompanyModel | null> {
@@ -202,15 +186,7 @@ export class CompanyService {
       return true;
     }
 
-    // Check if user is team member
-    const teamMember = await this.teamMemberRepository.findByCompany(
-      companyId,
-      {
-        // This would need to be implemented to filter by userId
-      },
-    );
-
-    // For now, let's check if user has any role in the company
+    // Check if user has any role in the company
     const hasRole = await this.teamMemberRepository.hasPermission(
       companyId,
       userId,

@@ -64,13 +64,8 @@ export class AuthController {
     },
   })
   async sendOtp(@Body() sendOtpDto: SendOtpDto): Promise<MessageResponseDto> {
-    try {
-      await this.authService.sendOtp(sendOtpDto.email);
-      return { message: 'OTP sent successfully to your email' };
-    } catch (error) {
-      this.logger.error(`Send OTP failed for ${sendOtpDto.email}:`, error);
-      throw error;
-    }
+    await this.authService.sendOtp(sendOtpDto.email);
+    return { message: 'OTP sent successfully to your email' };
   }
 
   @Public()

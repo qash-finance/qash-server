@@ -1,4 +1,19 @@
 -- CreateEnum
+CREATE TYPE "ContractTermEnum" AS ENUM ('PERMANENT', 'CONTRACTOR');
+
+-- CreateEnum
+CREATE TYPE "PayrollStatusEnum" AS ENUM ('ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "InvoiceTypeEnum" AS ENUM ('EMPLOYEE', 'B2B');
+
+-- CreateEnum
+CREATE TYPE "InvoiceStatusEnum" AS ENUM ('DRAFT', 'SENT', 'REVIEWED', 'CONFIRMED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "BillStatusEnum" AS ENUM ('PENDING', 'PAID', 'OVERDUE', 'CANCELLED');
+
+-- CreateEnum
 CREATE TYPE "OtpTypeEnum" AS ENUM ('LOGIN', 'EMAIL_VERIFICATION');
 
 -- CreateEnum
@@ -25,9 +40,13 @@ CREATE TYPE "TeamMemberRoleEnum" AS ENUM ('OWNER', 'ADMIN', 'VIEWER');
 -- CreateEnum
 CREATE TYPE "UserRoleEnum" AS ENUM ('USER', 'ADMIN');
 
+-- CreateEnum
+CREATE TYPE "GenderEnum" AS ENUM ('MALE', 'FEMALE', 'PREFER_NOT_TO_SAY', 'OTHER');
+
 -- CreateTable
 CREATE TABLE "otp_codes" (
     "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
     "user_id" INTEGER NOT NULL,
     "code" VARCHAR(6) NOT NULL,
     "type" "OtpTypeEnum" NOT NULL DEFAULT 'LOGIN',
@@ -42,6 +61,7 @@ CREATE TABLE "otp_codes" (
 -- CreateTable
 CREATE TABLE "user_sessions" (
     "id" TEXT NOT NULL,
+    "uuid" TEXT NOT NULL,
     "user_id" INTEGER NOT NULL,
     "refresh_token" VARCHAR(500) NOT NULL,
     "user_agent" TEXT,
@@ -57,6 +77,7 @@ CREATE TABLE "user_sessions" (
 -- CreateTable
 CREATE TABLE "users" (
     "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6) NOT NULL,
     "email" VARCHAR(255) NOT NULL,
@@ -70,11 +91,11 @@ CREATE TABLE "users" (
 -- CreateTable
 CREATE TABLE "team_members" (
     "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6) NOT NULL,
     "first_name" VARCHAR(100) NOT NULL,
     "last_name" VARCHAR(100) NOT NULL,
-    "email" VARCHAR(255) NOT NULL,
     "position" VARCHAR(100),
     "profile_picture" TEXT,
     "role" "TeamMemberRoleEnum" NOT NULL,
@@ -92,11 +113,14 @@ CREATE TABLE "team_members" (
 -- CreateTable
 CREATE TABLE "companies" (
     "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6) NOT NULL,
     "company_name" VARCHAR(255) NOT NULL,
     "registration_number" VARCHAR(100) NOT NULL,
     "company_type" "CompanyTypeEnum" NOT NULL,
+    "tax_id" VARCHAR(100),
+    "notification_email" VARCHAR(255),
     "country" VARCHAR(100) NOT NULL,
     "address_1" VARCHAR(255) NOT NULL,
     "address_2" VARCHAR(255),
@@ -110,8 +134,9 @@ CREATE TABLE "companies" (
 );
 
 -- CreateTable
-CREATE TABLE "company_contacts" (
+CREATE TABLE "employees" (
     "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
     "created_at" TIMESTAMP(6) NOT NULL,
     "updated_at" TIMESTAMP(6) NOT NULL,
     "company_id" INTEGER NOT NULL,
@@ -120,15 +145,25 @@ CREATE TABLE "company_contacts" (
     "email" VARCHAR NOT NULL,
     "token" JSON NOT NULL,
     "network" JSON NOT NULL,
+    "gender" "GenderEnum" DEFAULT 'PREFER_NOT_TO_SAY',
+    "nationality" VARCHAR(100),
+    "tax_id" TEXT,
+    "address_1" VARCHAR(255),
+    "address_2" VARCHAR(255),
+    "city" VARCHAR(100),
+    "country" VARCHAR(100),
+    "postal_code" VARCHAR(20),
     "order" SERIAL NOT NULL,
     "groupId" INTEGER NOT NULL,
+    "metadata" JSON,
 
-    CONSTRAINT "company_contacts_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "employees_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "company_groups" (
+CREATE TABLE "employee_groups" (
     "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
     "created_at" TIMESTAMP(6) NOT NULL,
     "updated_at" TIMESTAMP(6) NOT NULL,
     "name" VARCHAR NOT NULL,
@@ -137,7 +172,78 @@ CREATE TABLE "company_groups" (
     "order" SERIAL NOT NULL,
     "company_id" INTEGER NOT NULL,
 
-    CONSTRAINT "company_groups_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "employee_groups_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "payrolls" (
+    "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL,
+    "company_id" INTEGER NOT NULL,
+    "employee_id" INTEGER NOT NULL,
+    "network" JSON NOT NULL,
+    "token" JSON NOT NULL,
+    "amount" VARCHAR(50) NOT NULL,
+    "contractTerm" "ContractTermEnum" NOT NULL,
+    "payroll_cycle" INTEGER NOT NULL,
+    "joining_date" TIMESTAMP(6) NOT NULL,
+    "pay_start_date" TIMESTAMP(6) NOT NULL,
+    "pay_end_date" TIMESTAMP(6) NOT NULL,
+    "status" "PayrollStatusEnum" NOT NULL DEFAULT 'ACTIVE',
+    "note" TEXT,
+    "metadata" JSON,
+
+    CONSTRAINT "payrolls_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "invoices" (
+    "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL,
+    "invoice_type" "InvoiceTypeEnum" NOT NULL DEFAULT 'EMPLOYEE',
+    "invoice_number" VARCHAR(50) NOT NULL,
+    "issue_date" TIMESTAMP(6) NOT NULL,
+    "due_date" TIMESTAMP(6) NOT NULL,
+    "payroll_id" INTEGER,
+    "employee_id" INTEGER,
+    "from_company_id" INTEGER,
+    "to_company_id" INTEGER,
+    "is_to_company_registered" BOOLEAN NOT NULL DEFAULT false,
+    "fromDetails" JSON NOT NULL,
+    "billToDetails" JSON NOT NULL,
+    "items" JSON NOT NULL,
+    "subtotal" VARCHAR(50) NOT NULL,
+    "taxRate" VARCHAR(10) NOT NULL,
+    "taxAmount" VARCHAR(50) NOT NULL,
+    "total" VARCHAR(50) NOT NULL,
+    "status" "InvoiceStatusEnum" NOT NULL DEFAULT 'DRAFT',
+    "sent_at" TIMESTAMP(6),
+    "reviewed_at" TIMESTAMP(6),
+    "confirmed_at" TIMESTAMP(6),
+    "metadata" JSON,
+    "memo" JSON,
+    "footer" JSON,
+
+    CONSTRAINT "invoices_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "bills" (
+    "id" SERIAL NOT NULL,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL,
+    "company_id" INTEGER NOT NULL,
+    "invoice_id" INTEGER NOT NULL,
+    "status" "BillStatusEnum" NOT NULL DEFAULT 'PENDING',
+    "paid_at" TIMESTAMP(6),
+    "transaction_hash" VARCHAR(100),
+    "metadata" JSON,
+
+    CONSTRAINT "bills_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -190,6 +296,9 @@ CREATE TABLE "notifications" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "otp_codes_uuid_key" ON "otp_codes"("uuid");
+
+-- CreateIndex
 CREATE INDEX "otp_codes_user_id_idx" ON "otp_codes"("user_id");
 
 -- CreateIndex
@@ -197,6 +306,9 @@ CREATE INDEX "otp_codes_code_idx" ON "otp_codes"("code");
 
 -- CreateIndex
 CREATE INDEX "otp_codes_expires_at_idx" ON "otp_codes"("expires_at");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_sessions_uuid_key" ON "user_sessions"("uuid");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_sessions_refresh_token_key" ON "user_sessions"("refresh_token");
@@ -211,6 +323,9 @@ CREATE INDEX "user_sessions_refresh_token_idx" ON "user_sessions"("refresh_token
 CREATE INDEX "user_sessions_expires_at_idx" ON "user_sessions"("expires_at");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "users_uuid_key" ON "users"("uuid");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
@@ -220,7 +335,7 @@ CREATE INDEX "users_email_idx" ON "users"("email");
 CREATE INDEX "users_role_idx" ON "users"("role");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "team_members_email_key" ON "team_members"("email");
+CREATE UNIQUE INDEX "team_members_uuid_key" ON "team_members"("uuid");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "team_members_user_id_key" ON "team_members"("user_id");
@@ -229,16 +344,13 @@ CREATE UNIQUE INDEX "team_members_user_id_key" ON "team_members"("user_id");
 CREATE INDEX "team_members_company_id_idx" ON "team_members"("company_id");
 
 -- CreateIndex
-CREATE INDEX "team_members_email_idx" ON "team_members"("email");
-
--- CreateIndex
 CREATE INDEX "team_members_role_idx" ON "team_members"("role");
 
 -- CreateIndex
 CREATE INDEX "team_members_user_id_idx" ON "team_members"("user_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "team_members_company_id_email_key" ON "team_members"("company_id", "email");
+CREATE UNIQUE INDEX "companies_uuid_key" ON "companies"("uuid");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "companies_registration_number_key" ON "companies"("registration_number");
@@ -253,19 +365,88 @@ CREATE INDEX "companies_company_name_idx" ON "companies"("company_name");
 CREATE INDEX "companies_verification_status_idx" ON "companies"("verification_status");
 
 -- CreateIndex
-CREATE INDEX "company_contacts_company_id_idx" ON "company_contacts"("company_id");
+CREATE UNIQUE INDEX "employees_uuid_key" ON "employees"("uuid");
 
 -- CreateIndex
-CREATE INDEX "company_contacts_groupId_idx" ON "company_contacts"("groupId");
+CREATE INDEX "employees_company_id_idx" ON "employees"("company_id");
 
 -- CreateIndex
-CREATE INDEX "company_groups_company_id_idx" ON "company_groups"("company_id");
+CREATE INDEX "employees_groupId_idx" ON "employees"("groupId");
 
 -- CreateIndex
-CREATE INDEX "company_groups_order_idx" ON "company_groups"("order");
+CREATE INDEX "employees_email_idx" ON "employees"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "company_groups_company_id_name_key" ON "company_groups"("company_id", "name");
+CREATE UNIQUE INDEX "employee_groups_uuid_key" ON "employee_groups"("uuid");
+
+-- CreateIndex
+CREATE INDEX "employee_groups_company_id_idx" ON "employee_groups"("company_id");
+
+-- CreateIndex
+CREATE INDEX "employee_groups_order_idx" ON "employee_groups"("order");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "employee_groups_company_id_name_key" ON "employee_groups"("company_id", "name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "payrolls_uuid_key" ON "payrolls"("uuid");
+
+-- CreateIndex
+CREATE INDEX "payrolls_company_id_idx" ON "payrolls"("company_id");
+
+-- CreateIndex
+CREATE INDEX "payrolls_employee_id_idx" ON "payrolls"("employee_id");
+
+-- CreateIndex
+CREATE INDEX "payrolls_status_idx" ON "payrolls"("status");
+
+-- CreateIndex
+CREATE INDEX "payrolls_pay_start_date_idx" ON "payrolls"("pay_start_date");
+
+-- CreateIndex
+CREATE INDEX "payrolls_pay_end_date_idx" ON "payrolls"("pay_end_date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "invoices_uuid_key" ON "invoices"("uuid");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "invoices_invoice_number_key" ON "invoices"("invoice_number");
+
+-- CreateIndex
+CREATE INDEX "invoices_payroll_id_idx" ON "invoices"("payroll_id");
+
+-- CreateIndex
+CREATE INDEX "invoices_employee_id_idx" ON "invoices"("employee_id");
+
+-- CreateIndex
+CREATE INDEX "invoices_from_company_id_idx" ON "invoices"("from_company_id");
+
+-- CreateIndex
+CREATE INDEX "invoices_to_company_id_idx" ON "invoices"("to_company_id");
+
+-- CreateIndex
+CREATE INDEX "invoices_invoice_type_idx" ON "invoices"("invoice_type");
+
+-- CreateIndex
+CREATE INDEX "invoices_status_idx" ON "invoices"("status");
+
+-- CreateIndex
+CREATE INDEX "invoices_invoice_number_idx" ON "invoices"("invoice_number");
+
+-- CreateIndex
+CREATE INDEX "invoices_due_date_idx" ON "invoices"("due_date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "bills_invoice_id_key" ON "bills"("invoice_id");
+
+-- CreateIndex
+CREATE INDEX "bills_company_id_idx" ON "bills"("company_id");
+
+-- CreateIndex
+CREATE INDEX "bills_status_idx" ON "bills"("status");
+
+-- CreateIndex
+CREATE INDEX "bills_invoice_id_idx" ON "bills"("invoice_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "payment_link_code_key" ON "payment_link"("code");
@@ -310,13 +491,37 @@ ALTER TABLE "team_members" ADD CONSTRAINT "team_members_user_id_fkey" FOREIGN KE
 ALTER TABLE "team_members" ADD CONSTRAINT "team_members_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "company_contacts" ADD CONSTRAINT "company_contacts_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "employees" ADD CONSTRAINT "employees_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "company_contacts" ADD CONSTRAINT "company_contacts_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "company_groups"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "employees" ADD CONSTRAINT "employees_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "employee_groups"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "company_groups" ADD CONSTRAINT "company_groups_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "employee_groups" ADD CONSTRAINT "employee_groups_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payrolls" ADD CONSTRAINT "payrolls_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payrolls" ADD CONSTRAINT "payrolls_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "employees"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "invoices" ADD CONSTRAINT "invoices_payroll_id_fkey" FOREIGN KEY ("payroll_id") REFERENCES "payrolls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "invoices" ADD CONSTRAINT "invoices_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "employees"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "invoices" ADD CONSTRAINT "invoices_from_company_id_fkey" FOREIGN KEY ("from_company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "invoices" ADD CONSTRAINT "invoices_to_company_id_fkey" FOREIGN KEY ("to_company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bills" ADD CONSTRAINT "bills_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bills" ADD CONSTRAINT "bills_invoice_id_fkey" FOREIGN KEY ("invoice_id") REFERENCES "invoices"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "payment_link_record" ADD CONSTRAINT "payment_link_record_payment_link_id_fkey" FOREIGN KEY ("payment_link_id") REFERENCES "payment_link"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

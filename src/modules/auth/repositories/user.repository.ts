@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { UserModel } from '../../../database/generated/models/User';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from 'src/database/base.repository';
+import { Prisma } from 'src/database/generated/client';
 
 export interface CreateUserData {
   email: string;
@@ -18,25 +23,42 @@ export interface UserWithRelations extends UserModel {
 }
 
 @Injectable()
-export class UserRepository {
-  constructor(private readonly prisma: PrismaService) {}
+export class UserRepository extends BaseRepository<
+  UserModel,
+  Prisma.UserWhereInput,
+  Prisma.UserCreateInput,
+  Prisma.UserUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
+  }
+
+  protected getModel(tx?: PrismaTransactionClient): any {
+    return tx ? tx.user : this.prisma.user;
+  }
+
+  protected getModelName(): string {
+    return 'User';
+  }
 
   /**
    * Find user by email
    */
-  async findByEmail(email: string): Promise<UserModel | null> {
-    return this.prisma.user.findUnique({
-      where: { email },
-    });
+  async findByEmail(
+    email: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<UserModel | null> {
+    return this.findOne({ email }, tx);
   }
 
   /**
    * Find user by ID
    */
-  async findById(id: number): Promise<UserModel | null> {
-    return this.prisma.user.findUnique({
-      where: { id },
-    });
+  async findById(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<UserModel | null> {
+    return this.findOne({ id }, tx);
   }
 
   /**

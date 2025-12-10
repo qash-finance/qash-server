@@ -106,17 +106,11 @@ export class CreateCompanyGroupDto {
 export class CreateContactDto {
   @ApiProperty({
     description: 'The group information',
-    example: {
-      name: 'Employee',
-      shape: 'CIRCLE',
-      color: '#000000',
-    },
+    example: 1,
   })
   @IsNotEmpty()
-  @IsObject()
-  @ValidateNested()
-  @Type(() => CreateCompanyGroupDto)
-  group: CreateCompanyGroupDto;
+  @IsNumber()
+  groupId: number;
 
   @ApiProperty({
     description: 'The name of new contact',

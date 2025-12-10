@@ -7,7 +7,6 @@ import {
   IsBoolean,
   IsObject,
   Length,
-  Matches,
   IsEmail,
 } from 'class-validator';
 import {
@@ -134,6 +133,15 @@ export class UpdateCompanyDto {
   companyType?: CompanyTypeEnum;
 
   @ApiPropertyOptional({
+    description: 'Notification email',
+    example: 'notifications@company.com',
+  })
+  @IsOptional()
+  @IsEmail()
+  @Length(5, 255)
+  notificationEmail?: string;
+
+  @ApiPropertyOptional({
     description: 'Country where company is registered',
     example: 'United States',
   })
@@ -202,6 +210,12 @@ export class UpdateVerificationStatusDto {
 }
 
 export class CompanyResponseDto {
+  @ApiProperty({
+    description: 'Company UUID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  uuid: string;
+
   @ApiProperty({ description: 'Company ID', example: 1 })
   id: number;
 

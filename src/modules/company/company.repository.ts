@@ -4,8 +4,13 @@ import { CompanyModel } from '../../database/generated/models/Company';
 import {
   CompanyTypeEnum,
   CompanyVerificationStatusEnum,
+  Prisma,
   TeamMemberRoleEnum,
 } from '../../database/generated/client';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from 'src/database/base.repository';
 
 export interface CreateCompanyData {
   companyName: string;
@@ -46,8 +51,23 @@ export interface CompanyFilters {
 }
 
 @Injectable()
-export class CompanyRepository {
-  constructor(private readonly prisma: PrismaService) {}
+export class CompanyRepository extends BaseRepository<
+  CompanyModel,
+  Prisma.CompanyWhereInput,
+  Prisma.CompanyCreateInput,
+  Prisma.CompanyUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
+  }
+
+  protected getModel(tx?: PrismaTransactionClient) {
+    return tx ? tx.company : this.prisma.company;
+  }
+
+  protected getModelName(): string {
+    return 'Company';
+  }
 
   /**
    * Create new company
@@ -72,10 +92,9 @@ export class CompanyRepository {
    */
   async findByRegistrationNumber(
     registrationNumber: string,
+    tx?: PrismaTransactionClient,
   ): Promise<CompanyModel | null> {
-    return this.prisma.company.findUnique({
-      where: { registrationNumber },
-    });
+    return this.findOne({ registrationNumber }, tx);
   }
 
   /**
@@ -94,7 +113,6 @@ export class CompanyRepository {
             id: true,
             firstName: true,
             lastName: true,
-            email: true,
             position: true,
             profilePicture: true,
             role: true,

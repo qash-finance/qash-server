@@ -12,7 +12,7 @@ import {
   othersConfig,
   serverConfig,
 } from './modules/shared/config/registration';
-import { ContactModule } from './modules/contact/contact.module';
+import { EmployeeModule } from './modules/employee/employee.module';
 import { AppConfigServiceModule } from './modules/shared/config/config.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PrismaModule } from './database/prisma.module';
@@ -22,6 +22,9 @@ import { CompanyModule } from './modules/company/company.module';
 import { TeamMemberModule } from './modules/team-member/team-member.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SharedModule } from './modules/shared/shared.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
+import { InvoiceModule } from './modules/invoice/invoice.module';
+import { BillModule } from './modules/bill/bill.module';
 import { envValidator } from './common/validators/env.validation';
 import { HttpValidationPipe } from './modules/shared/pipes/http-validation';
 
@@ -45,15 +48,17 @@ import { HttpValidationPipe } from './modules/shared/pipes/http-validation';
     PrismaModule,
     ScheduleModule.forRoot(),
     HealthModule,
-    ContactModule,
+    AuthModule,
+    EmployeeModule,
     NotificationModule,
     PaymentLinkModule,
-    AuthModule,
     CompanyModule,
     TeamMemberModule,
     AdminModule,
     SharedModule,
-    ContactModule,
+    PayrollModule,
+    InvoiceModule,
+    BillModule,
   ],
   controllers: [AppController],
   providers: [

@@ -8,9 +8,9 @@ import { CompanyAuthGuard } from '../guards/company-auth.guard';
  * 1. Validates JWT token
  * 2. Fetches user's company information
  * 3. Enriches the user object with company data
- * 
+ *
  * Use with @CurrentUser('withCompany') to get UserWithCompany object
- * 
+ *
  * @example
  * ```typescript
  * @CompanyAuth()
@@ -26,7 +26,8 @@ export function CompanyAuth() {
     UseGuards(CompanyAuthGuard),
     ApiBearerAuth(),
     ApiUnauthorizedResponse({
-      description: 'Unauthorized - Invalid token or user not associated with company',
+      description:
+        'Unauthorized - Invalid token or user not associated with company',
     }),
   );
 }

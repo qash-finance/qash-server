@@ -19,34 +19,31 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { CompanyContactService } from './services/company-contact.service';
 import {
   CreateContactDto,
   UpdateAddressBookDto,
   AddressBookOrderDto,
   CreateCompanyGroupDto,
   PaginatedContactsResponseDto,
-  PaginatedGroupsResponseDto,
   CompanyContactResponseDto,
   CompanyGroupResponseDto,
-} from './contact.dto';
+} from './employee.dto';
 import { PaginationOptions } from '../../database/base.repository';
 import {
   CurrentUser,
   UserWithCompany,
 } from '../auth/decorators/current-user.decorator';
 import { CompanyAuth } from '../auth/decorators/company-auth.decorator';
-import { CompanyGroupService } from './services/company-group.service';
+import { EmployeeGroupService } from './services/employee-group.service';
+import { EmployeeService } from './services/employee.service';
 
-@ApiTags('Contacts')
+@ApiTags('Employee')
 @CompanyAuth()
-@Controller('contacts')
-export class ContactController {
-  private readonly logger = new Logger(ContactController.name);
-
+@Controller('employees')
+export class EmployeeController {
   constructor(
-    private readonly companyContactService: CompanyContactService,
-    private readonly companyGroupService: CompanyGroupService,
+    private readonly employeeService: EmployeeService,
+    private readonly employeeGroupService: EmployeeGroupService,
   ) {}
 
   //#region GET METHODS
@@ -56,13 +53,13 @@ export class ContactController {
 
   @Get()
   @ApiOperation({
-    summary: 'Get all contacts',
+    summary: 'Get all employees',
     description:
-      'Retrieve all contacts for the authenticated user with optional pagination',
+      'Retrieve all employees for the authenticated user with optional pagination',
   })
   @ApiResponse({
     status: 200,
-    description: 'Contacts retrieved successfully',
+    description: 'Employees retrieved successfully',
     type: PaginatedContactsResponseDto,
   })
   @ApiQuery({
@@ -81,10 +78,7 @@ export class ContactController {
     @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 10,
   ) {
     const pagination: PaginationOptions = { page, limit };
-    return this.companyContactService.getAllCompanyContacts(
-      user.company,
-      pagination,
-    );
+    return this.employeeService.getAllEmployees(user.company, pagination);
   }
 
   @Get('groups')
@@ -98,14 +92,14 @@ export class ContactController {
     type: [CompanyGroupResponseDto],
   })
   async getAllCompanyGroups(@CurrentUser('withCompany') user: UserWithCompany) {
-    return this.companyGroupService.getAllCompanyGroups(user.company.id);
+    return this.employeeGroupService.getAllEmployeeGroups(user.company.id);
   }
 
   @Get('search')
   @ApiOperation({
-    summary: 'Search company contacts',
+    summary: 'Search company employees',
     description:
-      'Search contacts by name, address, or description within the company',
+      'Search employees by name, address, or description within the company',
   })
   @ApiResponse({
     status: 200,
@@ -148,18 +142,18 @@ export class ContactController {
     @Query('limit', new ParseIntPipe({ optional: true }))
     limit: number = 20,
   ) {
-    return this.companyContactService.searchCompanyContacts(
-      user.company.id,
-      searchTerm,
-      { groupId, page, limit },
-    );
+    return this.employeeService.searchEmployees(user.company.id, searchTerm, {
+      groupId,
+      page,
+      limit,
+    });
   }
 
   @Get('group/:groupId')
   @ApiOperation({
-    summary: 'Get contacts by group',
+    summary: 'Get employees by group',
     description:
-      'Retrieve all contacts for a specific group within the company',
+      'Retrieve all employees for a specific group within the company',
   })
   @ApiParam({
     name: 'groupId',
@@ -169,7 +163,7 @@ export class ContactController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Group contacts retrieved successfully',
+    description: 'Group employees retrieved successfully',
     type: PaginatedContactsResponseDto,
   })
   @ApiResponse({
@@ -186,7 +180,7 @@ export class ContactController {
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Number of contacts per page',
+    description: 'Number of employees per page',
     type: Number,
     example: 20,
   })
@@ -198,7 +192,7 @@ export class ContactController {
     @Query('limit', new ParseIntPipe({ optional: true }))
     limit: number = 20,
   ) {
-    return this.companyContactService.getContactsByCompanyGroup(
+    return this.employeeService.getEmployeesByEmployeeGroup(
       user.company.id,
       groupId,
       {
@@ -210,8 +204,9 @@ export class ContactController {
 
   @Get('stats')
   @ApiOperation({
-    summary: 'Get company contact statistics',
-    description: "Get summary statistics for the company's contacts and groups",
+    summary: 'Get employee statistics',
+    description:
+      "Get summary statistics for the company's employees and groups",
   })
   @ApiResponse({
     status: 200,
@@ -231,46 +226,41 @@ export class ContactController {
   async getCompanyContactStatistics(
     @CurrentUser('withCompany') user: UserWithCompany,
   ) {
-    return this.companyContactService.getCompanyContactStatistics(
-      user.company.id,
-    );
+    return this.employeeService.getEmployeeStatistics(user.company.id);
   }
 
   @Get(':id')
   @ApiOperation({
-    summary: 'Get contact by ID',
-    description: 'Retrieve a specific contact by its ID within the company',
+    summary: 'Get employee by ID',
+    description: 'Retrieve a specific employee by its ID within the company',
   })
   @ApiParam({
     name: 'id',
-    description: 'Contact ID',
+    description: 'Employee ID',
     type: Number,
     example: 1,
   })
   @ApiResponse({
     status: 200,
-    description: 'Contact retrieved successfully',
+    description: 'Employee retrieved successfully',
     type: CompanyContactResponseDto,
   })
   @ApiResponse({
     status: 404,
-    description: 'Contact not found or access denied',
+    description: 'Employee not found or access denied',
   })
   async getCompanyContactById(
     @CurrentUser('withCompany') user: UserWithCompany,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.companyContactService.getCompanyContactById(
-      user.company.id,
-      id,
-    );
+    return this.employeeService.getEmployeeById(user.company.id, id);
   }
 
   @Get('validate/name-duplicate')
   @ApiOperation({
-    summary: 'Check if contact name is duplicate in group',
+    summary: 'Check if employee name is duplicate in group',
     description:
-      'Validate if a contact name already exists in a specific group within the company',
+      'Validate if a employee name already exists in a specific group within the company',
   })
   @ApiResponse({
     status: 200,
@@ -283,7 +273,7 @@ export class ContactController {
   @ApiQuery({
     name: 'name',
     required: true,
-    description: 'Contact name to check',
+    description: 'Employee name to check',
     example: 'John Doe',
   })
   @ApiQuery({
@@ -298,12 +288,11 @@ export class ContactController {
     @Query('name') name: string,
     @Query('groupId', ParseIntPipe) groupId: number,
   ) {
-    const isDuplicate =
-      await this.companyContactService.isCompanyContactNameDuplicate(
-        user.company.id,
-        name,
-        groupId,
-      );
+    const isDuplicate = await this.employeeService.isEmployeeNameDuplicate(
+      user.company.id,
+      name,
+      groupId,
+    );
     return { isDuplicate };
   }
 
@@ -339,12 +328,11 @@ export class ContactController {
     @Query('address') address: string,
     @Query('groupId', ParseIntPipe) groupId: number,
   ) {
-    const isDuplicate =
-      await this.companyContactService.isCompanyContactAddressDuplicate(
-        user.company.id,
-        address,
-        groupId,
-      );
+    const isDuplicate = await this.employeeService.isEmployeeAddressDuplicate(
+      user.company.id,
+      address,
+      groupId,
+    );
     return { isDuplicate };
   }
 
@@ -371,7 +359,7 @@ export class ContactController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Query('groupName') groupName: string,
   ) {
-    const exists = await this.companyContactService.isCompanyGroupExists(
+    const exists = await this.employeeService.isEmployeeGroupExists(
       user.company.id,
       groupName,
     );
@@ -401,18 +389,18 @@ export class ContactController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Body() dto: CreateCompanyGroupDto,
   ) {
-    return this.companyGroupService.createNewCompanyGroup(dto, user.company);
+    return this.employeeGroupService.createNewEmployeeGroup(dto, user.company);
   }
 
-  @Post('new-contact')
+  @Post('employee')
   @ApiOperation({
-    summary: 'Create new contact for a company',
+    summary: 'Create new employee for a company',
     description:
-      'Create a new contact for a company with validation and duplicate checking',
+      'Create a new employee for a company with validation and duplicate checking',
   })
   @ApiResponse({
     status: 201,
-    description: 'Contact created successfully',
+    description: 'Employee created successfully',
     type: CompanyContactResponseDto,
   })
   @ApiResponse({
@@ -423,10 +411,7 @@ export class ContactController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Body() dto: CreateContactDto,
   ) {
-    return this.companyContactService.createNewCompanyGroupContact(
-      dto,
-      user.company,
-    );
+    return this.employeeService.createNewEmployee(dto, user.company);
   }
   //#endregion POST METHODS
 
@@ -437,50 +422,51 @@ export class ContactController {
 
   @Put(':id')
   @ApiOperation({
-    summary: 'Update company contact',
-    description: 'Update an existing contact within the company',
+    summary: 'Update employee',
+    description: 'Update an existing employee within the company',
   })
-  @ApiParam({ name: 'id', description: 'Contact ID', type: Number, example: 1 })
+  @ApiParam({
+    name: 'id',
+    description: 'Employee ID',
+    type: Number,
+    example: 1,
+  })
   @ApiResponse({
     status: 200,
-    description: 'Contact updated successfully',
+    description: 'Employee updated successfully',
     type: CompanyContactResponseDto,
   })
   @ApiResponse({
     status: 404,
-    description: 'Contact not found or access denied',
+    description: 'Employee not found or access denied',
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid input data or duplicate contact',
+    description: 'Invalid input data or duplicate employee',
   })
   async updateCompanyContact(
     @CurrentUser('withCompany') user: UserWithCompany,
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateAddressBookDto,
   ): Promise<CompanyContactResponseDto> {
-    return this.companyContactService.updateCompanyContact(
-      user.company.id,
-      id,
-      updateDto,
-    );
+    return this.employeeService.updateEmployee(user.company.id, id, updateDto);
   }
 
   @Put('order/bulk')
   @ApiOperation({
-    summary: 'Update order of multiple contacts',
+    summary: 'Update order of multiple employees',
     description:
-      'Update the display order of multiple contacts within the company',
+      'Update the display order of multiple employees within the company',
   })
   @ApiResponse({
     status: 200,
-    description: 'Contact order updated successfully',
+    description: 'Employee order updated successfully',
     schema: {
       type: 'object',
       properties: {
         message: {
           type: 'string',
-          example: 'Contact order updated successfully',
+          example: 'Employee order updated successfully',
         },
         updatedCount: { type: 'number', example: 5 },
       },
@@ -492,13 +478,12 @@ export class ContactController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Body() orderUpdates: AddressBookOrderDto[],
   ): Promise<{ message: string; updatedCount: number }> {
-    const updatedCount =
-      await this.companyContactService.updateCompanyContactsOrder(
-        user.company.id,
-        orderUpdates,
-      );
+    const updatedCount = await this.employeeService.updateEmployeesOrder(
+      user.company.id,
+      orderUpdates,
+    );
     return {
-      message: 'Contact order updated successfully',
+      message: 'Employee order updated successfully',
       updatedCount,
     };
   }
@@ -510,18 +495,18 @@ export class ContactController {
   // *************************************************
   @Delete(':id')
   @ApiOperation({
-    summary: 'Delete contact',
-    description: 'Delete a contact by ID within the company',
+    summary: 'Delete employee',
+    description: 'Delete a employee by ID within the company',
   })
   @ApiParam({
     name: 'id',
-    description: 'Contact ID',
+    description: 'Employee ID',
     type: Number,
     example: 1,
   })
   @ApiResponse({
     status: 200,
-    description: 'Contact deleted successfully',
+    description: 'Employee deleted successfully',
     schema: {
       type: 'object',
       properties: { message: { type: 'string' } },
@@ -529,24 +514,24 @@ export class ContactController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Contact not found or access denied',
+    description: 'Employee not found or access denied',
   })
   async deleteCompanyContact(
     @CurrentUser('withCompany') user: UserWithCompany,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    await this.companyContactService.deleteCompanyContact(user.company.id, id);
-    return { message: 'Contact deleted successfully' };
+    await this.employeeService.deleteEmployee(user.company.id, id);
+    return { message: 'Employee deleted successfully' };
   }
 
   @Delete('bulk')
   @ApiOperation({
-    summary: 'Bulk delete contacts',
-    description: 'Delete multiple contacts at once within the company',
+    summary: 'Bulk delete employees',
+    description: 'Delete multiple employees at once within the company',
   })
   @ApiResponse({
     status: 200,
-    description: 'Contacts deleted successfully',
+    description: 'Employees deleted successfully',
     schema: {
       type: 'object',
       properties: {
@@ -561,13 +546,12 @@ export class ContactController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Body('ids') ids: number[],
   ) {
-    const deletedCount =
-      await this.companyContactService.bulkDeleteCompanyContacts(
-        user.company.id,
-        ids,
-      );
+    const deletedCount = await this.employeeService.bulkDeleteEmployees(
+      user.company.id,
+      ids,
+    );
     return {
-      message: `${deletedCount} contacts deleted successfully`,
+      message: `${deletedCount} employees deleted successfully`,
       deletedCount,
     };
   }

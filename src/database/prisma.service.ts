@@ -30,12 +30,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     await this.client.$disconnect();
   }
 
-  get companyContact() {
-    return this.client.companyContact;
+  get employee() {
+    return this.client.employee;
   }
 
-  get companyGroup() {
-    return this.client.companyGroup;
+  get employeeGroup() {
+    return this.client.employeeGroup;
   }
 
   get paymentLink() {
@@ -68,6 +68,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   get teamMember() {
     return this.client.teamMember;
+  }
+
+  get invoice() {
+    return this.client.invoice;
+  }
+
+  get bill() {
+    return this.client.bill;
+  }
+
+  get payroll() {
+    return this.client.payroll;
   }
 
   get $transaction() {

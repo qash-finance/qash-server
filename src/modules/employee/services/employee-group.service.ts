@@ -1,26 +1,24 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { CreateCompanyGroupDto } from '../contact.dto';
+import { CreateCompanyGroupDto } from '../employee.dto';
 import { PrismaService } from '../../../database/prisma.service';
 import { sanitizeInput } from 'src/common/utils/sanitize';
-import { CompanyGroupRepository } from '../repositories/company-group.repository';
+import { EmployeeGroupRepository } from '../repositories/employee-group.repository';
 import { CompanyModel } from 'src/database/generated/models';
 
 @Injectable()
-export class CompanyGroupService {
-  private readonly logger = new Logger(CompanyGroupService.name);
+export class EmployeeGroupService {
+  private readonly logger = new Logger(EmployeeGroupService.name);
 
   constructor(
-    private readonly companyGroupRepository: CompanyGroupRepository,
+    private readonly employeeGroupRepository: EmployeeGroupRepository,
     private readonly prisma: PrismaService,
   ) {}
 
   /**
    * Get all groups for a company
    */
-  async getAllCompanyGroups(companyId: number) {
-    this.logger.log(`Getting all groups for company: ${companyId}`);
-
-    return this.companyGroupRepository.findMany(
+  async getAllEmployeeGroups(companyId: number) {
+    return this.employeeGroupRepository.findMany(
       { companyId },
       { orderBy: { order: 'asc' } },
     );
@@ -29,14 +27,14 @@ export class CompanyGroupService {
   /**
    * Create a new group
    */
-  async createNewCompanyGroup(
+  async createNewEmployeeGroup(
     dto: CreateCompanyGroupDto,
     company: CompanyModel,
   ) {
     return this.prisma.executeInTransaction(async (tx) => {
       dto = sanitizeInput(dto);
       // Check if group already exists
-      const existingCompanyGroup = await this.companyGroupRepository.findOne({
+      const existingCompanyGroup = await this.employeeGroupRepository.findOne({
         name: dto.name,
         shape: dto.shape,
         color: dto.color,
@@ -46,11 +44,11 @@ export class CompanyGroupService {
         throw new BadRequestException('Company group already exists');
       }
       // Get next order
-      const order = await this.companyGroupRepository.getNextOrder(
+      const order = await this.employeeGroupRepository.getNextOrder(
         company.id,
         tx,
       );
-      const newCompanyGroup = await this.companyGroupRepository.create(
+      const newCompanyGroup = await this.employeeGroupRepository.create(
         {
           name: dto.name,
           shape: dto.shape,
@@ -63,6 +61,6 @@ export class CompanyGroupService {
         tx,
       );
       return newCompanyGroup;
-    }, 'createNewCompanyGroup');
+    }, 'createNewEmployeeGroup');
   }
 }

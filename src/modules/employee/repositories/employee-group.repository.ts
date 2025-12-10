@@ -1,32 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import {
-  CompanyGroup,
-  CategoryShapeEnum,
-  Prisma,
-} from 'src/database/generated/client';
+import { EmployeeGroup, Prisma } from 'src/database/generated/client';
 import {
   BaseRepository,
   PrismaTransactionClient,
 } from '../../../database/base.repository';
 
 @Injectable()
-export class CompanyGroupRepository extends BaseRepository<
-  CompanyGroup,
-  Prisma.CompanyGroupWhereInput,
-  Prisma.CompanyGroupCreateInput,
-  Prisma.CompanyGroupUpdateInput
+export class EmployeeGroupRepository extends BaseRepository<
+  EmployeeGroup,
+  Prisma.EmployeeGroupWhereInput,
+  Prisma.EmployeeGroupCreateInput,
+  Prisma.EmployeeGroupUpdateInput
 > {
   constructor(prisma: PrismaService) {
     super(prisma);
   }
 
   protected getModel(tx?: PrismaTransactionClient) {
-    return tx ? tx.companyGroup : this.prisma.companyGroup;
+    return tx ? tx.employeeGroup : this.prisma.employeeGroup;
   }
 
   protected getModelName(): string {
-    return 'CompanyGroup';
+    return 'EmployeeGroup';
   }
 
   /**
@@ -36,7 +32,7 @@ export class CompanyGroupRepository extends BaseRepository<
     companyId: number,
     name: string,
     tx?: PrismaTransactionClient,
-  ): Promise<CompanyGroup | null> {
+  ): Promise<EmployeeGroup | null> {
     return this.findOne({ companyId, name }, tx);
   }
 
@@ -65,7 +61,7 @@ export class CompanyGroupRepository extends BaseRepository<
     companyId: number,
     categoryIds: number[],
     tx?: PrismaTransactionClient,
-  ): Promise<CompanyGroup[]> {
+  ): Promise<EmployeeGroup[]> {
     const model = this.getModel(tx);
 
     const updates = categoryIds.map((id, index) =>

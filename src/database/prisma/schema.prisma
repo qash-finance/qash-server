@@ -9,7 +9,9 @@ datasource db {
 }
 
 model OtpCode {
-  id        Int         @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
   userId    Int         @map("user_id")
   code      String      @db.VarChar(6)
   type      OtpTypeEnum @default(LOGIN)
@@ -18,7 +20,6 @@ model OtpCode {
   attempts  Int         @default(0)
   createdAt DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
 
-  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -28,7 +29,9 @@ model OtpCode {
 }
 
 model UserSession {
-  id           String   @id @default(cuid())
+  id   String @id @default(cuid())
+  uuid String @unique @default(cuid()) @map("uuid")
+
   userId       Int      @map("user_id")
   refreshToken String   @unique @map("refresh_token") @db.VarChar(500)
   userAgent    String?  @map("user_agent") @db.Text
@@ -38,7 +41,6 @@ model UserSession {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -48,7 +50,9 @@ model UserSession {
 }
 
 model User {
-  id        Int          @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamp(6)
   email     String       @unique @db.VarChar(255)
@@ -58,7 +62,7 @@ model User {
 
   otpCodes       OtpCode[]
   sessions       UserSession[]
-  teamMembership TeamMember? // 1:1 relationship - each user has one team membership
+  teamMembership TeamMember? // 1:1 relationship, each user is a company team member
   invitedMembers TeamMember[]  @relation("TeamMemberInviter")
 
   @@index([email])
@@ -67,74 +71,70 @@ model User {
 }
 
 model TeamMember {
-  id        Int      @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  // Personal Information
   firstName      String  @map("first_name") @db.VarChar(100)
   lastName       String  @map("last_name") @db.VarChar(100)
-  email          String  @unique @db.VarChar(255) // Made unique since each user = team member
   position       String? @db.VarChar(100)
   profilePicture String? @map("profile_picture") @db.Text
 
-  // Role and Permissions
   role     TeamMemberRoleEnum
   isActive Boolean            @default(true) @map("is_active")
 
-  // Company Association
   companyId Int     @map("company_id")
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  // User Association (1:1 relationship - each team member is a user)
-  userId Int  @unique @map("user_id") // Made required and unique
+  userId Int  @unique @map("user_id")
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Invitation and Status
   invitedBy Int?      @map("invited_by")
   inviter   User?     @relation("TeamMemberInviter", fields: [invitedBy], references: [id])
   invitedAt DateTime? @map("invited_at") @db.Timestamp(6)
   joinedAt  DateTime? @map("joined_at") @db.Timestamp(6)
 
-  // Metadata
   metadata Json? @db.Json
 
-  @@unique([companyId, email])
   @@index([companyId])
-  @@index([email])
   @@index([role])
   @@index([userId])
   @@map("team_members")
 }
 
 model Company {
-  id        Int      @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  // Company Information
   companyName        String          @map("company_name") @db.VarChar(255)
   registrationNumber String          @unique @map("registration_number") @db.VarChar(100)
   companyType        CompanyTypeEnum @map("company_type")
+  taxId              String?         @map("tax_id") @db.VarChar(100)
+  notificationEmail  String?         @map("notification_email") @db.VarChar(255)
 
-  // Address Information
   country    String  @db.VarChar(100)
   address1   String  @map("address_1") @db.VarChar(255)
   address2   String? @map("address_2") @db.VarChar(255)
   city       String  @db.VarChar(100)
   postalCode String  @map("postal_code") @db.VarChar(20)
 
-  // Status and Verification
   verificationStatus CompanyVerificationStatusEnum @default(PENDING) @map("verification_status")
   isActive           Boolean                       @default(true) @map("is_active")
 
-  // Metadata
   metadata Json? @db.Json
 
-  // Relations
-  teamMembers TeamMember[]
-  contacts    CompanyContact[]
-  groups      CompanyGroup[]
+  teamMembers  TeamMember[]
+  contacts     Employee[]
+  groups       EmployeeGroup[]
+  payrolls     Payroll[]
+  bills        Bill[]
+  invoicesFrom Invoice[]       @relation("InvoiceFromCompany") // B2B invoices where this company is the sender
+  invoicesTo   Invoice[]       @relation("InvoiceToCompany") // B2B invoices where this company is the recipient
 
   @@index([registrationNumber])
   @@index([companyName])
@@ -142,31 +142,50 @@ model Company {
   @@map("companies")
 }
 
-model CompanyContact {
-  id        Int      @id() @default(autoincrement())
+model Employee {
+  id   Int    @id() @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
   createdAt DateTime @map("created_at") @db.Timestamp(6)
   updatedAt DateTime @map("updated_at") @db.Timestamp(6)
 
   companyId Int     @map("company_id")
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  name          String @db.VarChar
-  walletAddress String @db.VarChar
-  email         String @db.VarChar
-  token         Json   @db.Json
-  network       Json   @db.Json
+  name          String      @db.VarChar
+  walletAddress String      @db.VarChar
+  email         String      @db.VarChar
+  token         Json        @db.Json
+  network       Json        @db.Json
+  gender        GenderEnum? @default(PREFER_NOT_TO_SAY) @map("gender")
+  nationality   String?     @map("nationality") @db.VarChar(100)
+  taxId         String?     @map("tax_id")
 
-  order   Int          @default(autoincrement())
-  groupId Int          @map("groupId")
-  group   CompanyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  address1   String? @map("address_1") @db.VarChar(255)
+  address2   String? @map("address_2") @db.VarChar(255)
+  city       String? @db.VarChar(100)
+  country    String? @db.VarChar(100)
+  postalCode String? @map("postal_code") @db.VarChar(20)
+
+  order   Int           @default(autoincrement())
+  groupId Int           @map("groupId")
+  group   EmployeeGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  payrolls Payroll[]
+  invoices Invoice[] @relation("InvoiceEmployee")
+
+  metadata Json? @db.Json
 
   @@index([companyId])
   @@index([groupId])
-  @@map("company_contacts")
+  @@index([email])
+  @@map("employees")
 }
 
-model CompanyGroup {
-  id        Int      @id() @default(autoincrement())
+model EmployeeGroup {
+  id   Int    @id() @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
   createdAt DateTime @map("created_at") @db.Timestamp(6)
   updatedAt DateTime @map("updated_at") @db.Timestamp(6)
 
@@ -178,12 +197,138 @@ model CompanyGroup {
   companyId Int     @map("company_id")
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  contacts CompanyContact[]
+  employees Employee[]
 
   @@unique([companyId, name])
   @@index([companyId])
   @@index([order])
-  @@map("company_groups")
+  @@map("employee_groups")
+}
+
+model Payroll {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  companyId  Int      @map("company_id")
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId Int      @map("employee_id")
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  network Json   @db.Json
+  token   Json   @db.Json
+  amount  String @db.VarChar(50)
+
+  contractTerm ContractTermEnum
+  payrollCycle Int               @map("payroll_cycle")
+  joiningDate  DateTime          @map("joining_date") @db.Timestamp(6)
+  payStartDate DateTime          @map("pay_start_date") @db.Timestamp(6)
+  payEndDate   DateTime          @map("pay_end_date") @db.Timestamp(6)
+  status       PayrollStatusEnum @default(ACTIVE)
+
+  note     String? @db.Text
+  metadata Json?   @db.Json
+
+  invoices Invoice[]
+
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([status])
+  @@index([payStartDate])
+  @@index([payEndDate])
+  @@map("payrolls")
+}
+
+model Invoice {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Invoice Type - determines which relations are used
+  invoiceType InvoiceTypeEnum @default(EMPLOYEE) @map("invoice_type")
+
+  // Invoice Details
+  invoiceNumber String   @unique @map("invoice_number") @db.VarChar(50)
+  issueDate     DateTime @map("issue_date") @db.Timestamp(6)
+  dueDate       DateTime @map("due_date") @db.Timestamp(6)
+
+  // for EMPLOYEE invoices
+  payrollId  Int?      @map("payroll_id")
+  payroll    Payroll?  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+  employeeId Int?      @map("employee_id")
+  employee   Employee? @relation("InvoiceEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  // for B2B invoices
+  fromCompanyId         Int?     @map("from_company_id")
+  fromCompany           Company? @relation("InvoiceFromCompany", fields: [fromCompanyId], references: [id], onDelete: Cascade)
+  toCompanyId           Int?     @map("to_company_id")
+  toCompany             Company? @relation("InvoiceToCompany", fields: [toCompanyId], references: [id], onDelete: Cascade)
+  isToCompanyRegistered Boolean  @default(false) @map("is_to_company_registered")
+
+  // Invoice Data (flexible JSON structure - supports both employee and company details)
+  // fromDetails: For EMPLOYEE invoices = employee details, For B2B = fromCompany details
+  fromDetails   Json @db.Json // Flexible: Employee or Company details (name, email, address, wallet, etc.)
+  // billToDetails: For EMPLOYEE invoices = company details, For B2B = toCompany details
+  billToDetails Json @db.Json // Flexible: Company or Company details
+  items         Json @db.Json // Array of invoice items
+
+  // Financial Details
+  subtotal  String @db.VarChar(50)
+  taxRate   String @db.VarChar(10) // Percentage as string
+  taxAmount String @db.VarChar(50)
+  total     String @db.VarChar(50)
+
+  // Status and Workflow
+  status InvoiceStatusEnum @default(DRAFT)
+
+  // Timeline tracking
+  sentAt      DateTime? @map("sent_at") @db.Timestamp(6)
+  reviewedAt  DateTime? @map("reviewed_at") @db.Timestamp(6)
+  confirmedAt DateTime? @map("confirmed_at") @db.Timestamp(6)
+
+  // Relations
+  bill Bill?
+
+  metadata Json? @db.Json
+  memo     Json? @db.Json
+  footer   Json? @db.Json
+
+  @@index([payrollId])
+  @@index([employeeId])
+  @@index([fromCompanyId])
+  @@index([toCompanyId])
+  @@index([invoiceType])
+  @@index([status])
+  @@index([invoiceNumber])
+  @@index([dueDate])
+  @@map("invoices")
+}
+
+model Bill {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  companyId Int     @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoiceId Int     @unique @map("invoice_id")
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  status BillStatusEnum @default(PENDING)
+
+  paidAt          DateTime? @map("paid_at") @db.Timestamp(6)
+  transactionHash String?   @map("transaction_hash") @db.VarChar(100)
+
+  metadata Json? @db.Json
+
+  @@index([companyId])
+  @@index([status])
+  @@index([invoiceId])
+  @@map("bills")
 }
 
 model PaymentLink {
@@ -242,6 +387,38 @@ model Notifications {
   @@map("notifications")
 }
 
+enum ContractTermEnum {
+  PERMANENT
+  CONTRACTOR
+}
+
+enum PayrollStatusEnum {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum InvoiceTypeEnum {
+  EMPLOYEE // Employee <> Employer invoice (linked to payroll)
+  B2B // Business to Business invoice (company <> company)
+}
+
+enum InvoiceStatusEnum {
+  DRAFT
+  SENT
+  REVIEWED
+  CONFIRMED
+  CANCELLED
+}
+
+enum BillStatusEnum {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
 enum OtpTypeEnum {
   LOGIN
   EMAIL_VERIFICATION
@@ -297,4 +474,11 @@ enum TeamMemberRoleEnum {
 enum UserRoleEnum {
   USER
   ADMIN
+}
+
+enum GenderEnum {
+  MALE
+  FEMALE
+  PREFER_NOT_TO_SAY
+  OTHER
 }

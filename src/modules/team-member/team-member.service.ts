@@ -74,8 +74,21 @@ export class TeamMemberService {
 
     return this.teamMemberRepository.create({
       ...createTeamMemberDto,
-      userId: user.id,
-      invitedBy: userId,
+      user: {
+        connect: {
+          id: user.id,
+        },
+      },
+      inviter: {
+        connect: {
+          id: userId,
+        },
+      },
+      company: {
+        connect: {
+          id: companyId,
+        },
+      },
     });
   }
 
@@ -129,12 +142,23 @@ export class TeamMemberService {
     const teamMember = await this.teamMemberRepository.create({
       firstName: inviteDto.firstName,
       lastName: inviteDto.lastName,
-      email: inviteDto.email,
       position: inviteDto.position,
       role: inviteDto.role,
-      companyId,
-      userId: user.id,
-      invitedBy: userId,
+      company: {
+        connect: {
+          id: companyId,
+        },
+      },
+      user: {
+        connect: {
+          id: user.id,
+        },
+      },
+      inviter: {
+        connect: {
+          id: userId,
+        },
+      },
       metadata: inviteDto.metadata,
     });
 
@@ -261,7 +285,8 @@ export class TeamMemberService {
     userId: number,
     updateDto: UpdateTeamMemberDto,
   ) {
-    const teamMember = await this.teamMemberRepository.findById(teamMemberId);
+    const teamMember =
+      await this.teamMemberRepository.findByIdWithRelations(teamMemberId);
     if (!teamMember) {
       throw new NotFoundException('Team member not found');
     }
@@ -282,7 +307,7 @@ export class TeamMemberService {
     }
 
     // If updating email, check for conflicts
-    if (updateDto.email && updateDto.email !== teamMember.email) {
+    if (updateDto.email && updateDto.email !== teamMember.user.email) {
       const existing = await this.teamMemberRepository.findByCompanyAndEmail(
         teamMember.companyId,
         updateDto.email,

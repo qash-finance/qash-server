@@ -6,6 +6,7 @@ import { UserRepository } from './repositories/user.repository';
 import { UserSessionRepository } from './repositories/user-session.repository';
 import { AuthResponseDto } from './dto/auth.dto';
 import { OtpTypeEnum } from '../../database/generated/enums';
+import { handleError } from 'src/common/utils/errors';
 
 @Injectable()
 export class AuthService {
@@ -26,8 +27,11 @@ export class AuthService {
     email: string,
     type: OtpTypeEnum = OtpTypeEnum.LOGIN,
   ): Promise<void> {
-    this.logger.log(`Sending OTP to: ${email}`);
-    await this.otpService.sendOtp(email, type);
+    try {
+      await this.otpService.sendOtp(email, type);
+    } catch (error) {
+      handleError(error, this.logger);
+    }
   }
 
   /**

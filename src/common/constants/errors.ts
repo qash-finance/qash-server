@@ -21,6 +21,12 @@ export enum ErrorUser {
   RoleCannotBeChanged = 'Role cannot be changed',
 }
 
+export enum ErrorCompany {
+  RegistrationNumberAlreadyExists = 'Company with this registration number already exists',
+  UserAlreadyTeamMember = 'User is already a team member of another company',
+  CompanyNotFound = 'Company not found',
+}
+
 export enum ErrorQuery {
   BadIdString = 'Bad id string',
   InvalidSearchTerm = 'Search term must be at least 2 characters',
@@ -40,7 +46,15 @@ export enum ErrorCompanyContact {
   SelfAddressNotAllowed = 'Cannot add your own address to address book',
   CategoryAlreadyExists = 'Category already exists',
   NoContactIdsProvided = 'No contact IDs provided',
-  ContactNotFound = 'Contact not found',
+  ContactNotFound = 'Employee not found',
+}
+
+export enum ErrorPayroll {
+  HaveActivePayroll = 'Employee already has an active payroll. Please pause or complete the existing payroll first.',
+  PayStartDateBeforeJoiningDate = 'Pay start date must be after joining date',
+  PayStartDateInThePast = 'Pay start date cannot be in the past',
+  PayrollNotFound = 'Payroll not found',
+  PayEndDateBeforePayStartDate = 'Pay end date must be after pay start date',
 }
 
 export enum ErrorPaymentLink {

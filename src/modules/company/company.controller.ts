@@ -2,10 +2,10 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   HttpCode,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,7 +14,6 @@ import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiForbiddenResponse,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import {
@@ -23,15 +22,17 @@ import {
 } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../../common/interfaces/jwt-payload';
 import { CompanyService } from './company.service';
-import { CreateCompanyDto, CompanyResponseDto } from './company.dto';
+import {
+  CreateCompanyDto,
+  UpdateCompanyDto,
+  CompanyResponseDto,
+} from './company.dto';
 import { CompanyModel } from 'src/database/generated/models';
 import { CompanyAuth } from '../auth/decorators/company-auth.decorator';
 
-@ApiTags('Company Management')
+@ApiTags('Company')
 @Controller('companies')
 export class CompanyController {
-  private readonly logger = new Logger(CompanyController.name);
-
   constructor(private readonly companyService: CompanyService) {}
 
   //#region GET METHODS
@@ -54,11 +55,7 @@ export class CompanyController {
   async getMyCompany(
     @CurrentUser('withCompany') user: UserWithCompany,
   ): Promise<CompanyModel> {
-    try {
-      return this.companyService.getMyCompany(user.company.id);
-    } catch (error) {
-      throw error;
-    }
+    return this.companyService.getMyCompany(user.company.id);
   }
   //#endregion GET METHODS
 
@@ -85,17 +82,34 @@ export class CompanyController {
   async createCompany(
     @CurrentUser() user: JwtPayload,
     @Body() createCompanyDto: CreateCompanyDto,
-  ): Promise<CompanyResponseDto> {
-    try {
-      const company = await this.companyService.createCompany(
-        user.sub,
-        createCompanyDto,
-      );
-      return company as CompanyResponseDto;
-    } catch (error) {
-      this.logger.error(`Create company failed for user ${user.sub}:`, error);
-      throw error;
-    }
+  ): Promise<CompanyModel> {
+    return this.companyService.createCompany(user.sub, createCompanyDto);
+  }
+
+  @Put()
+  @CompanyAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update company details',
+    description: 'Update the current company information (owner/admin only)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Company updated successfully',
+    type: CompanyResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid company data' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
+  @ApiNotFoundResponse({ description: 'Company not found' })
+  async updateCompany(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Body() updateCompanyDto: UpdateCompanyDto,
+  ): Promise<CompanyModel> {
+    return this.companyService.updateCompany(
+      user.company.id,
+      user.sub,
+      updateCompanyDto,
+    );
   }
   //#endregion POST METHODS
 }
