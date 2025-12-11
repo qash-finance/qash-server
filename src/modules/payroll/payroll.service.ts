@@ -18,7 +18,11 @@ import {
   PayrollModel,
   PayrollUpdateInput,
 } from 'src/database/generated/models';
-import { Payroll, PayrollStatusEnum } from 'src/database/generated/client';
+import {
+  ContractTermEnum,
+  Payroll,
+  PayrollStatusEnum,
+} from 'src/database/generated/client';
 import { handleError } from 'src/common/utils/errors';
 import { PrismaService } from 'src/database/prisma.service';
 import { ErrorEmployee, ErrorPayroll } from 'src/common/constants/errors';
@@ -171,6 +175,8 @@ export class PayrollService {
         tx,
       );
 
+      console.log(existingPayrolls);
+
       const activePayroll = existingPayrolls.find(
         (p) => p.status === PayrollStatusEnum.ACTIVE,
       );
@@ -230,8 +236,68 @@ export class PayrollService {
 
       const payroll = await this.payrollRepository.create(payrollData, tx);
 
+      // Create an invoice schedule record so the scheduler can generate invoices
+      const nextGenerateDate =
+        this.calculateNextGenerateDateFromPayStart(payStartDate);
+      await tx.invoiceSchedule.create({
+        data: {
+          payroll: { connect: { id: payroll.id } },
+          isActive: true,
+          frequency: 'MONTHLY',
+          dayOfMonth: payStartDate.getDate(),
+          generateDaysBefore: 0,
+          nextGenerateDate,
+        },
+      });
+
       return payroll;
     }, 'createPayroll');
+  }
+
+  /**
+   * Sandbox helper: create a payroll with a pay date ~30 seconds from now
+   * to test the invoice scheduler. Uses minimal required fields and defaults.
+   */
+  async createSandboxPayroll(
+    companyId: number,
+    employeeId: number,
+    amount: number,
+  ): Promise<PayrollModel> {
+    // Build a DTO with near-future pay start date
+    const now = new Date();
+    const payStartDate = new Date(now.getTime() + 30_000); // 30 seconds later
+    const payEndDate = new Date(payStartDate);
+    payEndDate.setMonth(payEndDate.getMonth() + 1);
+
+    const dto: CreatePayrollDto = {
+      employeeId,
+      network: {
+        name: 'sandbox-network',
+        chainId: 1,
+      },
+      token: {
+        address: '0x0000000000000000000000000000000000000000',
+        symbol: 'USD',
+        decimals: 2,
+        name: 'SandboxUSD',
+      },
+      contractTerm: PayrollStatusEnum.ACTIVE as any, // will be overwritten below
+      contractDurationMonths: 1,
+      contractStartDate: now.toISOString(),
+      contractEndDate: payEndDate.toISOString(),
+      payrollCycle: 1,
+      amount: amount.toString(),
+      payStartDate: payStartDate.toISOString(),
+      payEndDate: payEndDate.toISOString(),
+      joiningDate: now.toISOString(),
+      note: 'sandbox payroll for scheduler test',
+      description: 'sandbox payroll for scheduler test',
+    } as any;
+
+    // contractTerm expects ContractTermEnum; reuse same enum from generated client
+    (dto as any).contractTerm = ContractTermEnum.PERMANENT;
+
+    return this.createPayroll(companyId, dto);
   }
 
   //#endregion POST METHODS
@@ -320,6 +386,11 @@ export class PayrollService {
 
       await this.payrollRepository.delete({ id, companyId });
 
+      // Remove invoice schedules for this payroll
+      await this.prisma.invoiceSchedule.deleteMany({
+        where: { payrollId: id },
+      });
+
       this.logger.log(`Deleted payroll ${id} from company ${companyId}`);
     } catch (error) {
       this.logger.error(`Error deleting payroll ${id}:`, error);
@@ -352,7 +423,29 @@ export class PayrollService {
         tx,
       );
 
+      // Toggle invoice schedules based on payroll status
+      await tx.invoiceSchedule.updateMany({
+        where: { payrollId: id },
+        data: { isActive: status === PayrollStatusEnum.ACTIVE },
+      });
+
       return updatedPayroll;
     }, 'updatePayrollStatus');
+  }
+
+  /**
+   * Calculate the next generate date based on pay start date (monthly)
+   */
+  private calculateNextGenerateDateFromPayStart(payStartDate: Date): Date {
+    const now = new Date();
+    // If the pay start date is in the future, use it. Otherwise, use same day next month.
+    if (payStartDate > now) {
+      return payStartDate;
+    }
+    return new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      payStartDate.getDate(),
+    );
   }
 }

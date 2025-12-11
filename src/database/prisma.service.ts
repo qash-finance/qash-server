@@ -82,6 +82,14 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.payroll;
   }
 
+  get invoiceItem() {
+    return this.client.invoiceItem;
+  }
+
+  get invoiceSchedule() {
+    return this.client.invoiceSchedule;
+  }
+
   get $transaction() {
     return this.client.$transaction.bind(this.client);
   }

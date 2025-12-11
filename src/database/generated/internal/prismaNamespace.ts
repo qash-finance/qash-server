@@ -421,6 +421,8 @@ export const ModelName = {
   EmployeeGroup: 'EmployeeGroup',
   Payroll: 'Payroll',
   Invoice: 'Invoice',
+  InvoiceItem: 'InvoiceItem',
+  InvoiceSchedule: 'InvoiceSchedule',
   Bill: 'Bill',
   PaymentLink: 'PaymentLink',
   PaymentLinkRecord: 'PaymentLinkRecord',
@@ -456,6 +458,8 @@ export type TypeMap<
       | 'employeeGroup'
       | 'payroll'
       | 'invoice'
+      | 'invoiceItem'
+      | 'invoiceSchedule'
       | 'bill'
       | 'paymentLink'
       | 'paymentLinkRecord'
@@ -1147,6 +1151,158 @@ export type TypeMap<
         };
       };
     };
+    InvoiceItem: {
+      payload: Prisma.$InvoiceItemPayload<ExtArgs>;
+      fields: Prisma.InvoiceItemFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.InvoiceItemFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.InvoiceItemFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload>;
+        };
+        findFirst: {
+          args: Prisma.InvoiceItemFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.InvoiceItemFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload>;
+        };
+        findMany: {
+          args: Prisma.InvoiceItemFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload>[];
+        };
+        create: {
+          args: Prisma.InvoiceItemCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload>;
+        };
+        createMany: {
+          args: Prisma.InvoiceItemCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.InvoiceItemCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload>[];
+        };
+        delete: {
+          args: Prisma.InvoiceItemDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload>;
+        };
+        update: {
+          args: Prisma.InvoiceItemUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload>;
+        };
+        deleteMany: {
+          args: Prisma.InvoiceItemDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.InvoiceItemUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.InvoiceItemUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload>[];
+        };
+        upsert: {
+          args: Prisma.InvoiceItemUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceItemPayload>;
+        };
+        aggregate: {
+          args: Prisma.InvoiceItemAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateInvoiceItem>;
+        };
+        groupBy: {
+          args: Prisma.InvoiceItemGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.InvoiceItemGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.InvoiceItemCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.InvoiceItemCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
+    InvoiceSchedule: {
+      payload: Prisma.$InvoiceSchedulePayload<ExtArgs>;
+      fields: Prisma.InvoiceScheduleFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.InvoiceScheduleFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.InvoiceScheduleFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload>;
+        };
+        findFirst: {
+          args: Prisma.InvoiceScheduleFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.InvoiceScheduleFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload>;
+        };
+        findMany: {
+          args: Prisma.InvoiceScheduleFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload>[];
+        };
+        create: {
+          args: Prisma.InvoiceScheduleCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload>;
+        };
+        createMany: {
+          args: Prisma.InvoiceScheduleCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.InvoiceScheduleCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload>[];
+        };
+        delete: {
+          args: Prisma.InvoiceScheduleDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload>;
+        };
+        update: {
+          args: Prisma.InvoiceScheduleUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload>;
+        };
+        deleteMany: {
+          args: Prisma.InvoiceScheduleDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.InvoiceScheduleUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.InvoiceScheduleUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload>[];
+        };
+        upsert: {
+          args: Prisma.InvoiceScheduleUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InvoiceSchedulePayload>;
+        };
+        aggregate: {
+          args: Prisma.InvoiceScheduleAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateInvoiceSchedule>;
+        };
+        groupBy: {
+          args: Prisma.InvoiceScheduleGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.InvoiceScheduleGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.InvoiceScheduleCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.InvoiceScheduleCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
     Bill: {
       payload: Prisma.$BillPayload<ExtArgs>;
       fields: Prisma.BillFieldRefs;
@@ -1655,29 +1811,85 @@ export const InvoiceScalarFieldEnum = {
   invoiceNumber: 'invoiceNumber',
   issueDate: 'issueDate',
   dueDate: 'dueDate',
+  isAutoGenerated: 'isAutoGenerated',
+  autoGenerateFromPayrollId: 'autoGenerateFromPayrollId',
+  nextAutoGenerateDate: 'nextAutoGenerateDate',
   payrollId: 'payrollId',
   employeeId: 'employeeId',
   fromCompanyId: 'fromCompanyId',
   toCompanyId: 'toCompanyId',
-  isToCompanyRegistered: 'isToCompanyRegistered',
+  toCompanyName: 'toCompanyName',
+  toCompanyEmail: 'toCompanyEmail',
+  toCompanyAddress: 'toCompanyAddress',
+  toCompanyTaxId: 'toCompanyTaxId',
+  toCompanyContactName: 'toCompanyContactName',
+  toCompanyMetadata: 'toCompanyMetadata',
+  emailTo: 'emailTo',
+  emailCc: 'emailCc',
+  emailBcc: 'emailBcc',
+  emailSubject: 'emailSubject',
+  emailBody: 'emailBody',
   fromDetails: 'fromDetails',
-  billToDetails: 'billToDetails',
-  items: 'items',
+  toDetails: 'toDetails',
   subtotal: 'subtotal',
   taxRate: 'taxRate',
   taxAmount: 'taxAmount',
+  discount: 'discount',
   total: 'total',
+  currency: 'currency',
   status: 'status',
   sentAt: 'sentAt',
   reviewedAt: 'reviewedAt',
   confirmedAt: 'confirmedAt',
+  paidAt: 'paidAt',
   metadata: 'metadata',
   memo: 'memo',
   footer: 'footer',
+  terms: 'terms',
 } as const;
 
 export type InvoiceScalarFieldEnum =
   (typeof InvoiceScalarFieldEnum)[keyof typeof InvoiceScalarFieldEnum];
+
+export const InvoiceItemScalarFieldEnum = {
+  id: 'id',
+  uuid: 'uuid',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  invoiceId: 'invoiceId',
+  description: 'description',
+  quantity: 'quantity',
+  unitPrice: 'unitPrice',
+  unit: 'unit',
+  taxRate: 'taxRate',
+  discount: 'discount',
+  total: 'total',
+  order: 'order',
+  metadata: 'metadata',
+} as const;
+
+export type InvoiceItemScalarFieldEnum =
+  (typeof InvoiceItemScalarFieldEnum)[keyof typeof InvoiceItemScalarFieldEnum];
+
+export const InvoiceScheduleScalarFieldEnum = {
+  id: 'id',
+  uuid: 'uuid',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  payrollId: 'payrollId',
+  isActive: 'isActive',
+  frequency: 'frequency',
+  dayOfMonth: 'dayOfMonth',
+  dayOfWeek: 'dayOfWeek',
+  generateDaysBefore: 'generateDaysBefore',
+  nextGenerateDate: 'nextGenerateDate',
+  lastGeneratedAt: 'lastGeneratedAt',
+  invoiceTemplate: 'invoiceTemplate',
+  metadata: 'metadata',
+} as const;
+
+export type InvoiceScheduleScalarFieldEnum =
+  (typeof InvoiceScheduleScalarFieldEnum)[keyof typeof InvoiceScheduleScalarFieldEnum];
 
 export const BillScalarFieldEnum = {
   id: 'id',
@@ -2176,6 +2388,8 @@ export type GlobalOmitConfig = {
   employeeGroup?: Prisma.EmployeeGroupOmit;
   payroll?: Prisma.PayrollOmit;
   invoice?: Prisma.InvoiceOmit;
+  invoiceItem?: Prisma.InvoiceItemOmit;
+  invoiceSchedule?: Prisma.InvoiceScheduleOmit;
   bill?: Prisma.BillOmit;
   paymentLink?: Prisma.PaymentLinkOmit;
   paymentLinkRecord?: Prisma.PaymentLinkRecordOmit;

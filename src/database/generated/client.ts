@@ -88,6 +88,16 @@ export type Payroll = Prisma.PayrollModel;
  */
 export type Invoice = Prisma.InvoiceModel;
 /**
+ * Model InvoiceItem
+ *
+ */
+export type InvoiceItem = Prisma.InvoiceItemModel;
+/**
+ * Model InvoiceSchedule
+ *
+ */
+export type InvoiceSchedule = Prisma.InvoiceScheduleModel;
+/**
  * Model Bill
  *
  */

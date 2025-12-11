@@ -37,6 +37,41 @@ export class AuthController {
 
   constructor(private readonly authService: AuthService) {}
 
+  //#region GET METHODS
+  // *************************************************
+  // **************** GET METHODS *******************
+  // *************************************************
+
+  @Auth()
+  @Get('me')
+  @ApiOperation({
+    summary: 'Get current user details',
+    description:
+      'Returns the authenticated user details including team member and company information',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User details retrieved successfully',
+    type: UserMeResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing token',
+  })
+  async getCurrentUser(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<UserMeResponseDto> {
+    try {
+      const userDetails = await this.authService.getCurrentUserWithCompany(
+        user.sub || user.userId,
+      );
+      return userDetails;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  //#endregion GET METHODS
+
   //#region POST METHODS
   // *************************************************
   // **************** POST METHODS *******************
@@ -173,40 +208,4 @@ export class AuthController {
   }
 
   //#endregion POST METHODS
-
-  //#region GET METHODS
-  // *************************************************
-  // **************** GET METHODS *******************
-  // *************************************************
-
-  @Auth()
-  @Get('me')
-  @ApiOperation({
-    summary: 'Get current user details',
-    description:
-      'Returns the authenticated user details including team member and company information',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'User details retrieved successfully',
-    type: UserMeResponseDto,
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing token',
-  })
-  async getCurrentUser(
-    @CurrentUser() user: JwtPayload,
-  ): Promise<UserMeResponseDto> {
-    try {
-      const userDetails = await this.authService.getCurrentUserWithCompany(
-        user.sub || user.userId,
-      );
-      return userDetails;
-    } catch (error) {
-      this.logger.error('Get current user failed:', error);
-      throw error;
-    }
-  }
-
-  //#endregion GET METHODS
 }

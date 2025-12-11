@@ -41,7 +41,7 @@ import {
 export class BillController {
   constructor(private readonly billService: BillService) {}
 
-  @Post('create/:invoiceId')
+  @Post('create/:invoiceUUID')
   @ApiOperation({ summary: 'Create bill from confirmed invoice' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -51,12 +51,16 @@ export class BillController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invoice not confirmed or bill already exists',
   })
-  @ApiParam({ name: 'invoiceId', type: 'number', description: 'Invoice ID' })
+  @ApiParam({
+    name: 'invoiceUUID',
+    type: 'string',
+    description: 'Invoice UUID',
+  })
   async createBill(
     @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('invoiceId', ParseIntPipe) invoiceId: number,
+    @Param('invoiceUUID') invoiceUUID: string,
   ): Promise<BillModel> {
-    return this.billService.createBillFromInvoice(invoiceId, user.company.id);
+    return this.billService.createBillFromInvoice(invoiceUUID, user.company.id);
   }
 
   @Get()

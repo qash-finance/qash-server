@@ -37,6 +37,7 @@ export type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
     fromCompany: true;
     toCompany: true;
     // Common relations
+    items: true;
     bill: true;
   };
 }>;
@@ -100,46 +101,13 @@ export class InvoiceRepository extends BaseRepository<
     return 'Invoice';
   }
 
-  async findById(
-    id: number,
+  async findByUUID(
+    uuid: string,
     tx?: PrismaTransactionClient,
   ): Promise<InvoiceWithRelations | null> {
     const client = tx || this.prisma;
     return client.invoice.findUnique({
-      where: { id },
-      include: {
-        // Employee-Employer relations (for EMPLOYEE invoices)
-        payroll: {
-          include: {
-            employee: {
-              include: {
-                group: true,
-              },
-            },
-            company: true,
-          },
-        },
-        employee: {
-          include: {
-            group: true,
-          },
-        },
-        // B2B relations (for B2B invoices)
-        fromCompany: true,
-        toCompany: true,
-        // Common relations
-        bill: true,
-      },
-    });
-  }
-
-  async findByInvoiceNumber(
-    invoiceNumber: string,
-    tx?: PrismaTransactionClient,
-  ): Promise<InvoiceWithRelations | null> {
-    const client = tx || this.prisma;
-    return client.invoice.findUnique({
-      where: { invoiceNumber },
+      where: { uuid },
       include: {
         // Employee-Employer relations (for EMPLOYEE invoices)
         payroll: {
@@ -178,12 +146,13 @@ export class InvoiceRepository extends BaseRepository<
     dueThisMonth: number;
   }> {
     const client = tx || this.prisma;
+    const invoice = client.invoice as InvoiceDelegate;
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const baseWhere = {
+    const baseWhere: Prisma.InvoiceWhereInput = {
       payroll: {
         companyId,
       },
@@ -197,19 +166,19 @@ export class InvoiceRepository extends BaseRepository<
       dueThisMonth,
       allInvoices,
     ] = await Promise.all([
-      client.invoice.count({
+      invoice.count({
         where: { ...baseWhere, status: InvoiceStatusEnum.DRAFT },
       }),
-      client.invoice.count({
+      invoice.count({
         where: { ...baseWhere, status: InvoiceStatusEnum.SENT },
       }),
-      client.invoice.count({
+      invoice.count({
         where: { ...baseWhere, status: InvoiceStatusEnum.REVIEWED },
       }),
-      client.invoice.count({
+      invoice.count({
         where: { ...baseWhere, status: InvoiceStatusEnum.CONFIRMED },
       }),
-      client.invoice.count({
+      invoice.count({
         where: {
           ...baseWhere,
           dueDate: {
@@ -327,5 +296,19 @@ export class InvoiceRepository extends BaseRepository<
     });
     const sequence = String(count + 1).padStart(4, '0');
     return `INV-${sequence}`;
+  }
+
+  /**
+   * Find latest invoice for a payroll
+   */
+  async findLatestInvoiceForPayroll(
+    payrollId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<InvoiceModel | null> {
+    const client = tx || this.prisma;
+    return (client.invoice as InvoiceDelegate).findFirst({
+      where: { payrollId },
+      orderBy: { issueDate: 'desc' },
+    });
   }
 }

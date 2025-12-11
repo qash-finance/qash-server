@@ -17,7 +17,6 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import { InvoiceService } from './services/invoice.service';
@@ -34,8 +33,8 @@ import {
   CurrentUser,
   UserWithCompany,
 } from '../auth/decorators/current-user.decorator';
-import { Public } from '../auth/decorators/public.decorator';
 import { JwtPayload } from 'src/common/interfaces/jwt-payload';
+import { Auth } from '../auth/decorators/auth.decorator';
 
 @ApiTags('Invoice')
 @ApiBearerAuth()
@@ -72,18 +71,6 @@ export class InvoiceController {
     return this.invoiceService.getInvoices(user.company.id, query);
   }
 
-  @Get('employee')
-  @ApiOperation({ summary: 'Get invoices for current employee' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Employee invoices retrieved successfully',
-  })
-  async getEmployeeInvoices(
-    @CurrentUser() user: JwtPayload,
-  ): Promise<InvoiceModel[]> {
-    return this.invoiceService.getEmployeeInvoices(user.email);
-  }
-
   @Get('stats')
   @CompanyAuth()
   @ApiOperation({ summary: 'Get invoice statistics' })
@@ -98,52 +85,42 @@ export class InvoiceController {
     return this.invoiceService.getInvoiceStats(user.company.id);
   }
 
-  @Get('number/:invoiceNumber')
-  @Public()
+  @Get('number/:invoiceUUID')
   @ApiOperation({
-    summary: 'Get invoice by invoice number (public access for employees)',
+    summary: 'Get invoice by invoice uuid',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Invoice retrieved successfully',
   })
   @ApiParam({
-    name: 'invoiceNumber',
+    name: 'invoiceUUID',
     type: 'string',
-    description: 'Invoice Number',
+    description: 'Invoice UUID',
   })
-  async getInvoiceByNumber(
-    @Param('invoiceNumber') invoiceNumber: string,
+  async getInvoiceByUUID(
+    @Param('invoiceUUID') invoiceUUID: string,
   ): Promise<InvoiceModel> {
-    return this.invoiceService.getInvoiceByNumber(invoiceNumber);
+    return this.invoiceService.getInvoiceByUUID(invoiceUUID);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get invoice details' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Invoice details retrieved successfully',
-  })
-  @ApiParam({ name: 'id', type: 'number', description: 'Invoice ID' })
-  async getInvoiceDetails(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<InvoiceModel> {
-    return this.invoiceService.getInvoiceDetails(id);
-  }
-
-  @Get(':id/pdf')
+  @Get(':invoiceUUID/pdf')
   @ApiOperation({ summary: 'Download invoice as PDF' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'PDF generated successfully',
   })
-  @ApiParam({ name: 'id', type: 'number', description: 'Invoice ID' })
+  @ApiParam({
+    name: 'invoiceUUID',
+    type: 'string',
+    description: 'Invoice UUID',
+  })
   async downloadInvoicePdf(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('invoiceUUID') invoiceUUID: string,
     @Res() res: Response,
   ): Promise<void> {
     try {
-      const invoice = await this.invoiceService.getInvoiceDetails(id);
+      const invoice = await this.invoiceService.getInvoiceByUUID(invoiceUUID);
       const pdfBuffer = await this.pdfService.generateInvoicePdf(invoice);
       const filename = this.pdfService.getInvoiceFilename(invoice);
 
@@ -207,7 +184,7 @@ export class InvoiceController {
   // *************************************************
   // **************** PUT METHODS ********************
   // *************************************************
-  @Put(':id')
+  @Put(':invoiceUUID')
   @ApiOperation({
     summary: 'Update invoice (employee can update their details)',
   })
@@ -215,13 +192,21 @@ export class InvoiceController {
     status: HttpStatus.OK,
     description: 'Invoice updated successfully',
   })
-  @ApiParam({ name: 'id', type: 'number', description: 'Invoice ID' })
+  @ApiParam({
+    name: 'invoiceUUID',
+    type: 'string',
+    description: 'Invoice UUID',
+  })
   async updateInvoice(
     @CurrentUser() user: JwtPayload,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('invoiceUUID') invoiceUUID: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
   ): Promise<InvoiceModel> {
-    return this.invoiceService.updateInvoice(id, updateInvoiceDto, user.email);
+    return this.invoiceService.updateInvoice(
+      invoiceUUID,
+      updateInvoiceDto,
+      user.email,
+    );
   }
   //#region PUT METHODS
 
@@ -229,62 +214,78 @@ export class InvoiceController {
   // *************************************************
   // **************** PATCH METHODS ******************
   // *************************************************
-  @Patch(':id/send')
+  @Patch(':invoiceUUID/send')
   @CompanyAuth()
   @ApiOperation({ summary: 'Send invoice to employee' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Invoice sent successfully',
   })
-  @ApiParam({ name: 'id', type: 'number', description: 'Invoice ID' })
+  @ApiParam({
+    name: 'invoiceUUID',
+    type: 'string',
+    description: 'Invoice UUID',
+  })
   async sendInvoice(
     @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('invoiceUUID') invoiceUUID: string,
   ): Promise<InvoiceModel> {
-    return this.invoiceService.sendInvoice(id, user.company.id);
+    return this.invoiceService.sendInvoice(invoiceUUID, user.company.id);
   }
 
-  @Patch(':id/review')
+  @Patch(':invoiceUUID/review')
   @ApiOperation({ summary: 'Employee reviews invoice' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Invoice reviewed successfully',
   })
-  @ApiParam({ name: 'id', type: 'number', description: 'Invoice ID' })
+  @ApiParam({
+    name: 'invoiceUUID',
+    type: 'string',
+    description: 'Invoice UUID',
+  })
   async reviewInvoice(
     @CurrentUser() user: JwtPayload,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('invoiceUUID') invoiceUUID: string,
   ): Promise<InvoiceModel> {
-    return this.invoiceService.reviewInvoice(id, user.email);
+    return this.invoiceService.reviewInvoice(invoiceUUID, user.email);
   }
 
-  @Patch(':id/confirm')
+  @Patch(':invoiceUUID/confirm')
   @ApiOperation({ summary: 'Employee confirms invoice' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Invoice confirmed successfully',
   })
-  @ApiParam({ name: 'id', type: 'number', description: 'Invoice ID' })
+  @ApiParam({
+    name: 'invoiceUUID',
+    type: 'string',
+    description: 'Invoice UUID',
+  })
   async confirmInvoice(
     @CurrentUser() user: JwtPayload,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('invoiceUUID') invoiceUUID: string,
   ): Promise<InvoiceModel> {
-    return this.invoiceService.confirmInvoice(id, user.email);
+    return this.invoiceService.confirmInvoice(invoiceUUID, user.email);
   }
 
-  @Patch(':id/cancel')
+  @Patch(':invoiceUUID/cancel')
   @CompanyAuth()
   @ApiOperation({ summary: 'Cancel invoice' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Invoice cancelled successfully',
   })
-  @ApiParam({ name: 'id', type: 'number', description: 'Invoice ID' })
+  @ApiParam({
+    name: 'invoiceUUID',
+    type: 'string',
+    description: 'Invoice UUID',
+  })
   async cancelInvoice(
     @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('invoiceUUID') invoiceUUID: string,
   ): Promise<InvoiceModel> {
-    return this.invoiceService.cancelInvoice(id, user.company.id);
+    return this.invoiceService.cancelInvoice(invoiceUUID, user.company.id);
   }
 
   //#region PATCH METHODS

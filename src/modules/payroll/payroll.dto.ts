@@ -169,7 +169,6 @@ export class CreatePayrollDto {
     description: 'Item description of the payroll',
     example: 'Consultant service',
   })
-  @IsOptional()
   @IsString()
   description: string;
 

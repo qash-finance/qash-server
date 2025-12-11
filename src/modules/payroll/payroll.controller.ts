@@ -10,6 +10,7 @@ import {
   Query,
   ParseIntPipe,
   HttpStatus,
+  ParseFloatPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +19,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { PayrollService } from './payroll.service';
 import {
@@ -130,6 +132,36 @@ export class PayrollController {
     @Body() createPayrollDto: CreatePayrollDto,
   ): Promise<PayrollModel> {
     return this.payrollService.createPayroll(user.company.id, createPayrollDto);
+  }
+
+  @Post('sandbox')
+  @ApiOperation({
+    summary:
+      'Create a sandbox payroll scheduled ~30s from now (for scheduler test)',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description:
+      'Sandbox payroll created; invoice scheduler should generate shortly',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        employeeId: { type: 'number' },
+        amount: { type: 'number' },
+      },
+    },
+  })
+  async createSandboxPayroll(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Body() body: { employeeId: number; amount?: number },
+  ): Promise<PayrollModel> {
+    return this.payrollService.createSandboxPayroll(
+      user.company.id,
+      body.employeeId,
+      body.amount,
+    );
   }
   //#endregion POST METHODS
 

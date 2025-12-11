@@ -16,6 +16,8 @@ export type * from './models/Employee.js';
 export type * from './models/EmployeeGroup.js';
 export type * from './models/Payroll.js';
 export type * from './models/Invoice.js';
+export type * from './models/InvoiceItem.js';
+export type * from './models/InvoiceSchedule.js';
 export type * from './models/Bill.js';
 export type * from './models/PaymentLink.js';
 export type * from './models/PaymentLinkRecord.js';

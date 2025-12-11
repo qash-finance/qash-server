@@ -37,12 +37,12 @@ export class BillService {
    * Create bill from confirmed invoice
    */
   async createBillFromInvoice(
-    invoiceId: number,
+    invoiceUUID: string,
     companyId: number,
   ): Promise<BillModel> {
     return this.prisma.executeInTransaction(async (tx) => {
       // Verify invoice exists and is confirmed
-      const invoice = await this.invoiceRepository.findById(invoiceId, tx);
+      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, tx);
 
       if (!invoice) {
         throw new NotFoundException('Invoice not found');
@@ -73,7 +73,7 @@ export class BillService {
         },
         invoice: {
           connect: {
-            id: invoiceId,
+            uuid: invoiceUUID,
           },
         },
         status: BillStatusEnum.PENDING,

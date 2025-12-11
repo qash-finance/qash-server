@@ -7,6 +7,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InvoiceRepository, InvoiceWithRelations } from '../invoice.repository';
+import { InvoiceItemService } from './invoice-item.service';
 import { PayrollRepository } from '../../payroll/payroll.repository';
 import {
   CreateInvoiceDto,
@@ -15,11 +16,16 @@ import {
   InvoiceStatsDto,
 } from '../invoice.dto';
 import {
+  CompanyWhereInput,
   InvoiceCreateInput,
   InvoiceModel,
   InvoiceUpdateInput,
+  InvoiceWhereInput,
 } from 'src/database/generated/models';
-import { InvoiceStatusEnum } from 'src/database/generated/client';
+import {
+  InvoiceStatusEnum,
+  InvoiceTypeEnum,
+} from 'src/database/generated/client';
 import { handleError } from 'src/common/utils/errors';
 import { PrismaService } from 'src/database/prisma.service';
 import { MailService } from '../../mail/mail.service';
@@ -32,182 +38,16 @@ export class InvoiceService {
 
   constructor(
     private readonly invoiceRepository: InvoiceRepository,
+    private readonly invoiceItemService: InvoiceItemService,
     private readonly payrollRepository: PayrollRepository,
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
   ) {}
 
-  //#region POST METHODS
+  //#region GET METHODS
   // *************************************************
-  // **************** POST METHODS *******************
+  // **************** GET METHODS ********************
   // *************************************************
-  /**
-   * Create new invoice (usually called by scheduled job)
-   */
-  async createPayrollInvoice(
-    dto: CreateInvoiceDto,
-    companyId: number,
-  ): Promise<InvoiceModel> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      // Verify payroll exists
-      const payroll = await this.payrollRepository.findById(
-        dto.payrollId,
-        companyId,
-        tx,
-      );
-
-      if (!payroll) {
-        throw new NotFoundException(ErrorPayroll.PayrollNotFound);
-      }
-
-      // Generate unique invoice number
-      const invoiceNumber =
-        await this.invoiceRepository.generatePayrollInvoiceNumber(
-          payroll.id,
-          payroll.employeeId,
-          tx,
-        );
-
-      const invoiceData: InvoiceCreateInput = {
-        invoiceNumber,
-        issueDate: new Date(),
-        dueDate: new Date(dto.dueDate),
-        payroll: {
-          connect: {
-            id: payroll.id,
-          },
-        },
-        employee: {
-          connect: {
-            id: payroll.employeeId,
-          },
-        },
-        fromDetails: dto.fromDetails as unknown as JsonValue,
-        billToDetails: dto.billToDetails as unknown as JsonValue,
-        items: dto.items as unknown as JsonValue,
-        subtotal: dto.subtotal,
-        taxRate: dto.taxRate,
-        taxAmount: dto.taxAmount,
-        total: dto.total,
-        metadata: dto.metadata,
-      };
-
-      const invoice = await this.invoiceRepository.create(invoiceData, tx);
-
-      return invoice;
-    }, 'createInvoice');
-  }
-  //#endregion POST METHODS
-
-  /**
-   * Generate invoice from payroll (automated process)
-   */
-  async generateInvoiceFromPayroll(
-    payrollId: number,
-    companyId: number,
-  ): Promise<InvoiceModel> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      const payroll = await this.payrollRepository.findById(
-        payrollId,
-        companyId,
-        tx,
-      );
-
-      if (!payroll) {
-        throw new NotFoundException('Payroll not found');
-      }
-
-      const latestInvoice = (
-        await this.invoiceRepository.findMany(
-          { payrollId },
-          { orderBy: { issueDate: 'desc' }, take: 1 },
-          tx,
-        )
-      )?.[0];
-
-      if (latestInvoice) {
-        const now = new Date();
-        const sameMonth =
-          latestInvoice.issueDate.getUTCFullYear() === now.getUTCFullYear() &&
-          latestInvoice.issueDate.getUTCMonth() === now.getUTCMonth();
-        if (sameMonth) {
-          throw new ConflictException(
-            'An invoice for this payroll already exists this month',
-          );
-        }
-      }
-
-      // Generate invoice number
-      const invoiceNumber =
-        await this.invoiceRepository.generatePayrollInvoiceNumber(
-          companyId,
-          tx,
-        );
-
-      // Calculate due date (typically 30 days from issue)
-      const issueDate = new Date();
-      const dueDate = new Date(issueDate);
-      dueDate.setDate(dueDate.getDate() + 30);
-
-      // Build invoice data from payroll
-      const fromDetails = {
-        name: payroll.employee.name,
-        email: payroll.employee.email,
-        companyName: payroll.company.companyName,
-        address1: payroll.employee.address1,
-        address2: payroll.employee.address2,
-        city: payroll.employee.city,
-        country: payroll.employee.country,
-        postalCode: payroll.employee.postalCode,
-        walletAddress: payroll.employee.walletAddress,
-        network: payroll.network,
-        token: payroll.token,
-      };
-
-      const billToDetails = {
-        companyName: payroll.company.companyName,
-        address1: payroll.company.address1,
-        address2: payroll.company.address2,
-        city: payroll.company.city,
-        country: payroll.company.country,
-        postalCode: payroll.company.postalCode,
-      };
-
-      const items = [
-        {
-          description: `Salary for ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
-          quantity: 1,
-          pricePerUnit: payroll.amount,
-          total: payroll.amount,
-        },
-      ];
-
-      const taxRate = '0.00';
-      const subtotal = payroll.amount;
-      const taxAmount = '0.00';
-      const total = payroll.amount;
-
-      const invoiceData = {
-        invoiceNumber,
-        issueDate,
-        dueDate,
-        payrollId,
-        employeeId: payroll.employeeId,
-        fromDetails,
-        billToDetails,
-        items,
-        subtotal,
-        taxRate,
-        taxAmount,
-        total,
-      };
-
-      const invoice = await this.invoiceRepository.create(invoiceData, tx);
-
-      return invoice;
-    }, 'generateInvoiceFromPayroll');
-  }
-
   /**
    * Get invoices (for company dashboard)
    */
@@ -224,11 +64,10 @@ export class InvoiceService {
     };
   }> {
     try {
-      const filters = {
-        companyId,
+      const filters: InvoiceWhereInput = {
+        toCompanyId: companyId,
         payrollId: query.payrollId,
         status: query.status,
-        search: query.search,
       };
 
       const result = await this.invoiceRepository.findManyPaginated(
@@ -240,12 +79,7 @@ export class InvoiceService {
         },
         {
           include: {
-            payroll: {
-              include: {
-                employee: true,
-                company: true,
-              },
-            },
+            payroll: {},
             employee: true,
             fromCompany: true,
             toCompany: true,
@@ -284,11 +118,11 @@ export class InvoiceService {
   }
 
   /**
-   * Get invoice details
+   * Get invoice by invoice uuid (for employee access)
    */
-  async getInvoiceDetails(id: number): Promise<InvoiceModel> {
+  async getInvoiceByUUID(invoiceUUID: string): Promise<InvoiceWithRelations> {
     try {
-      const invoice = await this.invoiceRepository.findById(id);
+      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID);
 
       if (!invoice) {
         throw new NotFoundException('Invoice not found');
@@ -296,42 +130,296 @@ export class InvoiceService {
 
       return invoice;
     } catch (error) {
-      this.logger.error(`Error fetching invoice ${id}:`, error);
+      this.logger.error(`Error fetching invoice ${invoiceUUID}:`, error);
       handleError(error, this.logger);
     }
   }
 
   /**
-   * Get invoice by invoice number (for employee access)
+   * Get invoice statistics
    */
-  async getInvoiceByNumber(
-    invoiceNumber: string,
-  ): Promise<InvoiceWithRelations> {
+  async getInvoiceStats(companyId: number): Promise<InvoiceStatsDto> {
     try {
-      const invoice =
-        await this.invoiceRepository.findByInvoiceNumber(invoiceNumber);
-
-      if (!invoice) {
-        throw new NotFoundException('Invoice not found');
-      }
-
-      return invoice;
+      return await this.invoiceRepository.getStats(companyId);
     } catch (error) {
-      this.logger.error(`Error fetching invoice ${invoiceNumber}:`, error);
+      this.logger.error('Error fetching invoice stats:', error);
       handleError(error, this.logger);
     }
   }
 
+  /**
+   * Get overdue invoices (for scheduled notifications)
+   */
+  async getOverdueInvoices(date?: Date): Promise<InvoiceModel[]> {
+    try {
+      const overdueDate = date || new Date();
+      return await this.invoiceRepository.findDueInvoices(overdueDate);
+    } catch (error) {
+      this.logger.error('Error fetching overdue invoices:', error);
+      handleError(error, this.logger);
+    }
+  }
+  //#endregion GET METHODS
+
+  //#region POST METHODS
+  // *************************************************
+  // **************** POST METHODS *******************
+  // *************************************************
+  /**
+   * Create new invoice (usually called by scheduled job)
+   */
+  async createPayrollInvoice(
+    dto: CreateInvoiceDto,
+    companyId: number,
+  ): Promise<InvoiceModel> {
+    return this.prisma.executeInTransaction(async (tx) => {
+      // Verify payroll exists
+      const payroll = await this.payrollRepository.findById(
+        dto.payrollId,
+        companyId,
+        tx,
+      );
+
+      if (!payroll) {
+        throw new NotFoundException(ErrorPayroll.PayrollNotFound);
+      }
+
+      // Generate unique invoice number
+      const invoiceNumber =
+        await this.invoiceRepository.generatePayrollInvoiceNumber(
+          payroll.id,
+          payroll.employeeId,
+          tx,
+        );
+
+      const invoiceData: InvoiceCreateInput = {
+        invoiceType: InvoiceTypeEnum.EMPLOYEE,
+        invoiceNumber,
+        issueDate: new Date(),
+        dueDate: new Date(dto.dueDate),
+        payroll: {
+          connect: {
+            id: payroll.id,
+          },
+        },
+        employee: {
+          connect: {
+            id: payroll.employeeId,
+          },
+        },
+        toCompany: {
+          connect: {
+            id: companyId,
+          },
+        },
+        emailTo: dto.billToDetails?.email || payroll.employee.email,
+        emailCc: [],
+        emailBcc: [],
+        fromDetails: dto.fromDetails as unknown as JsonValue,
+        toDetails: dto.billToDetails as unknown as JsonValue,
+        subtotal: dto.subtotal,
+        taxRate: dto.taxRate,
+        taxAmount: dto.taxAmount,
+        discount: '0.00',
+        total: dto.total,
+        currency: 'USD',
+        metadata: dto.metadata,
+        status: InvoiceStatusEnum.SENT,
+      };
+
+      const invoice = await this.invoiceRepository.create(invoiceData, tx);
+
+      return invoice;
+    }, 'createInvoice');
+  }
+  //#endregion POST METHODS
+
+  /**
+   * Generate invoice from payroll (automated process)
+   */
+  async generateInvoiceFromPayroll(
+    payrollId: number,
+    companyId: number,
+    options?: {
+      issueDate?: Date;
+      dueDate?: Date;
+      isAutoGenerated?: boolean;
+      autoGenerateFromPayrollId?: number;
+    },
+    tx?: any,
+  ): Promise<InvoiceModel> {
+    const executeTransaction = tx
+      ? async (callback: any) => callback(tx)
+      : (callback: any) =>
+          this.prisma.executeInTransaction(
+            callback,
+            'generateInvoiceFromPayroll',
+          );
+
+    return executeTransaction(async (transactionClient: any) => {
+      const payroll = await this.payrollRepository.findById(
+        payrollId,
+        companyId,
+        transactionClient,
+      );
+
+      if (!payroll) {
+        throw new NotFoundException('Payroll not found');
+      }
+
+      // Check for duplicate in same month
+      const latestInvoice =
+        await this.invoiceRepository.findLatestInvoiceForPayroll(
+          payrollId,
+          transactionClient,
+        );
+
+      if (latestInvoice) {
+        const now = options?.issueDate || new Date();
+        const sameMonth =
+          latestInvoice.issueDate.getUTCFullYear() === now.getUTCFullYear() &&
+          latestInvoice.issueDate.getUTCMonth() === now.getUTCMonth();
+        if (sameMonth) {
+          throw new ConflictException(
+            'An invoice for this payroll already exists this month',
+          );
+        }
+      }
+
+      // Generate invoice number
+      const invoiceNumber =
+        await this.invoiceRepository.generatePayrollInvoiceNumber(
+          payrollId,
+          payroll.employeeId,
+          transactionClient,
+        );
+
+      // Calculate dates
+      const issueDate = options?.issueDate || new Date();
+      const dueDate =
+        options?.dueDate ||
+        (() => {
+          const date = new Date(issueDate);
+          date.setDate(date.getDate() + 30);
+          return date;
+        })();
+
+      // Build invoice data from payroll
+      const fromDetails = {
+        name: payroll.employee.name,
+        email: payroll.employee.email,
+        address1: payroll.employee.address1,
+        address2: payroll.employee.address2,
+        city: payroll.employee.city,
+        country: payroll.employee.country,
+        postalCode: payroll.employee.postalCode,
+        walletAddress: payroll.employee.walletAddress,
+        network: payroll.network,
+        token: payroll.token,
+      };
+
+      const toDetails = {
+        companyName: payroll.company.companyName,
+        address1: payroll.company.address1,
+        address2: payroll.company.address2,
+        city: payroll.company.city,
+        country: payroll.company.country,
+        postalCode: payroll.company.postalCode,
+        email: payroll.company.notificationEmail,
+      };
+
+      // Calculate financials
+      const taxRate = '0.00';
+      const subtotal = payroll.amount;
+      const taxAmount = '0.00';
+      const discount = '0.00';
+      const total = payroll.amount;
+
+      // Create invoice
+      const invoiceData: InvoiceCreateInput = {
+        invoiceType: InvoiceTypeEnum.EMPLOYEE,
+        invoiceNumber,
+        issueDate,
+        dueDate,
+        payroll: { connect: { id: payrollId } },
+        employee: { connect: { id: payroll.employeeId } },
+        toCompany: { connect: { id: companyId } },
+        emailTo: payroll.employee.email,
+        emailCc: payroll.company.notificationEmail
+          ? [payroll.company.notificationEmail]
+          : [],
+        emailBcc: [],
+        fromDetails: fromDetails as any,
+        toDetails: toDetails as any,
+        subtotal,
+        taxRate,
+        taxAmount,
+        discount,
+        total,
+        currency: 'USD',
+        status: 'SENT',
+        isAutoGenerated: options?.isAutoGenerated || false,
+        autoGenerateFromPayrollId: options?.autoGenerateFromPayrollId,
+      };
+
+      const invoice = await this.invoiceRepository.create(
+        invoiceData,
+        transactionClient,
+      );
+
+      // Create invoice items
+      await this.invoiceItemService.createItems(
+        invoice.uuid,
+        companyId,
+        [
+          {
+            description: `Salary for ${issueDate.toLocaleDateString('en-US', {
+              month: 'long',
+              year: 'numeric',
+            })}`,
+            quantity: '1',
+            unitPrice: payroll.amount,
+            unit: 'month',
+            taxRate: '0.00',
+            discount: '0.00',
+            order: 0,
+          },
+        ],
+        transactionClient,
+      );
+
+      this.logger.log(
+        `Generated invoice ${invoice.invoiceNumber} from payroll ${payrollId}`,
+      );
+
+      return invoice;
+    });
+  }
+
+  /**
+   * Find latest invoice for payroll (used by scheduler)
+   */
+  async findLatestInvoiceForPayroll(
+    payrollId: number,
+    tx?: any,
+  ): Promise<InvoiceModel | null> {
+    return this.invoiceRepository.findLatestInvoiceForPayroll(payrollId, tx);
+  }
+
+  //#region PATCH METHODS
+  // *************************************************
+  // **************** PATCH METHODS ******************
+  // *************************************************
   /**
    * Update invoice (employee can update their details)
    */
   async updateInvoice(
-    id: number,
+    invoiceUUID: string,
     dto: UpdateInvoiceDto,
     employeeEmail?: string,
   ): Promise<InvoiceModel> {
     return this.prisma.executeInTransaction(async (tx) => {
-      const invoice = await this.invoiceRepository.findById(id, tx);
+      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, tx);
 
       if (!invoice) {
         throw new NotFoundException('Invoice not found');
@@ -353,21 +441,18 @@ export class InvoiceService {
         );
       }
 
-      // transform dto to InvoiceUpdateInput
+      // transform dto to InvoiceUpdateInput (exclude items - handled separately)
+      const { items, ...dtoWithoutItems } = dto;
       const updateData: InvoiceUpdateInput = {
-        ...dto,
+        ...dtoWithoutItems,
         fromDetails: dto.fromDetails as unknown as JsonValue,
-        billToDetails: dto.billToDetails as unknown as JsonValue,
-        items: dto.items as unknown as JsonValue,
       };
 
       const updatedInvoice = await this.invoiceRepository.update(
-        { id },
+        { uuid: invoiceUUID },
         updateData,
         tx,
       );
-
-      this.logger.log(`Updated invoice ${id}`);
 
       return updatedInvoice;
     }, 'updateInvoice');
@@ -376,9 +461,12 @@ export class InvoiceService {
   /**
    * Send invoice to employee
    */
-  async sendInvoice(id: number, companyId: number): Promise<InvoiceModel> {
+  async sendInvoice(
+    invoiceUUID: string,
+    companyId: number,
+  ): Promise<InvoiceModel> {
     return this.prisma.executeInTransaction(async (tx) => {
-      const invoice = await this.invoiceRepository.findById(id, tx);
+      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, tx);
 
       if (!invoice) {
         throw new NotFoundException('Invoice not found');
@@ -393,7 +481,7 @@ export class InvoiceService {
       }
 
       const updatedInvoice = await this.invoiceRepository.update(
-        { id },
+        { uuid: invoiceUUID },
         {
           status: InvoiceStatusEnum.SENT,
           sentAt: new Date(),
@@ -425,11 +513,11 @@ export class InvoiceService {
    * Employee reviews invoice
    */
   async reviewInvoice(
-    id: number,
+    invoiceUUID: string,
     employeeEmail: string,
   ): Promise<InvoiceModel> {
     return this.prisma.executeInTransaction(async (tx) => {
-      const invoice = await this.invoiceRepository.findById(id, tx);
+      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, tx);
 
       if (!invoice) {
         throw new NotFoundException('Invoice not found');
@@ -444,7 +532,7 @@ export class InvoiceService {
       }
 
       const updatedInvoice = await this.invoiceRepository.update(
-        { id },
+        { uuid: invoiceUUID },
         {
           status: InvoiceStatusEnum.REVIEWED,
           reviewedAt: new Date(),
@@ -464,11 +552,11 @@ export class InvoiceService {
    * Employee confirms invoice
    */
   async confirmInvoice(
-    id: number,
+    invoiceUUID: string,
     employeeEmail: string,
   ): Promise<InvoiceModel> {
     return this.prisma.executeInTransaction(async (tx) => {
-      const invoice = await this.invoiceRepository.findById(id, tx);
+      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, tx);
 
       if (!invoice) {
         throw new NotFoundException('Invoice not found');
@@ -485,7 +573,7 @@ export class InvoiceService {
       }
 
       const updatedInvoice = await this.invoiceRepository.update(
-        { id },
+        { uuid: invoiceUUID },
         {
           status: InvoiceStatusEnum.CONFIRMED,
           confirmedAt: new Date(),
@@ -515,9 +603,12 @@ export class InvoiceService {
   /**
    * Cancel invoice
    */
-  async cancelInvoice(id: number, companyId: number): Promise<InvoiceModel> {
+  async cancelInvoice(
+    invoiceUUID: string,
+    companyId: number,
+  ): Promise<InvoiceModel> {
     return this.prisma.executeInTransaction(async (tx) => {
-      const invoice = await this.invoiceRepository.findById(id, tx);
+      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, tx);
 
       if (!invoice) {
         throw new NotFoundException('Invoice not found');
@@ -532,7 +623,7 @@ export class InvoiceService {
       }
 
       const updatedInvoice = await this.invoiceRepository.update(
-        { id },
+        { uuid: invoiceUUID },
         { status: InvoiceStatusEnum.CANCELLED },
         tx,
       );
@@ -542,29 +633,5 @@ export class InvoiceService {
       return updatedInvoice;
     }, 'cancelInvoice');
   }
-
-  /**
-   * Get invoice statistics
-   */
-  async getInvoiceStats(companyId: number): Promise<InvoiceStatsDto> {
-    try {
-      return await this.invoiceRepository.getStats(companyId);
-    } catch (error) {
-      this.logger.error('Error fetching invoice stats:', error);
-      handleError(error, this.logger);
-    }
-  }
-
-  /**
-   * Get overdue invoices (for scheduled notifications)
-   */
-  async getOverdueInvoices(date?: Date): Promise<InvoiceModel[]> {
-    try {
-      const overdueDate = date || new Date();
-      return await this.invoiceRepository.findDueInvoices(overdueDate);
-    } catch (error) {
-      this.logger.error('Error fetching overdue invoices:', error);
-      handleError(error, this.logger);
-    }
-  }
+  //#region PATCH METHODS
 }

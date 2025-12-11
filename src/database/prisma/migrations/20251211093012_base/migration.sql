@@ -209,27 +209,83 @@ CREATE TABLE "invoices" (
     "invoice_number" VARCHAR(50) NOT NULL,
     "issue_date" TIMESTAMP(6) NOT NULL,
     "due_date" TIMESTAMP(6) NOT NULL,
+    "is_auto_generated" BOOLEAN NOT NULL DEFAULT false,
+    "auto_generate_from_payroll_id" INTEGER,
+    "next_auto_generate_date" TIMESTAMP(6),
     "payroll_id" INTEGER,
     "employee_id" INTEGER,
     "from_company_id" INTEGER,
     "to_company_id" INTEGER,
-    "is_to_company_registered" BOOLEAN NOT NULL DEFAULT false,
-    "fromDetails" JSON NOT NULL,
-    "billToDetails" JSON NOT NULL,
-    "items" JSON NOT NULL,
+    "to_company_name" VARCHAR(255),
+    "to_company_email" VARCHAR(255),
+    "to_company_address" TEXT,
+    "to_company_tax_id" VARCHAR(100),
+    "to_company_contact_name" VARCHAR(255),
+    "to_company_metadata" JSON,
+    "email_to" VARCHAR(255) NOT NULL,
+    "email_cc" VARCHAR(255)[],
+    "email_bcc" VARCHAR(255)[],
+    "email_subject" VARCHAR(500),
+    "email_body" TEXT,
+    "from_details" JSON,
+    "to_details" JSON,
     "subtotal" VARCHAR(50) NOT NULL,
     "taxRate" VARCHAR(10) NOT NULL,
     "taxAmount" VARCHAR(50) NOT NULL,
+    "discount" VARCHAR(50) NOT NULL DEFAULT '0.00',
     "total" VARCHAR(50) NOT NULL,
+    "currency" VARCHAR(10) NOT NULL DEFAULT 'USD',
     "status" "InvoiceStatusEnum" NOT NULL DEFAULT 'DRAFT',
     "sent_at" TIMESTAMP(6),
     "reviewed_at" TIMESTAMP(6),
     "confirmed_at" TIMESTAMP(6),
+    "paid_at" TIMESTAMP(6),
     "metadata" JSON,
     "memo" JSON,
     "footer" JSON,
+    "terms" JSON,
 
     CONSTRAINT "invoices_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "invoice_items" (
+    "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL,
+    "invoice_id" INTEGER NOT NULL,
+    "description" TEXT NOT NULL,
+    "quantity" VARCHAR(50) NOT NULL,
+    "unitPrice" VARCHAR(50) NOT NULL,
+    "unit" VARCHAR(50),
+    "taxRate" VARCHAR(10) NOT NULL DEFAULT '0.00',
+    "discount" VARCHAR(50) NOT NULL DEFAULT '0.00',
+    "total" VARCHAR(50) NOT NULL,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    "metadata" JSON,
+
+    CONSTRAINT "invoice_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "invoice_schedules" (
+    "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL,
+    "payroll_id" INTEGER NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "frequency" VARCHAR(50) NOT NULL,
+    "day_of_month" INTEGER,
+    "day_of_week" INTEGER,
+    "generate_days_before" INTEGER NOT NULL DEFAULT 0,
+    "next_generate_date" TIMESTAMP(6),
+    "last_generated_at" TIMESTAMP(6),
+    "invoice_template" JSON,
+    "metadata" JSON,
+
+    CONSTRAINT "invoice_schedules_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -411,9 +467,6 @@ CREATE INDEX "payrolls_pay_end_date_idx" ON "payrolls"("pay_end_date");
 CREATE UNIQUE INDEX "invoices_uuid_key" ON "invoices"("uuid");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "invoices_invoice_number_key" ON "invoices"("invoice_number");
-
--- CreateIndex
 CREATE INDEX "invoices_payroll_id_idx" ON "invoices"("payroll_id");
 
 -- CreateIndex
@@ -436,6 +489,36 @@ CREATE INDEX "invoices_invoice_number_idx" ON "invoices"("invoice_number");
 
 -- CreateIndex
 CREATE INDEX "invoices_due_date_idx" ON "invoices"("due_date");
+
+-- CreateIndex
+CREATE INDEX "invoices_is_auto_generated_idx" ON "invoices"("is_auto_generated");
+
+-- CreateIndex
+CREATE INDEX "invoices_auto_generate_from_payroll_id_idx" ON "invoices"("auto_generate_from_payroll_id");
+
+-- CreateIndex
+CREATE INDEX "invoices_next_auto_generate_date_idx" ON "invoices"("next_auto_generate_date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "invoice_items_uuid_key" ON "invoice_items"("uuid");
+
+-- CreateIndex
+CREATE INDEX "invoice_items_invoice_id_idx" ON "invoice_items"("invoice_id");
+
+-- CreateIndex
+CREATE INDEX "invoice_items_order_idx" ON "invoice_items"("order");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "invoice_schedules_uuid_key" ON "invoice_schedules"("uuid");
+
+-- CreateIndex
+CREATE INDEX "invoice_schedules_payroll_id_idx" ON "invoice_schedules"("payroll_id");
+
+-- CreateIndex
+CREATE INDEX "invoice_schedules_is_active_idx" ON "invoice_schedules"("is_active");
+
+-- CreateIndex
+CREATE INDEX "invoice_schedules_next_generate_date_idx" ON "invoice_schedules"("next_generate_date");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "bills_invoice_id_key" ON "bills"("invoice_id");
@@ -517,6 +600,12 @@ ALTER TABLE "invoices" ADD CONSTRAINT "invoices_from_company_id_fkey" FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_to_company_id_fkey" FOREIGN KEY ("to_company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "invoice_items" ADD CONSTRAINT "invoice_items_invoice_id_fkey" FOREIGN KEY ("invoice_id") REFERENCES "invoices"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "invoice_schedules" ADD CONSTRAINT "invoice_schedules_payroll_id_fkey" FOREIGN KEY ("payroll_id") REFERENCES "payrolls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "bills" ADD CONSTRAINT "bills_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;

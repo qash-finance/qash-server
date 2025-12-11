@@ -337,6 +337,7 @@ export type PayrollWhereInput = {
     Prisma.EmployeeWhereInput
   >;
   invoices?: Prisma.InvoiceListRelationFilter;
+  invoiceSchedules?: Prisma.InvoiceScheduleListRelationFilter;
 };
 
 export type PayrollOrderByWithRelationInput = {
@@ -361,6 +362,7 @@ export type PayrollOrderByWithRelationInput = {
   company?: Prisma.CompanyOrderByWithRelationInput;
   employee?: Prisma.EmployeeOrderByWithRelationInput;
   invoices?: Prisma.InvoiceOrderByRelationAggregateInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleOrderByRelationAggregateInput;
 };
 
 export type PayrollWhereUniqueInput = Prisma.AtLeast<
@@ -399,6 +401,7 @@ export type PayrollWhereUniqueInput = Prisma.AtLeast<
       Prisma.EmployeeWhereInput
     >;
     invoices?: Prisma.InvoiceListRelationFilter;
+    invoiceSchedules?: Prisma.InvoiceScheduleListRelationFilter;
   },
   'id' | 'uuid'
 >;
@@ -480,6 +483,7 @@ export type PayrollCreateInput = {
   company: Prisma.CompanyCreateNestedOneWithoutPayrollsInput;
   employee: Prisma.EmployeeCreateNestedOneWithoutPayrollsInput;
   invoices?: Prisma.InvoiceCreateNestedManyWithoutPayrollInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleCreateNestedManyWithoutPayrollInput;
 };
 
 export type PayrollUncheckedCreateInput = {
@@ -502,6 +506,7 @@ export type PayrollUncheckedCreateInput = {
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutPayrollInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleUncheckedCreateNestedManyWithoutPayrollInput;
 };
 
 export type PayrollUpdateInput = {
@@ -527,6 +532,7 @@ export type PayrollUpdateInput = {
   company?: Prisma.CompanyUpdateOneRequiredWithoutPayrollsNestedInput;
   employee?: Prisma.EmployeeUpdateOneRequiredWithoutPayrollsNestedInput;
   invoices?: Prisma.InvoiceUpdateManyWithoutPayrollNestedInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleUpdateManyWithoutPayrollNestedInput;
 };
 
 export type PayrollUncheckedUpdateInput = {
@@ -553,6 +559,7 @@ export type PayrollUncheckedUpdateInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutPayrollNestedInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleUncheckedUpdateManyWithoutPayrollNestedInput;
 };
 
 export type PayrollCreateManyInput = {
@@ -707,6 +714,11 @@ export type PayrollSumOrderByAggregateInput = {
 export type PayrollNullableScalarRelationFilter = {
   is?: Prisma.PayrollWhereInput | null;
   isNot?: Prisma.PayrollWhereInput | null;
+};
+
+export type PayrollScalarRelationFilter = {
+  is?: Prisma.PayrollWhereInput;
+  isNot?: Prisma.PayrollWhereInput;
 };
 
 export type PayrollCreateNestedManyWithoutCompanyInput = {
@@ -933,6 +945,32 @@ export type PayrollUpdateOneWithoutInvoicesNestedInput = {
   >;
 };
 
+export type PayrollCreateNestedOneWithoutInvoiceSchedulesInput = {
+  create?: Prisma.XOR<
+    Prisma.PayrollCreateWithoutInvoiceSchedulesInput,
+    Prisma.PayrollUncheckedCreateWithoutInvoiceSchedulesInput
+  >;
+  connectOrCreate?: Prisma.PayrollCreateOrConnectWithoutInvoiceSchedulesInput;
+  connect?: Prisma.PayrollWhereUniqueInput;
+};
+
+export type PayrollUpdateOneRequiredWithoutInvoiceSchedulesNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.PayrollCreateWithoutInvoiceSchedulesInput,
+    Prisma.PayrollUncheckedCreateWithoutInvoiceSchedulesInput
+  >;
+  connectOrCreate?: Prisma.PayrollCreateOrConnectWithoutInvoiceSchedulesInput;
+  upsert?: Prisma.PayrollUpsertWithoutInvoiceSchedulesInput;
+  connect?: Prisma.PayrollWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.PayrollUpdateToOneWithWhereWithoutInvoiceSchedulesInput,
+      Prisma.PayrollUpdateWithoutInvoiceSchedulesInput
+    >,
+    Prisma.PayrollUncheckedUpdateWithoutInvoiceSchedulesInput
+  >;
+};
+
 export type PayrollCreateWithoutCompanyInput = {
   uuid?: string;
   createdAt?: Date | string;
@@ -951,6 +989,7 @@ export type PayrollCreateWithoutCompanyInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   employee: Prisma.EmployeeCreateNestedOneWithoutPayrollsInput;
   invoices?: Prisma.InvoiceCreateNestedManyWithoutPayrollInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleCreateNestedManyWithoutPayrollInput;
 };
 
 export type PayrollUncheckedCreateWithoutCompanyInput = {
@@ -972,6 +1011,7 @@ export type PayrollUncheckedCreateWithoutCompanyInput = {
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutPayrollInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleUncheckedCreateNestedManyWithoutPayrollInput;
 };
 
 export type PayrollCreateOrConnectWithoutCompanyInput = {
@@ -1063,6 +1103,7 @@ export type PayrollCreateWithoutEmployeeInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   company: Prisma.CompanyCreateNestedOneWithoutPayrollsInput;
   invoices?: Prisma.InvoiceCreateNestedManyWithoutPayrollInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleCreateNestedManyWithoutPayrollInput;
 };
 
 export type PayrollUncheckedCreateWithoutEmployeeInput = {
@@ -1084,6 +1125,7 @@ export type PayrollUncheckedCreateWithoutEmployeeInput = {
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutPayrollInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleUncheckedCreateNestedManyWithoutPayrollInput;
 };
 
 export type PayrollCreateOrConnectWithoutEmployeeInput = {
@@ -1147,6 +1189,7 @@ export type PayrollCreateWithoutInvoicesInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   company: Prisma.CompanyCreateNestedOneWithoutPayrollsInput;
   employee: Prisma.EmployeeCreateNestedOneWithoutPayrollsInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleCreateNestedManyWithoutPayrollInput;
 };
 
 export type PayrollUncheckedCreateWithoutInvoicesInput = {
@@ -1168,6 +1211,7 @@ export type PayrollUncheckedCreateWithoutInvoicesInput = {
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  invoiceSchedules?: Prisma.InvoiceScheduleUncheckedCreateNestedManyWithoutPayrollInput;
 };
 
 export type PayrollCreateOrConnectWithoutInvoicesInput = {
@@ -1220,6 +1264,7 @@ export type PayrollUpdateWithoutInvoicesInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   company?: Prisma.CompanyUpdateOneRequiredWithoutPayrollsNestedInput;
   employee?: Prisma.EmployeeUpdateOneRequiredWithoutPayrollsNestedInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleUpdateManyWithoutPayrollNestedInput;
 };
 
 export type PayrollUncheckedUpdateWithoutInvoicesInput = {
@@ -1245,6 +1290,129 @@ export type PayrollUncheckedUpdateWithoutInvoicesInput = {
     | $Enums.PayrollStatusEnum;
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  invoiceSchedules?: Prisma.InvoiceScheduleUncheckedUpdateManyWithoutPayrollNestedInput;
+};
+
+export type PayrollCreateWithoutInvoiceSchedulesInput = {
+  uuid?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  network: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  token: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  amount: string;
+  contractTerm: $Enums.ContractTermEnum;
+  payrollCycle: number;
+  joiningDate: Date | string;
+  payStartDate: Date | string;
+  payEndDate: Date | string;
+  description: string;
+  status?: $Enums.PayrollStatusEnum;
+  note?: string | null;
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  company: Prisma.CompanyCreateNestedOneWithoutPayrollsInput;
+  employee: Prisma.EmployeeCreateNestedOneWithoutPayrollsInput;
+  invoices?: Prisma.InvoiceCreateNestedManyWithoutPayrollInput;
+};
+
+export type PayrollUncheckedCreateWithoutInvoiceSchedulesInput = {
+  id?: number;
+  uuid?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  companyId: number;
+  employeeId: number;
+  network: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  token: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  amount: string;
+  contractTerm: $Enums.ContractTermEnum;
+  payrollCycle: number;
+  joiningDate: Date | string;
+  payStartDate: Date | string;
+  payEndDate: Date | string;
+  description: string;
+  status?: $Enums.PayrollStatusEnum;
+  note?: string | null;
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  invoices?: Prisma.InvoiceUncheckedCreateNestedManyWithoutPayrollInput;
+};
+
+export type PayrollCreateOrConnectWithoutInvoiceSchedulesInput = {
+  where: Prisma.PayrollWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.PayrollCreateWithoutInvoiceSchedulesInput,
+    Prisma.PayrollUncheckedCreateWithoutInvoiceSchedulesInput
+  >;
+};
+
+export type PayrollUpsertWithoutInvoiceSchedulesInput = {
+  update: Prisma.XOR<
+    Prisma.PayrollUpdateWithoutInvoiceSchedulesInput,
+    Prisma.PayrollUncheckedUpdateWithoutInvoiceSchedulesInput
+  >;
+  create: Prisma.XOR<
+    Prisma.PayrollCreateWithoutInvoiceSchedulesInput,
+    Prisma.PayrollUncheckedCreateWithoutInvoiceSchedulesInput
+  >;
+  where?: Prisma.PayrollWhereInput;
+};
+
+export type PayrollUpdateToOneWithWhereWithoutInvoiceSchedulesInput = {
+  where?: Prisma.PayrollWhereInput;
+  data: Prisma.XOR<
+    Prisma.PayrollUpdateWithoutInvoiceSchedulesInput,
+    Prisma.PayrollUncheckedUpdateWithoutInvoiceSchedulesInput
+  >;
+};
+
+export type PayrollUpdateWithoutInvoiceSchedulesInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  network?: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  token?: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  amount?: Prisma.StringFieldUpdateOperationsInput | string;
+  contractTerm?:
+    | Prisma.EnumContractTermEnumFieldUpdateOperationsInput
+    | $Enums.ContractTermEnum;
+  payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number;
+  joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?:
+    | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
+    | $Enums.PayrollStatusEnum;
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  company?: Prisma.CompanyUpdateOneRequiredWithoutPayrollsNestedInput;
+  employee?: Prisma.EmployeeUpdateOneRequiredWithoutPayrollsNestedInput;
+  invoices?: Prisma.InvoiceUpdateManyWithoutPayrollNestedInput;
+};
+
+export type PayrollUncheckedUpdateWithoutInvoiceSchedulesInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number;
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  companyId?: Prisma.IntFieldUpdateOperationsInput | number;
+  employeeId?: Prisma.IntFieldUpdateOperationsInput | number;
+  network?: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  token?: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  amount?: Prisma.StringFieldUpdateOperationsInput | string;
+  contractTerm?:
+    | Prisma.EnumContractTermEnumFieldUpdateOperationsInput
+    | $Enums.ContractTermEnum;
+  payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number;
+  joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?:
+    | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
+    | $Enums.PayrollStatusEnum;
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutPayrollNestedInput;
 };
 
 export type PayrollCreateManyCompanyInput = {
@@ -1289,6 +1457,7 @@ export type PayrollUpdateWithoutCompanyInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   employee?: Prisma.EmployeeUpdateOneRequiredWithoutPayrollsNestedInput;
   invoices?: Prisma.InvoiceUpdateManyWithoutPayrollNestedInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleUpdateManyWithoutPayrollNestedInput;
 };
 
 export type PayrollUncheckedUpdateWithoutCompanyInput = {
@@ -1314,6 +1483,7 @@ export type PayrollUncheckedUpdateWithoutCompanyInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutPayrollNestedInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleUncheckedUpdateManyWithoutPayrollNestedInput;
 };
 
 export type PayrollUncheckedUpdateManyWithoutCompanyInput = {
@@ -1382,6 +1552,7 @@ export type PayrollUpdateWithoutEmployeeInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   company?: Prisma.CompanyUpdateOneRequiredWithoutPayrollsNestedInput;
   invoices?: Prisma.InvoiceUpdateManyWithoutPayrollNestedInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleUpdateManyWithoutPayrollNestedInput;
 };
 
 export type PayrollUncheckedUpdateWithoutEmployeeInput = {
@@ -1407,6 +1578,7 @@ export type PayrollUncheckedUpdateWithoutEmployeeInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   invoices?: Prisma.InvoiceUncheckedUpdateManyWithoutPayrollNestedInput;
+  invoiceSchedules?: Prisma.InvoiceScheduleUncheckedUpdateManyWithoutPayrollNestedInput;
 };
 
 export type PayrollUncheckedUpdateManyWithoutEmployeeInput = {
@@ -1439,6 +1611,7 @@ export type PayrollUncheckedUpdateManyWithoutEmployeeInput = {
 
 export type PayrollCountOutputType = {
   invoices: number;
+  invoiceSchedules: number;
 };
 
 export type PayrollCountOutputTypeSelect<
@@ -1446,6 +1619,7 @@ export type PayrollCountOutputTypeSelect<
     runtime.Types.Extensions.DefaultArgs,
 > = {
   invoices?: boolean | PayrollCountOutputTypeCountInvoicesArgs;
+  invoiceSchedules?: boolean | PayrollCountOutputTypeCountInvoiceSchedulesArgs;
 };
 
 /**
@@ -1469,6 +1643,16 @@ export type PayrollCountOutputTypeCountInvoicesArgs<
     runtime.Types.Extensions.DefaultArgs,
 > = {
   where?: Prisma.InvoiceWhereInput;
+};
+
+/**
+ * PayrollCountOutputType without action
+ */
+export type PayrollCountOutputTypeCountInvoiceSchedulesArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs =
+    runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.InvoiceScheduleWhereInput;
 };
 
 export type PayrollSelect<
@@ -1497,6 +1681,7 @@ export type PayrollSelect<
     company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>;
     employee?: boolean | Prisma.EmployeeDefaultArgs<ExtArgs>;
     invoices?: boolean | Prisma.Payroll$invoicesArgs<ExtArgs>;
+    invoiceSchedules?: boolean | Prisma.Payroll$invoiceSchedulesArgs<ExtArgs>;
     _count?: boolean | Prisma.PayrollCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['payroll']
@@ -1612,6 +1797,7 @@ export type PayrollInclude<
   company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>;
   employee?: boolean | Prisma.EmployeeDefaultArgs<ExtArgs>;
   invoices?: boolean | Prisma.Payroll$invoicesArgs<ExtArgs>;
+  invoiceSchedules?: boolean | Prisma.Payroll$invoiceSchedulesArgs<ExtArgs>;
   _count?: boolean | Prisma.PayrollCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type PayrollIncludeCreateManyAndReturn<
@@ -1638,6 +1824,7 @@ export type $PayrollPayload<
     company: Prisma.$CompanyPayload<ExtArgs>;
     employee: Prisma.$EmployeePayload<ExtArgs>;
     invoices: Prisma.$InvoicePayload<ExtArgs>[];
+    invoiceSchedules: Prisma.$InvoiceSchedulePayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -2248,6 +2435,17 @@ export interface Prisma__PayrollClient<
       >
     | Null
   >;
+  invoiceSchedules<T extends Prisma.Payroll$invoiceSchedulesArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Payroll$invoiceSchedulesArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$InvoiceSchedulePayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2795,6 +2993,37 @@ export type Payroll$invoicesArgs<
   take?: number;
   skip?: number;
   distinct?: Prisma.InvoiceScalarFieldEnum | Prisma.InvoiceScalarFieldEnum[];
+};
+
+/**
+ * Payroll.invoiceSchedules
+ */
+export type Payroll$invoiceSchedulesArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs =
+    runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the InvoiceSchedule
+   */
+  select?: Prisma.InvoiceScheduleSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the InvoiceSchedule
+   */
+  omit?: Prisma.InvoiceScheduleOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InvoiceScheduleInclude<ExtArgs> | null;
+  where?: Prisma.InvoiceScheduleWhereInput;
+  orderBy?:
+    | Prisma.InvoiceScheduleOrderByWithRelationInput
+    | Prisma.InvoiceScheduleOrderByWithRelationInput[];
+  cursor?: Prisma.InvoiceScheduleWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?:
+    | Prisma.InvoiceScheduleScalarFieldEnum
+    | Prisma.InvoiceScheduleScalarFieldEnum[];
 };
 
 /**

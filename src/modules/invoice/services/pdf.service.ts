@@ -36,9 +36,9 @@ export class PdfService {
    * Generate HTML template for invoice
    */
   private generateInvoiceHtml(invoice: InvoiceModel): string {
-    const fromDetails = invoice.fromDetails as any;
-    const billToDetails = invoice.billToDetails as any;
-    const items = invoice.items as any[];
+    const fromDetails = (invoice as any).fromDetails || {};
+    const toDetails = (invoice as any).toDetails || {};
+    const items = (invoice as any).items || [];
 
     return `
     <!DOCTYPE html>
@@ -188,12 +188,12 @@ export class PdfService {
             <div class="bill-to-section">
                 <div class="section-title">BILL TO</div>
                 <div class="address-block">
-                    <div><strong>${billToDetails.companyName}</strong></div>
-                    <div>Attn: ${billToDetails.contactName}</div>
-                    <div>${billToDetails.email}</div>
-                    <div>${billToDetails.address1}</div>
-                    ${billToDetails.address2 ? `<div>${billToDetails.address2}</div>` : ''}
-                    <div>${billToDetails.city}, ${billToDetails.country} ${billToDetails.postalCode}</div>
+                    <div><strong>${toDetails.companyName || ''}</strong></div>
+                    <div>${toDetails.contactName ? `Attn: ${toDetails.contactName}` : ''}</div>
+                    <div>${toDetails.email || ''}</div>
+                    <div>${toDetails.address1 || ''}</div>
+                    ${toDetails.address2 ? `<div>${toDetails.address2}</div>` : ''}
+                    <div>${[toDetails.city, toDetails.country, toDetails.postalCode].filter(Boolean).join(' ')}</div>
                 </div>
             </div>
         </div>

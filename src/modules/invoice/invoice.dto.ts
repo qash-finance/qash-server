@@ -27,12 +27,16 @@ export class InvoiceItemDto {
   description: string;
 
   @ApiProperty({
-    description: 'Quantity of the item',
-    example: 1,
+    description: 'Quantity of the item (as string for precision)',
+    example: '1',
   })
-  @IsNumber()
-  @Min(0)
-  quantity: number;
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d+(\.\d{1,8})?$/, {
+    message:
+      'Quantity must be a valid positive number with up to 8 decimal places',
+  })
+  quantity: string;
 
   @ApiProperty({
     description: 'Price per unit (as string for precision)',
@@ -44,19 +48,61 @@ export class InvoiceItemDto {
     message:
       'Price must be a valid positive number with up to 8 decimal places',
   })
-  pricePerUnit: string;
+  unitPrice: string;
 
-  @ApiProperty({
-    description: 'Total amount for this item (as string for precision)',
+  @ApiPropertyOptional({
+    description: 'Unit of measurement',
+    example: 'hours',
+  })
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tax rate as percentage (as string)',
+    example: '10.00',
+    default: '0.00',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,2})?$/, {
+    message: 'Tax rate must be a valid number with up to 2 decimal places',
+  })
+  taxRate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Discount amount (as string for precision)',
+    example: '0.00',
+    default: '0.00',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,8})?$/, {
+    message:
+      'Discount must be a valid positive number with up to 8 decimal places',
+  })
+  discount?: string;
+
+  @ApiPropertyOptional({
+    description: 'Total amount for this item (auto-calculated if not provided)',
     example: '5000.00',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @Matches(/^\d+(\.\d{1,8})?$/, {
     message:
       'Total must be a valid positive number with up to 8 decimal places',
   })
-  total: string;
+  total?: string;
+
+  @ApiPropertyOptional({
+    description: 'Display order',
+    example: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  order?: number;
 
   @ApiPropertyOptional({
     description: 'Additional metadata for the item',
@@ -64,6 +110,119 @@ export class InvoiceItemDto {
   @IsOptional()
   @IsObject()
   metadata?: Record<string, any>;
+}
+
+export class CreateInvoiceItemDto extends InvoiceItemDto {
+  // Inherits all fields from InvoiceItemDto
+}
+
+export class UpdateInvoiceItemDto {
+  @ApiPropertyOptional({
+    description: 'Description of the invoice item',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Quantity of the item (as string for precision)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,8})?$/, {
+    message:
+      'Quantity must be a valid positive number with up to 8 decimal places',
+  })
+  quantity?: string;
+
+  @ApiPropertyOptional({
+    description: 'Price per unit (as string for precision)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,8})?$/, {
+    message:
+      'Price must be a valid positive number with up to 8 decimal places',
+  })
+  unitPrice?: string;
+
+  @ApiPropertyOptional({
+    description: 'Unit of measurement',
+  })
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tax rate as percentage (as string)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,2})?$/, {
+    message: 'Tax rate must be a valid number with up to 2 decimal places',
+  })
+  taxRate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Discount amount (as string for precision)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,8})?$/, {
+    message:
+      'Discount must be a valid positive number with up to 8 decimal places',
+  })
+  discount?: string;
+
+  @ApiPropertyOptional({
+    description: 'Display order',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  order?: number;
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata for the item',
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, any>;
+}
+
+export class ReorderInvoiceItemsDto {
+  @ApiProperty({
+    description: 'Array of item ID and order pairs',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        id: { type: 'number' },
+        order: { type: 'number' },
+      },
+    },
+    example: [
+      { id: 1, order: 0 },
+      { id: 2, order: 1 },
+      { id: 3, order: 2 },
+    ],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemOrderDto)
+  itemOrders: ItemOrderDto[];
+}
+
+export class ItemOrderDto {
+  @ApiProperty({ description: 'Invoice item ID', example: 1 })
+  @IsNumber()
+  id: number;
+
+  @ApiProperty({ description: 'New order position', example: 0 })
+  @IsNumber()
+  @Min(0)
+  order: number;
 }
 
 export class FromDetailsDto {
@@ -314,13 +473,6 @@ export class CreateInvoiceDto {
 
 export class UpdateInvoiceDto {
   @ApiPropertyOptional({
-    description: 'Invoice due date',
-  })
-  @IsOptional()
-  @IsDateString()
-  dueDate?: string;
-
-  @ApiPropertyOptional({
     description: 'Employee details (from)',
     type: FromDetailsDto,
   })
@@ -328,15 +480,6 @@ export class UpdateInvoiceDto {
   @ValidateNested()
   @Type(() => FromDetailsDto)
   fromDetails?: FromDetailsDto;
-
-  @ApiPropertyOptional({
-    description: 'Company details (bill to)',
-    type: BillToDetailsDto,
-  })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => BillToDetailsDto)
-  billToDetails?: BillToDetailsDto;
 
   @ApiPropertyOptional({
     description: 'Invoice items',
@@ -484,4 +627,153 @@ export class InvoiceStatsDto {
     example: 10,
   })
   dueThisMonth: number;
+}
+
+export class CreateInvoiceScheduleDto {
+  @ApiProperty({
+    description: 'Frequency of invoice generation',
+    enum: ['MONTHLY', 'WEEKLY', 'BIWEEKLY', 'QUARTERLY'],
+    example: 'MONTHLY',
+  })
+  @IsString()
+  @IsNotEmpty()
+  frequency: string;
+
+  @ApiPropertyOptional({
+    description: 'Day of month to generate (1-31), for MONTHLY frequency',
+    example: 1,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(31)
+  dayOfMonth?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Day of week to generate (0-6, Sunday=0), for WEEKLY frequency',
+    example: 1,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(6)
+  dayOfWeek?: number;
+
+  @ApiProperty({
+    description: 'Number of days before due date to generate invoice',
+    example: 7,
+    default: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  generateDaysBefore: number;
+
+  @ApiPropertyOptional({
+    description: 'Invoice template settings',
+  })
+  @IsOptional()
+  @IsObject()
+  invoiceTemplate?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata',
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, any>;
+}
+
+export class UpdateInvoiceScheduleDto {
+  @ApiPropertyOptional({
+    description: 'Frequency of invoice generation',
+    enum: ['MONTHLY', 'WEEKLY', 'BIWEEKLY', 'QUARTERLY'],
+  })
+  @IsOptional()
+  @IsString()
+  frequency?: string;
+
+  @ApiPropertyOptional({
+    description: 'Day of month to generate (1-31)',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(31)
+  dayOfMonth?: number;
+
+  @ApiPropertyOptional({
+    description: 'Day of week to generate (0-6, Sunday=0)',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(6)
+  dayOfWeek?: number;
+
+  @ApiPropertyOptional({
+    description: 'Number of days before due date to generate invoice',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  generateDaysBefore?: number;
+
+  @ApiPropertyOptional({
+    description: 'Whether the schedule is active',
+  })
+  @IsOptional()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Invoice template settings',
+  })
+  @IsOptional()
+  @IsObject()
+  invoiceTemplate?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata',
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, any>;
+}
+
+export class InvoiceScheduleResponseDto {
+  @ApiProperty({ description: 'Schedule ID' })
+  id: number;
+
+  @ApiProperty({ description: 'Schedule UUID' })
+  uuid: string;
+
+  @ApiProperty({ description: 'Payroll ID' })
+  payrollId: number;
+
+  @ApiProperty({ description: 'Frequency' })
+  frequency: string;
+
+  @ApiPropertyOptional({ description: 'Day of month' })
+  dayOfMonth?: number;
+
+  @ApiPropertyOptional({ description: 'Day of week' })
+  dayOfWeek?: number;
+
+  @ApiProperty({ description: 'Days before due date to generate' })
+  generateDaysBefore: number;
+
+  @ApiProperty({ description: 'Is active' })
+  isActive: boolean;
+
+  @ApiPropertyOptional({ description: 'Next generate date' })
+  nextGenerateDate?: Date;
+
+  @ApiPropertyOptional({ description: 'Last generated at' })
+  lastGeneratedAt?: Date;
+
+  @ApiProperty({ description: 'Created at' })
+  createdAt: Date;
+
+  @ApiProperty({ description: 'Updated at' })
+  updatedAt: Date;
 }
