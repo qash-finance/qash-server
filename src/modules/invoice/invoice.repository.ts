@@ -4,11 +4,7 @@ import {
   InvoiceDelegate,
   InvoiceModel,
 } from '../../database/generated/models/Invoice';
-import {
-  InvoiceStatusEnum,
-  InvoiceTypeEnum,
-  Prisma,
-} from '../../database/generated/client';
+import { InvoiceStatusEnum, Prisma } from '../../database/generated/client';
 import {
   BaseRepository,
   PrismaTransactionClient,

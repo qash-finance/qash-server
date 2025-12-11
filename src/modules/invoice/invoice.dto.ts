@@ -16,6 +16,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { InvoiceStatusEnum } from 'src/database/generated/client';
+import { Currency } from 'src/common/constants/currency';
 
 export class InvoiceItemDto {
   @ApiProperty({
@@ -376,6 +377,13 @@ export class BillToDetailsDto {
 }
 
 export class CreateInvoiceDto {
+  @ApiProperty({
+    description: 'Currency of the invoice',
+    example: 'USD',
+  })
+  @IsEnum(Currency)
+  currency: Currency;
+
   @ApiProperty({
     description: 'Payroll ID this invoice is for',
     example: 1,

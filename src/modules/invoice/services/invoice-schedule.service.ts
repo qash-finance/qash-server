@@ -11,6 +11,10 @@ import {
   CreateInvoiceScheduleDto,
   UpdateInvoiceScheduleDto,
 } from '../invoice.dto';
+import {
+  ErrorInvoiceSchedule,
+  ErrorPayroll,
+} from 'src/common/constants/errors';
 
 @Injectable()
 export class InvoiceScheduleService {
@@ -39,7 +43,7 @@ export class InvoiceScheduleService {
       );
 
       if (!payroll) {
-        throw new NotFoundException('Payroll not found');
+        throw new NotFoundException(ErrorPayroll.PayrollNotFound);
       }
 
       // Check if schedule already exists
@@ -50,7 +54,7 @@ export class InvoiceScheduleService {
 
       if (existing) {
         throw new BadRequestException(
-          'Invoice schedule already exists for this payroll',
+          ErrorInvoiceSchedule.InvoiceScheduleAlreadyExists,
         );
       }
 
@@ -77,10 +81,6 @@ export class InvoiceScheduleService {
         tx,
       );
 
-      this.logger.log(
-        `Created invoice schedule for payroll ${payrollId}, next generation: ${nextGenerateDate}`,
-      );
-
       return schedule;
     }, 'createInvoiceSchedule');
   }
@@ -97,12 +97,16 @@ export class InvoiceScheduleService {
       const schedule = await this.scheduleRepository.findById(id, tx);
 
       if (!schedule) {
-        throw new NotFoundException('Invoice schedule not found');
+        throw new NotFoundException(
+          ErrorInvoiceSchedule.InvoiceScheduleNotFound,
+        );
       }
 
       // Verify payroll belongs to company
       if (schedule.payroll.companyId !== companyId) {
-        throw new NotFoundException('Invoice schedule not found');
+        throw new NotFoundException(
+          ErrorInvoiceSchedule.InvoiceScheduleNotFound,
+        );
       }
 
       const updateData: any = { ...dto };
@@ -125,8 +129,6 @@ export class InvoiceScheduleService {
 
       const updated = await this.scheduleRepository.update(id, updateData, tx);
 
-      this.logger.log(`Updated invoice schedule ${id}`);
-
       return updated;
     }, 'updateInvoiceSchedule');
   }
@@ -139,16 +141,18 @@ export class InvoiceScheduleService {
       const schedule = await this.scheduleRepository.findById(id, tx);
 
       if (!schedule) {
-        throw new NotFoundException('Invoice schedule not found');
+        throw new NotFoundException(
+          ErrorInvoiceSchedule.InvoiceScheduleNotFound,
+        );
       }
 
       if (schedule.payroll.companyId !== companyId) {
-        throw new NotFoundException('Invoice schedule not found');
+        throw new NotFoundException(
+          ErrorInvoiceSchedule.InvoiceScheduleNotFound,
+        );
       }
 
       await this.scheduleRepository.delete(id, tx);
-
-      this.logger.log(`Deleted invoice schedule ${id}`);
     }, 'deleteInvoiceSchedule');
   }
 

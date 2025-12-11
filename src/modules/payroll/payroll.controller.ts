@@ -10,7 +10,6 @@ import {
   Query,
   ParseIntPipe,
   HttpStatus,
-  ParseFloatPipe,
 } from '@nestjs/common';
 import {
   ApiTags,

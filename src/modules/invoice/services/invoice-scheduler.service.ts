@@ -14,7 +14,6 @@ export class InvoiceSchedulerService {
   constructor(
     private readonly scheduleService: InvoiceScheduleService,
     private readonly invoiceService: InvoiceService,
-    private readonly payrollRepository: PayrollRepository,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -23,8 +22,6 @@ export class InvoiceSchedulerService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async generateScheduledInvoices() {
-    this.logger.log('Checking for scheduled invoices to generate...');
-
     try {
       const now = new Date();
       const schedules =
@@ -34,8 +31,6 @@ export class InvoiceSchedulerService {
         this.logger.debug('No invoices scheduled for generation');
         return;
       }
-
-      this.logger.log(`Found ${schedules.length} invoice(s) to generate`);
 
       for (const schedule of schedules) {
         try {
@@ -109,6 +104,8 @@ export class InvoiceSchedulerService {
         },
         tx,
       );
+
+      // TODO:Send email to employee
 
       // Calculate next generate date
       const nextGenerateDate = this.calculateNextGenerateDate(

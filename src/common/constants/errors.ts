@@ -59,6 +59,18 @@ export enum ErrorPayroll {
 
 export enum ErrorInvoice {
   InvoiceNotFound = 'Invoice not found',
+  InvoiceAlreadyExistsThisMonth = 'An invoice for this payroll already exists this month',
+  NotOwner = 'Only the employee can update their own invoices',
+  InvoiceNotUpdatable = 'Invoice can only be updated when in SENT or REVIEWED status',
+  InvoiceNotSendable = 'Only draft invoices can be sent',
+  InvoiceNotReviewable = 'Only sent invoices can be reviewed',
+  InvoiceNotConfirmable = 'Only reviewed invoices can be confirmed',
+  InvoiceNotCancelable = 'Cannot cancel confirmed invoices',
+}
+
+export enum ErrorInvoiceSchedule {
+  InvoiceScheduleNotFound = 'Invoice schedule not found',
+  InvoiceScheduleAlreadyExists = 'Invoice schedule already exists for this payroll',
 }
 
 export enum ErrorPaymentLink {

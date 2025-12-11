@@ -1,17 +1,10 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InvoiceItemRepository } from '../repositories/invoice-item.repository';
 import { InvoiceRepository } from '../invoice.repository';
 import { PrismaService } from '../../../database/prisma.service';
-import {
-  CreateInvoiceItemDto,
-  UpdateInvoiceItemDto,
-  ReorderInvoiceItemsDto,
-} from '../invoice.dto';
+import { CreateInvoiceItemDto, UpdateInvoiceItemDto } from '../invoice.dto';
+import { ErrorInvoice } from 'src/common/constants/errors';
+import { InvoiceTypeEnum } from 'src/database/generated/enums';
 
 @Injectable()
 export class InvoiceItemService {
@@ -37,26 +30,11 @@ export class InvoiceItemService {
       : (cb: any) => this.prisma.executeInTransaction(cb, 'createInvoiceItem');
 
     return run(async (trx: any) => {
-      // Verify invoice exists and belongs to company
-      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, trx);
-
-      if (!invoice) {
-        throw new NotFoundException('Invoice not found');
-      }
-
-      // Verify company access (check if invoice belongs to company)
-      if (invoice.invoiceType === 'EMPLOYEE') {
-        if (invoice.payroll?.companyId !== companyId) {
-          throw new NotFoundException('Invoice not found');
-        }
-      } else if (invoice.invoiceType === 'B2B') {
-        if (
-          invoice.fromCompanyId !== companyId &&
-          invoice.toCompanyId !== companyId
-        ) {
-          throw new NotFoundException('Invoice not found');
-        }
-      }
+      const invoice = await this.getAccessibleInvoice(
+        invoiceUUID,
+        companyId,
+        trx,
+      );
 
       // Calculate item total if not provided
       const quantity = parseFloat(dto.quantity);
@@ -98,10 +76,6 @@ export class InvoiceItemService {
       // Recalculate invoice totals
       await this.recalculateInvoiceTotals(invoiceUUID, trx);
 
-      this.logger.log(
-        `Created invoice item ${item.id} for invoice ${invoiceUUID}`,
-      );
-
       return item;
     });
   }
@@ -120,26 +94,11 @@ export class InvoiceItemService {
       : (cb: any) => this.prisma.executeInTransaction(cb, 'createInvoiceItems');
 
     return run(async (trx: any) => {
-      // Verify invoice exists and belongs to company
-      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, trx);
-
-      if (!invoice) {
-        throw new NotFoundException('Invoice not found');
-      }
-
-      // Verify company access
-      if (invoice.invoiceType === 'EMPLOYEE') {
-        if (invoice.payroll?.companyId !== companyId) {
-          throw new NotFoundException('Invoice not found');
-        }
-      } else if (invoice.invoiceType === 'B2B') {
-        if (
-          invoice.fromCompanyId !== companyId &&
-          invoice.toCompanyId !== companyId
-        ) {
-          throw new NotFoundException('Invoice not found');
-        }
-      }
+      const invoice = await this.getAccessibleInvoice(
+        invoiceUUID,
+        companyId,
+        trx,
+      );
 
       // Calculate totals for each item
       const itemsToCreate = items.map((dto, index) => {
@@ -172,10 +131,6 @@ export class InvoiceItemService {
       // Recalculate invoice totals
       await this.recalculateInvoiceTotals(invoiceUUID, trx);
 
-      this.logger.log(
-        `Created ${itemsToCreate.length} items for invoice ${invoiceUUID}`,
-      );
-
       return this.itemRepository.findByInvoiceUuid(invoiceUUID, trx);
     });
   }
@@ -187,26 +142,7 @@ export class InvoiceItemService {
     invoiceUUID: string,
     companyId: number,
   ): Promise<any[]> {
-    // Verify invoice exists and belongs to company
-    const invoice = await this.invoiceRepository.findByUUID(invoiceUUID);
-
-    if (!invoice) {
-      throw new NotFoundException('Invoice not found');
-    }
-
-    // Verify company access
-    if (invoice.invoiceType === 'EMPLOYEE') {
-      if (invoice.payroll?.companyId !== companyId) {
-        throw new NotFoundException('Invoice not found');
-      }
-    } else if (invoice.invoiceType === 'B2B') {
-      if (
-        invoice.fromCompanyId !== companyId &&
-        invoice.toCompanyId !== companyId
-      ) {
-        throw new NotFoundException('Invoice not found');
-      }
-    }
+    await this.getAccessibleInvoice(invoiceUUID, companyId);
 
     return this.itemRepository.findByInvoiceUuid(invoiceUUID);
   }
@@ -226,26 +162,11 @@ export class InvoiceItemService {
       : (cb: any) => this.prisma.executeInTransaction(cb, 'updateInvoiceItem');
 
     return run(async (trx: any) => {
-      // Verify invoice exists and belongs to company
-      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, trx);
-
-      if (!invoice) {
-        throw new NotFoundException('Invoice not found');
-      }
-
-      // Verify company access
-      if (invoice.invoiceType === 'EMPLOYEE') {
-        if (invoice.payroll?.companyId !== companyId) {
-          throw new NotFoundException('Invoice not found');
-        }
-      } else if (invoice.invoiceType === 'B2B') {
-        if (
-          invoice.fromCompanyId !== companyId &&
-          invoice.toCompanyId !== companyId
-        ) {
-          throw new NotFoundException('Invoice not found');
-        }
-      }
+      const invoice = await this.getAccessibleInvoice(
+        invoiceUUID,
+        companyId,
+        trx,
+      );
 
       // Verify item exists and belongs to invoice
       const item = await this.itemRepository.findById(id, trx);
@@ -301,26 +222,11 @@ export class InvoiceItemService {
       : (cb: any) => this.prisma.executeInTransaction(cb, 'deleteInvoiceItem');
 
     return run(async (trx: any) => {
-      // Verify invoice exists and belongs to company
-      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, trx);
-
-      if (!invoice) {
-        throw new NotFoundException('Invoice not found');
-      }
-
-      // Verify company access
-      if (invoice.invoiceType === 'EMPLOYEE') {
-        if (invoice.payroll?.companyId !== companyId) {
-          throw new NotFoundException('Invoice not found');
-        }
-      } else if (invoice.invoiceType === 'B2B') {
-        if (
-          invoice.fromCompanyId !== companyId &&
-          invoice.toCompanyId !== companyId
-        ) {
-          throw new NotFoundException('Invoice not found');
-        }
-      }
+      const invoice = await this.getAccessibleInvoice(
+        invoiceUUID,
+        companyId,
+        trx,
+      );
 
       // Verify item exists and belongs to invoice
       const item = await this.itemRepository.findById(id, trx);
@@ -368,5 +274,35 @@ export class InvoiceItemService {
       taxAmount: totals.totalTax,
       total: totals.total,
     };
+  }
+
+  /**
+   * Ensure invoice exists and belongs to the given company
+   */
+  private async getAccessibleInvoice(
+    invoiceUUID: string,
+    companyId: number,
+    tx?: any,
+  ) {
+    const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, tx);
+
+    if (!invoice) {
+      throw new NotFoundException(ErrorInvoice.InvoiceNotFound);
+    }
+
+    if (invoice.invoiceType === InvoiceTypeEnum.EMPLOYEE) {
+      if (invoice.payroll?.companyId !== companyId) {
+        throw new NotFoundException(ErrorInvoice.InvoiceNotFound);
+      }
+    } else if (invoice.invoiceType === InvoiceTypeEnum.B2B) {
+      if (
+        invoice.fromCompanyId !== companyId &&
+        invoice.toCompanyId !== companyId
+      ) {
+        throw new NotFoundException(ErrorInvoice.InvoiceNotFound);
+      }
+    }
+
+    return invoice;
   }
 }
