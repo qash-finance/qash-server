@@ -156,8 +156,10 @@ export class PayrollService {
   async createPayroll(
     companyId: number,
     dto: CreatePayrollDto,
+    options?: { scheduleFrequency?: string },
   ): Promise<PayrollModel> {
     return this.prisma.executeInTransaction(async (tx) => {
+      const scheduleFrequency = options?.scheduleFrequency ?? 'MONTHLY';
       // Make sure employee exists and belongs to company
       const employee = await this.employeeRepository.findOne(
         { id: dto.employeeId, companyId },
@@ -243,7 +245,7 @@ export class PayrollService {
         data: {
           payroll: { connect: { id: payroll.id } },
           isActive: true,
-          frequency: 'MONTHLY',
+          frequency: scheduleFrequency,
           dayOfMonth: payStartDate.getDate(),
           generateDaysBefore: 0,
           nextGenerateDate,
@@ -282,22 +284,19 @@ export class PayrollService {
         name: 'SandboxUSD',
       },
       contractTerm: PayrollStatusEnum.ACTIVE as any, // will be overwritten below
-      contractDurationMonths: 1,
-      contractStartDate: now.toISOString(),
-      contractEndDate: payEndDate.toISOString(),
-      payrollCycle: 1,
+      payrollCycle: 5,
       amount: amount.toString(),
       payStartDate: payStartDate.toISOString(),
       payEndDate: payEndDate.toISOString(),
       joiningDate: now.toISOString(),
       note: 'sandbox payroll for scheduler test',
       description: 'sandbox payroll for scheduler test',
-    } as any;
+    };
 
     // contractTerm expects ContractTermEnum; reuse same enum from generated client
     (dto as any).contractTerm = ContractTermEnum.PERMANENT;
 
-    return this.createPayroll(companyId, dto);
+    return this.createPayroll(companyId, dto, { scheduleFrequency: 'SANDBOX' });
   }
 
   //#endregion POST METHODS

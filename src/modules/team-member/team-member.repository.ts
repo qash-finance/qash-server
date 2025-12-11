@@ -338,7 +338,7 @@ export class TeamMemberRepository extends BaseRepository<
     return this.prisma.teamMember.findMany({
       where: {
         user: {
-          email,
+        email,
         },
         isActive: true,
       },
@@ -380,7 +380,7 @@ export class TeamMemberRepository extends BaseRepository<
   async isEmailInvited(companyId: number, email: string): Promise<boolean> {
     const existing = await this.prisma.teamMember.findFirst({
       where: {
-        companyId,
+          companyId,
         user: {
           email,
         },

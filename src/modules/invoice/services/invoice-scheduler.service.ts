@@ -21,7 +21,7 @@ export class InvoiceSchedulerService {
   /**
    * Run every hour to check for invoices that need to be generated
    */
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_HOUR)
   async generateScheduledInvoices() {
     this.logger.log('Checking for scheduled invoices to generate...');
 
@@ -144,6 +144,9 @@ export class InvoiceSchedulerService {
     let nextDate = new Date();
 
     switch (frequency.toUpperCase()) {
+      case 'SANDBOX': // fast cycle for testing
+        nextDate = new Date(now.getTime() + 30 * 1000); // 30 seconds later
+        break;
       case 'MONTHLY':
         if (dayOfMonth) {
           nextDate = new Date(
