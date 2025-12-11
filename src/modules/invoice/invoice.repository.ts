@@ -303,17 +303,31 @@ export class InvoiceRepository extends BaseRepository<
     });
   }
 
+  /**
+   * Generate an invoice number.
+   * If payrollId is provided, sequence is per payroll (employee-centric).
+   * Otherwise, fallback to monthly per-company sequence.
+   */
   async generateInvoiceNumber(
     companyId: number,
+    payrollId?: number,
     tx?: PrismaTransactionClient,
   ): Promise<string> {
     const client = tx || this.prisma;
 
+    // If payrollId supplied, count all invoices for that payroll (no month reset)
+    if (payrollId) {
+      const count = await client.invoice.count({
+        where: { payrollId },
+      });
+      const sequence = String(count + 1).padStart(3, '0');
+      return `INV-P${payrollId}-${sequence}`;
+    }
+
+    // Fallback: per-company, per-month sequence (existing behavior)
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
-
-    // Get the count of invoices for this company this month
     const startOfMonth = new Date(year, now.getMonth(), 1);
     const endOfMonth = new Date(year, now.getMonth() + 1, 0);
 

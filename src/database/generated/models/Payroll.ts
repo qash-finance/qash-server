@@ -53,6 +53,7 @@ export type PayrollMinAggregateOutputType = {
   joiningDate: Date | null;
   payStartDate: Date | null;
   payEndDate: Date | null;
+  description: string | null;
   status: $Enums.PayrollStatusEnum | null;
   note: string | null;
 };
@@ -70,6 +71,7 @@ export type PayrollMaxAggregateOutputType = {
   joiningDate: Date | null;
   payStartDate: Date | null;
   payEndDate: Date | null;
+  description: string | null;
   status: $Enums.PayrollStatusEnum | null;
   note: string | null;
 };
@@ -89,6 +91,7 @@ export type PayrollCountAggregateOutputType = {
   joiningDate: number;
   payStartDate: number;
   payEndDate: number;
+  description: number;
   status: number;
   note: number;
   metadata: number;
@@ -122,6 +125,7 @@ export type PayrollMinAggregateInputType = {
   joiningDate?: true;
   payStartDate?: true;
   payEndDate?: true;
+  description?: true;
   status?: true;
   note?: true;
 };
@@ -139,6 +143,7 @@ export type PayrollMaxAggregateInputType = {
   joiningDate?: true;
   payStartDate?: true;
   payEndDate?: true;
+  description?: true;
   status?: true;
   note?: true;
 };
@@ -158,6 +163,7 @@ export type PayrollCountAggregateInputType = {
   joiningDate?: true;
   payStartDate?: true;
   payEndDate?: true;
+  description?: true;
   status?: true;
   note?: true;
   metadata?: true;
@@ -272,6 +278,7 @@ export type PayrollGroupByOutputType = {
   joiningDate: Date;
   payStartDate: Date;
   payEndDate: Date;
+  description: string;
   status: $Enums.PayrollStatusEnum;
   note: string | null;
   metadata: runtime.JsonValue | null;
@@ -315,6 +322,7 @@ export type PayrollWhereInput = {
   joiningDate?: Prisma.DateTimeFilter<'Payroll'> | Date | string;
   payStartDate?: Prisma.DateTimeFilter<'Payroll'> | Date | string;
   payEndDate?: Prisma.DateTimeFilter<'Payroll'> | Date | string;
+  description?: Prisma.StringFilter<'Payroll'> | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFilter<'Payroll'>
     | $Enums.PayrollStatusEnum;
@@ -346,6 +354,7 @@ export type PayrollOrderByWithRelationInput = {
   joiningDate?: Prisma.SortOrder;
   payStartDate?: Prisma.SortOrder;
   payEndDate?: Prisma.SortOrder;
+  description?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   note?: Prisma.SortOrderInput | Prisma.SortOrder;
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder;
@@ -375,6 +384,7 @@ export type PayrollWhereUniqueInput = Prisma.AtLeast<
     joiningDate?: Prisma.DateTimeFilter<'Payroll'> | Date | string;
     payStartDate?: Prisma.DateTimeFilter<'Payroll'> | Date | string;
     payEndDate?: Prisma.DateTimeFilter<'Payroll'> | Date | string;
+    description?: Prisma.StringFilter<'Payroll'> | string;
     status?:
       | Prisma.EnumPayrollStatusEnumFilter<'Payroll'>
       | $Enums.PayrollStatusEnum;
@@ -408,6 +418,7 @@ export type PayrollOrderByWithAggregationInput = {
   joiningDate?: Prisma.SortOrder;
   payStartDate?: Prisma.SortOrder;
   payEndDate?: Prisma.SortOrder;
+  description?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   note?: Prisma.SortOrderInput | Prisma.SortOrder;
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder;
@@ -442,6 +453,7 @@ export type PayrollScalarWhereWithAggregatesInput = {
   joiningDate?: Prisma.DateTimeWithAggregatesFilter<'Payroll'> | Date | string;
   payStartDate?: Prisma.DateTimeWithAggregatesFilter<'Payroll'> | Date | string;
   payEndDate?: Prisma.DateTimeWithAggregatesFilter<'Payroll'> | Date | string;
+  description?: Prisma.StringWithAggregatesFilter<'Payroll'> | string;
   status?:
     | Prisma.EnumPayrollStatusEnumWithAggregatesFilter<'Payroll'>
     | $Enums.PayrollStatusEnum;
@@ -461,6 +473,7 @@ export type PayrollCreateInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -484,6 +497,7 @@ export type PayrollUncheckedCreateInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -504,6 +518,7 @@ export type PayrollUpdateInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -531,6 +546,7 @@ export type PayrollUncheckedUpdateInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -554,6 +570,7 @@ export type PayrollCreateManyInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -573,6 +590,7 @@ export type PayrollUpdateManyMutationInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -597,6 +615,7 @@ export type PayrollUncheckedUpdateManyInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -629,6 +648,7 @@ export type PayrollCountOrderByAggregateInput = {
   joiningDate?: Prisma.SortOrder;
   payStartDate?: Prisma.SortOrder;
   payEndDate?: Prisma.SortOrder;
+  description?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   note?: Prisma.SortOrder;
   metadata?: Prisma.SortOrder;
@@ -654,6 +674,7 @@ export type PayrollMaxOrderByAggregateInput = {
   joiningDate?: Prisma.SortOrder;
   payStartDate?: Prisma.SortOrder;
   payEndDate?: Prisma.SortOrder;
+  description?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   note?: Prisma.SortOrder;
 };
@@ -671,6 +692,7 @@ export type PayrollMinOrderByAggregateInput = {
   joiningDate?: Prisma.SortOrder;
   payStartDate?: Prisma.SortOrder;
   payEndDate?: Prisma.SortOrder;
+  description?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   note?: Prisma.SortOrder;
 };
@@ -923,6 +945,7 @@ export type PayrollCreateWithoutCompanyInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -944,6 +967,7 @@ export type PayrollUncheckedCreateWithoutCompanyInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -1013,6 +1037,7 @@ export type PayrollScalarWhereInput = {
   joiningDate?: Prisma.DateTimeFilter<'Payroll'> | Date | string;
   payStartDate?: Prisma.DateTimeFilter<'Payroll'> | Date | string;
   payEndDate?: Prisma.DateTimeFilter<'Payroll'> | Date | string;
+  description?: Prisma.StringFilter<'Payroll'> | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFilter<'Payroll'>
     | $Enums.PayrollStatusEnum;
@@ -1032,6 +1057,7 @@ export type PayrollCreateWithoutEmployeeInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -1053,6 +1079,7 @@ export type PayrollUncheckedCreateWithoutEmployeeInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -1114,6 +1141,7 @@ export type PayrollCreateWithoutInvoicesInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -1136,6 +1164,7 @@ export type PayrollUncheckedCreateWithoutInvoicesInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -1183,6 +1212,7 @@ export type PayrollUpdateWithoutInvoicesInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -1209,6 +1239,7 @@ export type PayrollUncheckedUpdateWithoutInvoicesInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -1230,6 +1261,7 @@ export type PayrollCreateManyCompanyInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -1249,6 +1281,7 @@ export type PayrollUpdateWithoutCompanyInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -1274,6 +1307,7 @@ export type PayrollUncheckedUpdateWithoutCompanyInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -1298,6 +1332,7 @@ export type PayrollUncheckedUpdateManyWithoutCompanyInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -1319,6 +1354,7 @@ export type PayrollCreateManyEmployeeInput = {
   joiningDate: Date | string;
   payStartDate: Date | string;
   payEndDate: Date | string;
+  description: string;
   status?: $Enums.PayrollStatusEnum;
   note?: string | null;
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
@@ -1338,6 +1374,7 @@ export type PayrollUpdateWithoutEmployeeInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -1363,6 +1400,7 @@ export type PayrollUncheckedUpdateWithoutEmployeeInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -1387,6 +1425,7 @@ export type PayrollUncheckedUpdateManyWithoutEmployeeInput = {
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
   status?:
     | Prisma.EnumPayrollStatusEnumFieldUpdateOperationsInput
     | $Enums.PayrollStatusEnum;
@@ -1451,6 +1490,7 @@ export type PayrollSelect<
     joiningDate?: boolean;
     payStartDate?: boolean;
     payEndDate?: boolean;
+    description?: boolean;
     status?: boolean;
     note?: boolean;
     metadata?: boolean;
@@ -1481,6 +1521,7 @@ export type PayrollSelectCreateManyAndReturn<
     joiningDate?: boolean;
     payStartDate?: boolean;
     payEndDate?: boolean;
+    description?: boolean;
     status?: boolean;
     note?: boolean;
     metadata?: boolean;
@@ -1509,6 +1550,7 @@ export type PayrollSelectUpdateManyAndReturn<
     joiningDate?: boolean;
     payStartDate?: boolean;
     payEndDate?: boolean;
+    description?: boolean;
     status?: boolean;
     note?: boolean;
     metadata?: boolean;
@@ -1533,6 +1575,7 @@ export type PayrollSelectScalar = {
   joiningDate?: boolean;
   payStartDate?: boolean;
   payEndDate?: boolean;
+  description?: boolean;
   status?: boolean;
   note?: boolean;
   metadata?: boolean;
@@ -1556,6 +1599,7 @@ export type PayrollOmit<
   | 'joiningDate'
   | 'payStartDate'
   | 'payEndDate'
+  | 'description'
   | 'status'
   | 'note'
   | 'metadata',
@@ -1611,6 +1655,7 @@ export type $PayrollPayload<
       joiningDate: Date;
       payStartDate: Date;
       payEndDate: Date;
+      description: string;
       status: $Enums.PayrollStatusEnum;
       note: string | null;
       metadata: runtime.JsonValue | null;
@@ -2259,6 +2304,7 @@ export interface PayrollFieldRefs {
   readonly joiningDate: Prisma.FieldRef<'Payroll', 'DateTime'>;
   readonly payStartDate: Prisma.FieldRef<'Payroll', 'DateTime'>;
   readonly payEndDate: Prisma.FieldRef<'Payroll', 'DateTime'>;
+  readonly description: Prisma.FieldRef<'Payroll', 'String'>;
   readonly status: Prisma.FieldRef<'Payroll', 'PayrollStatusEnum'>;
   readonly note: Prisma.FieldRef<'Payroll', 'String'>;
   readonly metadata: Prisma.FieldRef<'Payroll', 'Json'>;

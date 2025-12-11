@@ -21,7 +21,7 @@ import {
 import { Payroll, PayrollStatusEnum } from 'src/database/generated/client';
 import { handleError } from 'src/common/utils/errors';
 import { PrismaService } from 'src/database/prisma.service';
-import { ErrorCompanyContact, ErrorPayroll } from 'src/common/constants/errors';
+import { ErrorEmployee, ErrorPayroll } from 'src/common/constants/errors';
 import { JsonValue } from '@prisma/client/runtime/client';
 import { PaginatedResult } from 'src/database/base.repository';
 
@@ -161,7 +161,7 @@ export class PayrollService {
       );
 
       if (!employee) {
-        throw new NotFoundException(ErrorCompanyContact.ContactNotFound);
+        throw new NotFoundException(ErrorEmployee.ContactNotFound);
       }
 
       // Check if employee already has an active payroll
@@ -223,6 +223,7 @@ export class PayrollService {
         joiningDate: joiningDate,
         payStartDate: payStartDate,
         payEndDate: payEndDate,
+        description: dto.description,
         note: dto.note,
         metadata: dto.metadata,
       };

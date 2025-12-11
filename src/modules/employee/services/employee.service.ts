@@ -17,8 +17,8 @@ import {
   sanitizeString,
 } from '../../../common/utils/validation.util';
 import {
-  ErrorCompanyContact,
-  ErrorCompanyGroup,
+  ErrorEmployee,
+  ErrorEmployeeGroup,
   ErrorQuery,
 } from '../../../common/constants/errors';
 import { PrismaService } from '../../../database/prisma.service';
@@ -133,7 +133,7 @@ export class EmployeeService {
       });
 
       if (!group) {
-        throw new NotFoundException(ErrorCompanyGroup.NotFound);
+        throw new NotFoundException(ErrorEmployeeGroup.NotFound);
       }
 
       return this.employeeRepository.findManyPaginated(
@@ -163,7 +163,7 @@ export class EmployeeService {
       });
 
       if (!contact) {
-        throw new NotFoundException(ErrorCompanyContact.ContactNotFound);
+        throw new NotFoundException(ErrorEmployee.ContactNotFound);
       }
 
       const group = await this.employeeGroupRepository.findOne({
@@ -288,7 +288,7 @@ export class EmployeeService {
       });
 
       if (isNameDuplicate) {
-        throw new BadRequestException(ErrorCompanyContact.NameAlreadyExists);
+        throw new BadRequestException(ErrorEmployee.NameAlreadyExists);
       }
 
       const order = await this.employeeRepository.getNextOrderForGroup(
@@ -337,7 +337,7 @@ export class EmployeeService {
       );
 
       if (!existingContact) {
-        throw new NotFoundException(ErrorCompanyContact.ContactNotFound);
+        throw new NotFoundException(ErrorEmployee.ContactNotFound);
       }
 
       const updateData: any = {};
@@ -355,9 +355,7 @@ export class EmployeeService {
           );
 
           if (isDuplicate) {
-            throw new BadRequestException(
-              ErrorCompanyContact.NameAlreadyExists,
-            );
+            throw new BadRequestException(ErrorEmployee.NameAlreadyExists);
           }
         }
       }
@@ -376,9 +374,7 @@ export class EmployeeService {
           );
 
           if (isDuplicate) {
-            throw new BadRequestException(
-              ErrorCompanyContact.AddressAlreadyExists,
-            );
+            throw new BadRequestException(ErrorEmployee.AddressAlreadyExists);
           }
         }
       }
@@ -399,7 +395,7 @@ export class EmployeeService {
         });
 
         if (!group) {
-          throw new BadRequestException(ErrorCompanyGroup.NotFound);
+          throw new BadRequestException(ErrorEmployeeGroup.NotFound);
         }
 
         updateData.groupId = dto.categoryId;
@@ -472,7 +468,7 @@ export class EmployeeService {
       );
 
       if (!contact) {
-        throw new NotFoundException(ErrorCompanyContact.ContactNotFound);
+        throw new NotFoundException(ErrorEmployee.ContactNotFound);
       }
 
       await this.employeeRepository.delete({ id: contactId, companyId }, tx);
@@ -484,7 +480,7 @@ export class EmployeeService {
    */
   async bulkDeleteEmployees(companyId: number, contactIds: number[]) {
     if (!contactIds || contactIds.length === 0) {
-      throw new BadRequestException(ErrorCompanyContact.NoContactIdsProvided);
+      throw new BadRequestException(ErrorEmployee.NoContactIdsProvided);
     }
 
     let deletedCount = 0;

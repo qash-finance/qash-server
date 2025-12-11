@@ -1,3 +1,9 @@
+export enum ErrorQuery {
+  BadIdString = 'Bad id string',
+  InvalidSearchTerm = 'Search term must be at least 2 characters',
+  NotExists = 'Not exists',
+}
+
 export enum ErrorToken {
   NotFound = 'Token not found',
   InvalidFormat = 'Invalid token format',
@@ -27,17 +33,11 @@ export enum ErrorCompany {
   CompanyNotFound = 'Company not found',
 }
 
-export enum ErrorQuery {
-  BadIdString = 'Bad id string',
-  InvalidSearchTerm = 'Search term must be at least 2 characters',
-  NotExists = 'Not exists',
-}
-
-export enum ErrorCompanyGroup {
+export enum ErrorEmployeeGroup {
   NotFound = 'Group not found or access denied',
 }
 
-export enum ErrorCompanyContact {
+export enum ErrorEmployee {
   NameAlreadyExists = 'Name already exists',
   InvalidAddress = 'Invalid address format',
   InvalidName = 'Invalid name format',
@@ -55,6 +55,10 @@ export enum ErrorPayroll {
   PayStartDateInThePast = 'Pay start date cannot be in the past',
   PayrollNotFound = 'Payroll not found',
   PayEndDateBeforePayStartDate = 'Pay end date must be after pay start date',
+}
+
+export enum ErrorInvoice {
+  InvoiceNotFound = 'Invoice not found',
 }
 
 export enum ErrorPaymentLink {

@@ -191,6 +191,7 @@ CREATE TABLE "payrolls" (
     "joining_date" TIMESTAMP(6) NOT NULL,
     "pay_start_date" TIMESTAMP(6) NOT NULL,
     "pay_end_date" TIMESTAMP(6) NOT NULL,
+    "description" TEXT NOT NULL,
     "status" "PayrollStatusEnum" NOT NULL DEFAULT 'ACTIVE',
     "note" TEXT,
     "metadata" JSON,

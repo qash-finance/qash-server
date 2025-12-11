@@ -6,14 +6,14 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { InvoiceRepository, InvoiceWithRelations } from './invoice.repository';
-import { PayrollRepository } from '../payroll/payroll.repository';
+import { InvoiceRepository, InvoiceWithRelations } from '../invoice.repository';
+import { PayrollRepository } from '../../payroll/payroll.repository';
 import {
   CreateInvoiceDto,
   UpdateInvoiceDto,
   InvoiceQueryDto,
   InvoiceStatsDto,
-} from './invoice.dto';
+} from '../invoice.dto';
 import {
   InvoiceCreateInput,
   InvoiceModel,
@@ -22,8 +22,9 @@ import {
 import { InvoiceStatusEnum } from 'src/database/generated/client';
 import { handleError } from 'src/common/utils/errors';
 import { PrismaService } from 'src/database/prisma.service';
-import { MailService } from '../mail/mail.service';
+import { MailService } from '../../mail/mail.service';
 import { JsonValue } from '@prisma/client/runtime/client';
+import { ErrorPayroll } from 'src/common/constants/errors';
 
 @Injectable()
 export class InvoiceService {
@@ -36,20 +37,27 @@ export class InvoiceService {
     private readonly mailService: MailService,
   ) {}
 
+  //#region POST METHODS
+  // *************************************************
+  // **************** POST METHODS *******************
+  // *************************************************
   /**
    * Create new invoice (usually called by scheduled job)
    */
-  async createInvoice(dto: CreateInvoiceDto): Promise<InvoiceModel> {
+  async createInvoice(
+    dto: CreateInvoiceDto,
+    companyId: number,
+  ): Promise<InvoiceModel> {
     return this.prisma.executeInTransaction(async (tx) => {
-      // Verify payroll exists - we'll get companyId from the payroll
+      // Verify payroll exists
       const payroll = await this.payrollRepository.findById(
         dto.payrollId,
-        1, // We'll validate company ownership later
+        companyId,
         tx,
       );
 
       if (!payroll) {
-        throw new NotFoundException('Payroll not found');
+        throw new NotFoundException(ErrorPayroll.PayrollNotFound);
       }
 
       // Generate unique invoice number
@@ -87,6 +95,7 @@ export class InvoiceService {
       return invoice;
     }, 'createInvoice');
   }
+  //#endregion POST METHODS
 
   /**
    * Generate invoice from payroll (automated process)

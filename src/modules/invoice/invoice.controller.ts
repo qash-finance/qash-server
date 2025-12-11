@@ -20,8 +20,8 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { Response } from 'express';
-import { InvoiceService } from './invoice.service';
-import { PdfService } from './pdf.service';
+import { InvoiceService } from './services/invoice.service';
+import { PdfService } from './services/pdf.service';
 import {
   CreateInvoiceDto,
   UpdateInvoiceDto,
@@ -46,37 +46,10 @@ export class InvoiceController {
     private readonly pdfService: PdfService,
   ) {}
 
-  @Post()
-  @CompanyAuth()
-  @ApiOperation({ summary: 'Create a new invoice manually' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Invoice created successfully',
-  })
-  async createInvoice(
-    @Body() createInvoiceDto: CreateInvoiceDto,
-  ): Promise<InvoiceModel> {
-    return this.invoiceService.createInvoice(createInvoiceDto);
-  }
-
-  @Post('generate/:payrollId')
-  @CompanyAuth()
-  @ApiOperation({ summary: 'Generate invoice from payroll' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Invoice generated successfully',
-  })
-  @ApiParam({ name: 'payrollId', type: 'number', description: 'Payroll ID' })
-  async generateInvoice(
-    @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('payrollId', ParseIntPipe) payrollId: number,
-  ): Promise<InvoiceModel> {
-    return this.invoiceService.generateInvoiceFromPayroll(
-      payrollId,
-      user.company.id,
-    );
-  }
-
+  //#region GET METHODS
+  // *************************************************
+  // **************** GET METHODS ********************
+  // *************************************************
   @Get()
   @CompanyAuth()
   @ApiOperation({ summary: 'Get all invoices for company with pagination' })
@@ -158,6 +131,79 @@ export class InvoiceController {
     return this.invoiceService.getInvoiceDetails(id);
   }
 
+  @Get(':id/pdf')
+  @ApiOperation({ summary: 'Download invoice as PDF' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'PDF generated successfully',
+  })
+  @ApiParam({ name: 'id', type: 'number', description: 'Invoice ID' })
+  async downloadInvoicePdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const invoice = await this.invoiceService.getInvoiceDetails(id);
+      const pdfBuffer = await this.pdfService.generateInvoicePdf(invoice);
+      const filename = this.pdfService.getInvoiceFilename(invoice);
+
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': pdfBuffer.length,
+      });
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Failed to generate PDF',
+        error: error.message,
+      });
+    }
+  }
+  //#region GET METHODS
+
+  //#region POST METHODS
+  // *************************************************
+  // **************** POST METHODS *******************
+  // *************************************************
+  @Post()
+  @CompanyAuth()
+  @ApiOperation({ summary: 'Create a new invoice manually' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Invoice created successfully',
+  })
+  async createInvoice(
+    @Body() createInvoiceDto: CreateInvoiceDto,
+    @CurrentUser('withCompany') user: UserWithCompany,
+  ): Promise<InvoiceModel> {
+    return this.invoiceService.createInvoice(createInvoiceDto, user.company.id);
+  }
+
+  @Post('generate/:payrollId')
+  @CompanyAuth()
+  @ApiOperation({ summary: 'Generate invoice from payroll' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Invoice generated successfully',
+  })
+  @ApiParam({ name: 'payrollId', type: 'number', description: 'Payroll ID' })
+  async generateInvoice(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Param('payrollId', ParseIntPipe) payrollId: number,
+  ): Promise<InvoiceModel> {
+    return this.invoiceService.generateInvoiceFromPayroll(
+      payrollId,
+      user.company.id,
+    );
+  }
+  //#endregion POST METHODS
+
+  //#region PUT METHODS
+  // *************************************************
+  // **************** PUT METHODS ********************
+  // *************************************************
   @Put(':id')
   @ApiOperation({
     summary: 'Update invoice (employee can update their details)',
@@ -174,7 +220,12 @@ export class InvoiceController {
   ): Promise<InvoiceModel> {
     return this.invoiceService.updateInvoice(id, updateInvoiceDto, user.email);
   }
+  //#region PUT METHODS
 
+  //#region PATCH METHODS
+  // *************************************************
+  // **************** PATCH METHODS ******************
+  // *************************************************
   @Patch(':id/send')
   @CompanyAuth()
   @ApiOperation({ summary: 'Send invoice to employee' })
@@ -233,34 +284,5 @@ export class InvoiceController {
     return this.invoiceService.cancelInvoice(id, user.company.id);
   }
 
-  @Get(':id/pdf')
-  @ApiOperation({ summary: 'Download invoice as PDF' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'PDF generated successfully',
-  })
-  @ApiParam({ name: 'id', type: 'number', description: 'Invoice ID' })
-  async downloadInvoicePdf(
-    @Param('id', ParseIntPipe) id: number,
-    @Res() res: Response,
-  ): Promise<void> {
-    try {
-      const invoice = await this.invoiceService.getInvoiceDetails(id);
-      const pdfBuffer = await this.pdfService.generateInvoicePdf(invoice);
-      const filename = this.pdfService.getInvoiceFilename(invoice);
-
-      res.set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Length': pdfBuffer.length,
-      });
-
-      res.send(pdfBuffer);
-    } catch (error) {
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: 'Failed to generate PDF',
-        error: error.message,
-      });
-    }
-  }
+  //#region PATCH METHODS
 }

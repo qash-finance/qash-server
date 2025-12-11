@@ -166,6 +166,14 @@ export class CreatePayrollDto {
   payEndDate: string;
 
   @ApiPropertyOptional({
+    description: 'Item description of the payroll',
+    example: 'Consultant service',
+  })
+  @IsOptional()
+  @IsString()
+  description: string;
+
+  @ApiPropertyOptional({
     description: 'Additional notes about the payroll',
     example: 'Monthly salary for software engineer position',
   })

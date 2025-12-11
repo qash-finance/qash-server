@@ -226,6 +226,7 @@ model Payroll {
   joiningDate  DateTime          @map("joining_date") @db.Timestamp(6)
   payStartDate DateTime          @map("pay_start_date") @db.Timestamp(6)
   payEndDate   DateTime          @map("pay_end_date") @db.Timestamp(6)
+  description  String            @map("description") @db.Text
   status       PayrollStatusEnum @default(ACTIVE)
 
   note     String? @db.Text
