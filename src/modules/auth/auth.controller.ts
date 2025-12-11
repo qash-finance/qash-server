@@ -19,12 +19,15 @@ import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { Auth } from './decorators/auth.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { JwtPayload } from '../../common/interfaces/jwt-payload';
 import {
   SendOtpDto,
   VerifyOtpDto,
   RefreshTokenDto,
   AuthResponseDto,
   MessageResponseDto,
+  UserMeResponseDto,
 } from './dto/auth.dto';
 
 @ApiTags('Authentication')
@@ -170,4 +173,40 @@ export class AuthController {
   }
 
   //#endregion POST METHODS
+
+  //#region GET METHODS
+  // *************************************************
+  // **************** GET METHODS *******************
+  // *************************************************
+
+  @Auth()
+  @Get('me')
+  @ApiOperation({
+    summary: 'Get current user details',
+    description:
+      'Returns the authenticated user details including team member and company information',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User details retrieved successfully',
+    type: UserMeResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing token',
+  })
+  async getCurrentUser(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<UserMeResponseDto> {
+    try {
+      const userDetails = await this.authService.getCurrentUserWithCompany(
+        user.sub || user.userId,
+      );
+      return userDetails;
+    } catch (error) {
+      this.logger.error('Get current user failed:', error);
+      throw error;
+    }
+  }
+
+  //#endregion GET METHODS
 }

@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { InvoiceModel } from '../../database/generated/models/Invoice';
-import { InvoiceStatusEnum, Prisma } from '../../database/generated/client';
+import {
+  InvoiceDelegate,
+  InvoiceModel,
+} from '../../database/generated/models/Invoice';
+import {
+  InvoiceStatusEnum,
+  InvoiceTypeEnum,
+  Prisma,
+} from '../../database/generated/client';
 import {
   BaseRepository,
   PrismaTransactionClient,
@@ -308,42 +315,17 @@ export class InvoiceRepository extends BaseRepository<
    * If payrollId is provided, sequence is per payroll (employee-centric).
    * Otherwise, fallback to monthly per-company sequence.
    */
-  async generateInvoiceNumber(
-    companyId: number,
-    payrollId?: number,
+  async generatePayrollInvoiceNumber(
+    payrollId: number,
+    employeeId: number,
     tx?: PrismaTransactionClient,
   ): Promise<string> {
     const client = tx || this.prisma;
 
-    // If payrollId supplied, count all invoices for that payroll (no month reset)
-    if (payrollId) {
-      const count = await client.invoice.count({
-        where: { payrollId },
-      });
-      const sequence = String(count + 1).padStart(3, '0');
-      return `INV-P${payrollId}-${sequence}`;
-    }
-
-    // Fallback: per-company, per-month sequence (existing behavior)
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const startOfMonth = new Date(year, now.getMonth(), 1);
-    const endOfMonth = new Date(year, now.getMonth() + 1, 0);
-
-    const count = await client.invoice.count({
-      where: {
-        payroll: {
-          companyId,
-        },
-        createdAt: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
-      },
+    const count = await (client.invoice as InvoiceDelegate).count({
+      where: { payrollId, employeeId },
     });
-
     const sequence = String(count + 1).padStart(4, '0');
-    return `INV-${year}${month}-${companyId}-${sequence}`;
+    return `INV-${sequence}`;
   }
 }

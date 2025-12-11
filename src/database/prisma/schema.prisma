@@ -249,33 +249,34 @@ model Invoice {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  // Invoice Type - determines which relations are used
   invoiceType InvoiceTypeEnum @default(EMPLOYEE) @map("invoice_type")
 
-  // Invoice Details
   invoiceNumber String   @unique @map("invoice_number") @db.VarChar(50)
   issueDate     DateTime @map("issue_date") @db.Timestamp(6)
   dueDate       DateTime @map("due_date") @db.Timestamp(6)
 
-  // for EMPLOYEE invoices
+
+// Invoice from: Employee or Company
   payrollId  Int?      @map("payroll_id")
   payroll    Payroll?  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
   employeeId Int?      @map("employee_id")
   employee   Employee? @relation("InvoiceEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
 
-  // for B2B invoices
   fromCompanyId         Int?     @map("from_company_id")
   fromCompany           Company? @relation("InvoiceFromCompany", fields: [fromCompanyId], references: [id], onDelete: Cascade)
+
+
   toCompanyId           Int?     @map("to_company_id")
   toCompany             Company? @relation("InvoiceToCompany", fields: [toCompanyId], references: [id], onDelete: Cascade)
   isToCompanyRegistered Boolean  @default(false) @map("is_to_company_registered")
+  toCompanyMetadata Json @db.Json // This is use when toCompany is not registered
 
-  // Invoice Data (flexible JSON structure - supports both employee and company details)
-  // fromDetails: For EMPLOYEE invoices = employee details, For B2B = fromCompany details
-  fromDetails   Json @db.Json // Flexible: Employee or Company details (name, email, address, wallet, etc.)
-  // billToDetails: For EMPLOYEE invoices = company details, For B2B = toCompany details
-  billToDetails Json @db.Json // Flexible: Company or Company details
-  items         Json @db.Json // Array of invoice items
+  notificationEmails String[] @map("notification_emails") @db.VarChar(255)
+ 
+
+
+  fromDetails   Json @db.Json 
+  items         Json @db.Json
 
   // Financial Details
   subtotal  String @db.VarChar(50)

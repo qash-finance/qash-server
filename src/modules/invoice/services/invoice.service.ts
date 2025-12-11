@@ -44,7 +44,7 @@ export class InvoiceService {
   /**
    * Create new invoice (usually called by scheduled job)
    */
-  async createInvoice(
+  async createPayrollInvoice(
     dto: CreateInvoiceDto,
     companyId: number,
   ): Promise<InvoiceModel> {
@@ -61,10 +61,12 @@ export class InvoiceService {
       }
 
       // Generate unique invoice number
-      const invoiceNumber = await this.invoiceRepository.generateInvoiceNumber(
-        payroll.companyId,
-        tx,
-      );
+      const invoiceNumber =
+        await this.invoiceRepository.generatePayrollInvoiceNumber(
+          payroll.id,
+          payroll.employeeId,
+          tx,
+        );
 
       const invoiceData: InvoiceCreateInput = {
         invoiceNumber,
@@ -136,10 +138,11 @@ export class InvoiceService {
       }
 
       // Generate invoice number
-      const invoiceNumber = await this.invoiceRepository.generateInvoiceNumber(
-        companyId,
-        tx,
-      );
+      const invoiceNumber =
+        await this.invoiceRepository.generatePayrollInvoiceNumber(
+          companyId,
+          tx,
+        );
 
       // Calculate due date (typically 30 days from issue)
       const issueDate = new Date();

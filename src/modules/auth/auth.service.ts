@@ -133,6 +133,20 @@ export class AuthService {
   }
 
   /**
+   * Get current user with company details
+   */
+  async getCurrentUserWithCompany(userId: number) {
+    this.logger.log(`Getting user details with company for: ${userId}`);
+    const user = await this.userRepository.findByIdWithCompany(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  /**
    * Clean up expired data (for cron jobs)
    */
   async cleanupExpiredData(): Promise<void> {

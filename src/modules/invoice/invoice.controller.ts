@@ -169,16 +169,19 @@ export class InvoiceController {
   // *************************************************
   @Post()
   @CompanyAuth()
-  @ApiOperation({ summary: 'Create a new invoice manually' })
+  @ApiOperation({ summary: 'Create a new payroll invoice manually' })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Invoice created successfully',
   })
-  async createInvoice(
+  async createPayrollInvoice(
     @Body() createInvoiceDto: CreateInvoiceDto,
     @CurrentUser('withCompany') user: UserWithCompany,
   ): Promise<InvoiceModel> {
-    return this.invoiceService.createInvoice(createInvoiceDto, user.company.id);
+    return this.invoiceService.createPayrollInvoice(
+      createInvoiceDto,
+      user.company.id,
+    );
   }
 
   @Post('generate/:payrollId')

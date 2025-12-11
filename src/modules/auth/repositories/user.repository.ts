@@ -172,4 +172,20 @@ export class UserRepository extends BaseRepository<
       data: { lastLogin: new Date() },
     });
   }
+
+  /**
+   * Get user with team member and company details
+   */
+  async findByIdWithCompany(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        teamMembership: {
+          include: {
+            company: true,
+          },
+        },
+      },
+    });
+  }
 }
