@@ -52,8 +52,7 @@ export type EmployeeMinAggregateOutputType = {
   gender: $Enums.GenderEnum | null
   nationality: string | null
   taxId: string | null
-  address1: string | null
-  address2: string | null
+  address: string | null
   city: string | null
   country: string | null
   postalCode: string | null
@@ -73,8 +72,7 @@ export type EmployeeMaxAggregateOutputType = {
   gender: $Enums.GenderEnum | null
   nationality: string | null
   taxId: string | null
-  address1: string | null
-  address2: string | null
+  address: string | null
   city: string | null
   country: string | null
   postalCode: string | null
@@ -96,8 +94,7 @@ export type EmployeeCountAggregateOutputType = {
   gender: number
   nationality: number
   taxId: number
-  address1: number
-  address2: number
+  address: number
   city: number
   country: number
   postalCode: number
@@ -134,8 +131,7 @@ export type EmployeeMinAggregateInputType = {
   gender?: true
   nationality?: true
   taxId?: true
-  address1?: true
-  address2?: true
+  address?: true
   city?: true
   country?: true
   postalCode?: true
@@ -155,8 +151,7 @@ export type EmployeeMaxAggregateInputType = {
   gender?: true
   nationality?: true
   taxId?: true
-  address1?: true
-  address2?: true
+  address?: true
   city?: true
   country?: true
   postalCode?: true
@@ -178,8 +173,7 @@ export type EmployeeCountAggregateInputType = {
   gender?: true
   nationality?: true
   taxId?: true
-  address1?: true
-  address2?: true
+  address?: true
   city?: true
   country?: true
   postalCode?: true
@@ -289,8 +283,7 @@ export type EmployeeGroupByOutputType = {
   gender: $Enums.GenderEnum | null
   nationality: string | null
   taxId: string | null
-  address1: string | null
-  address2: string | null
+  address: string | null
   city: string | null
   country: string | null
   postalCode: string | null
@@ -336,8 +329,7 @@ export type EmployeeWhereInput = {
   gender?: Prisma.EnumGenderEnumNullableFilter<"Employee"> | $Enums.GenderEnum | null
   nationality?: Prisma.StringNullableFilter<"Employee"> | string | null
   taxId?: Prisma.StringNullableFilter<"Employee"> | string | null
-  address1?: Prisma.StringNullableFilter<"Employee"> | string | null
-  address2?: Prisma.StringNullableFilter<"Employee"> | string | null
+  address?: Prisma.StringNullableFilter<"Employee"> | string | null
   city?: Prisma.StringNullableFilter<"Employee"> | string | null
   country?: Prisma.StringNullableFilter<"Employee"> | string | null
   postalCode?: Prisma.StringNullableFilter<"Employee"> | string | null
@@ -364,8 +356,7 @@ export type EmployeeOrderByWithRelationInput = {
   gender?: Prisma.SortOrderInput | Prisma.SortOrder
   nationality?: Prisma.SortOrderInput | Prisma.SortOrder
   taxId?: Prisma.SortOrderInput | Prisma.SortOrder
-  address1?: Prisma.SortOrderInput | Prisma.SortOrder
-  address2?: Prisma.SortOrderInput | Prisma.SortOrder
+  address?: Prisma.SortOrderInput | Prisma.SortOrder
   city?: Prisma.SortOrderInput | Prisma.SortOrder
   country?: Prisma.SortOrderInput | Prisma.SortOrder
   postalCode?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -395,8 +386,7 @@ export type EmployeeWhereUniqueInput = Prisma.AtLeast<{
   gender?: Prisma.EnumGenderEnumNullableFilter<"Employee"> | $Enums.GenderEnum | null
   nationality?: Prisma.StringNullableFilter<"Employee"> | string | null
   taxId?: Prisma.StringNullableFilter<"Employee"> | string | null
-  address1?: Prisma.StringNullableFilter<"Employee"> | string | null
-  address2?: Prisma.StringNullableFilter<"Employee"> | string | null
+  address?: Prisma.StringNullableFilter<"Employee"> | string | null
   city?: Prisma.StringNullableFilter<"Employee"> | string | null
   country?: Prisma.StringNullableFilter<"Employee"> | string | null
   postalCode?: Prisma.StringNullableFilter<"Employee"> | string | null
@@ -423,8 +413,7 @@ export type EmployeeOrderByWithAggregationInput = {
   gender?: Prisma.SortOrderInput | Prisma.SortOrder
   nationality?: Prisma.SortOrderInput | Prisma.SortOrder
   taxId?: Prisma.SortOrderInput | Prisma.SortOrder
-  address1?: Prisma.SortOrderInput | Prisma.SortOrder
-  address2?: Prisma.SortOrderInput | Prisma.SortOrder
+  address?: Prisma.SortOrderInput | Prisma.SortOrder
   city?: Prisma.SortOrderInput | Prisma.SortOrder
   country?: Prisma.SortOrderInput | Prisma.SortOrder
   postalCode?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -455,8 +444,7 @@ export type EmployeeScalarWhereWithAggregatesInput = {
   gender?: Prisma.EnumGenderEnumNullableWithAggregatesFilter<"Employee"> | $Enums.GenderEnum | null
   nationality?: Prisma.StringNullableWithAggregatesFilter<"Employee"> | string | null
   taxId?: Prisma.StringNullableWithAggregatesFilter<"Employee"> | string | null
-  address1?: Prisma.StringNullableWithAggregatesFilter<"Employee"> | string | null
-  address2?: Prisma.StringNullableWithAggregatesFilter<"Employee"> | string | null
+  address?: Prisma.StringNullableWithAggregatesFilter<"Employee"> | string | null
   city?: Prisma.StringNullableWithAggregatesFilter<"Employee"> | string | null
   country?: Prisma.StringNullableWithAggregatesFilter<"Employee"> | string | null
   postalCode?: Prisma.StringNullableWithAggregatesFilter<"Employee"> | string | null
@@ -477,8 +465,7 @@ export type EmployeeCreateInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -504,8 +491,7 @@ export type EmployeeUncheckedCreateInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -528,8 +514,7 @@ export type EmployeeUpdateInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -555,8 +540,7 @@ export type EmployeeUncheckedUpdateInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -581,8 +565,7 @@ export type EmployeeCreateManyInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -603,8 +586,7 @@ export type EmployeeUpdateManyMutationInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -626,8 +608,7 @@ export type EmployeeUncheckedUpdateManyInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -660,8 +641,7 @@ export type EmployeeCountOrderByAggregateInput = {
   gender?: Prisma.SortOrder
   nationality?: Prisma.SortOrder
   taxId?: Prisma.SortOrder
-  address1?: Prisma.SortOrder
-  address2?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   city?: Prisma.SortOrder
   country?: Prisma.SortOrder
   postalCode?: Prisma.SortOrder
@@ -689,8 +669,7 @@ export type EmployeeMaxOrderByAggregateInput = {
   gender?: Prisma.SortOrder
   nationality?: Prisma.SortOrder
   taxId?: Prisma.SortOrder
-  address1?: Prisma.SortOrder
-  address2?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   city?: Prisma.SortOrder
   country?: Prisma.SortOrder
   postalCode?: Prisma.SortOrder
@@ -710,8 +689,7 @@ export type EmployeeMinOrderByAggregateInput = {
   gender?: Prisma.SortOrder
   nationality?: Prisma.SortOrder
   taxId?: Prisma.SortOrder
-  address1?: Prisma.SortOrder
-  address2?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   city?: Prisma.SortOrder
   country?: Prisma.SortOrder
   postalCode?: Prisma.SortOrder
@@ -866,8 +844,7 @@ export type EmployeeCreateWithoutCompanyInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -891,8 +868,7 @@ export type EmployeeUncheckedCreateWithoutCompanyInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -946,8 +922,7 @@ export type EmployeeScalarWhereInput = {
   gender?: Prisma.EnumGenderEnumNullableFilter<"Employee"> | $Enums.GenderEnum | null
   nationality?: Prisma.StringNullableFilter<"Employee"> | string | null
   taxId?: Prisma.StringNullableFilter<"Employee"> | string | null
-  address1?: Prisma.StringNullableFilter<"Employee"> | string | null
-  address2?: Prisma.StringNullableFilter<"Employee"> | string | null
+  address?: Prisma.StringNullableFilter<"Employee"> | string | null
   city?: Prisma.StringNullableFilter<"Employee"> | string | null
   country?: Prisma.StringNullableFilter<"Employee"> | string | null
   postalCode?: Prisma.StringNullableFilter<"Employee"> | string | null
@@ -968,8 +943,7 @@ export type EmployeeCreateWithoutGroupInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -994,8 +968,7 @@ export type EmployeeUncheckedCreateWithoutGroupInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -1043,8 +1016,7 @@ export type EmployeeCreateWithoutPayrollsInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -1069,8 +1041,7 @@ export type EmployeeUncheckedCreateWithoutPayrollsInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -1108,8 +1079,7 @@ export type EmployeeUpdateWithoutPayrollsInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1134,8 +1104,7 @@ export type EmployeeUncheckedUpdateWithoutPayrollsInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1157,8 +1126,7 @@ export type EmployeeCreateWithoutInvoicesInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -1183,8 +1151,7 @@ export type EmployeeUncheckedCreateWithoutInvoicesInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -1222,8 +1189,7 @@ export type EmployeeUpdateWithoutInvoicesInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1248,8 +1214,7 @@ export type EmployeeUncheckedUpdateWithoutInvoicesInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1272,8 +1237,7 @@ export type EmployeeCreateManyCompanyInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -1294,8 +1258,7 @@ export type EmployeeUpdateWithoutCompanyInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1319,8 +1282,7 @@ export type EmployeeUncheckedUpdateWithoutCompanyInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1344,8 +1306,7 @@ export type EmployeeUncheckedUpdateManyWithoutCompanyInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1368,8 +1329,7 @@ export type EmployeeCreateManyGroupInput = {
   gender?: $Enums.GenderEnum | null
   nationality?: string | null
   taxId?: string | null
-  address1?: string | null
-  address2?: string | null
+  address?: string | null
   city?: string | null
   country?: string | null
   postalCode?: string | null
@@ -1389,8 +1349,7 @@ export type EmployeeUpdateWithoutGroupInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1415,8 +1374,7 @@ export type EmployeeUncheckedUpdateWithoutGroupInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1440,8 +1398,7 @@ export type EmployeeUncheckedUpdateManyWithoutGroupInput = {
   gender?: Prisma.NullableEnumGenderEnumFieldUpdateOperationsInput | $Enums.GenderEnum | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   postalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1503,8 +1460,7 @@ export type EmployeeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   gender?: boolean
   nationality?: boolean
   taxId?: boolean
-  address1?: boolean
-  address2?: boolean
+  address?: boolean
   city?: boolean
   country?: boolean
   postalCode?: boolean
@@ -1532,8 +1488,7 @@ export type EmployeeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   gender?: boolean
   nationality?: boolean
   taxId?: boolean
-  address1?: boolean
-  address2?: boolean
+  address?: boolean
   city?: boolean
   country?: boolean
   postalCode?: boolean
@@ -1558,8 +1513,7 @@ export type EmployeeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   gender?: boolean
   nationality?: boolean
   taxId?: boolean
-  address1?: boolean
-  address2?: boolean
+  address?: boolean
   city?: boolean
   country?: boolean
   postalCode?: boolean
@@ -1584,8 +1538,7 @@ export type EmployeeSelectScalar = {
   gender?: boolean
   nationality?: boolean
   taxId?: boolean
-  address1?: boolean
-  address2?: boolean
+  address?: boolean
   city?: boolean
   country?: boolean
   postalCode?: boolean
@@ -1594,7 +1547,7 @@ export type EmployeeSelectScalar = {
   metadata?: boolean
 }
 
-export type EmployeeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "createdAt" | "updatedAt" | "companyId" | "name" | "walletAddress" | "email" | "token" | "network" | "gender" | "nationality" | "taxId" | "address1" | "address2" | "city" | "country" | "postalCode" | "order" | "groupId" | "metadata", ExtArgs["result"]["employee"]>
+export type EmployeeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "createdAt" | "updatedAt" | "companyId" | "name" | "walletAddress" | "email" | "token" | "network" | "gender" | "nationality" | "taxId" | "address" | "city" | "country" | "postalCode" | "order" | "groupId" | "metadata", ExtArgs["result"]["employee"]>
 export type EmployeeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>
   group?: boolean | Prisma.EmployeeGroupDefaultArgs<ExtArgs>
@@ -1633,8 +1586,7 @@ export type $EmployeePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     gender: $Enums.GenderEnum | null
     nationality: string | null
     taxId: string | null
-    address1: string | null
-    address2: string | null
+    address: string | null
     city: string | null
     country: string | null
     postalCode: string | null
@@ -2081,8 +2033,7 @@ export interface EmployeeFieldRefs {
   readonly gender: Prisma.FieldRef<"Employee", 'GenderEnum'>
   readonly nationality: Prisma.FieldRef<"Employee", 'String'>
   readonly taxId: Prisma.FieldRef<"Employee", 'String'>
-  readonly address1: Prisma.FieldRef<"Employee", 'String'>
-  readonly address2: Prisma.FieldRef<"Employee", 'String'>
+  readonly address: Prisma.FieldRef<"Employee", 'String'>
   readonly city: Prisma.FieldRef<"Employee", 'String'>
   readonly country: Prisma.FieldRef<"Employee", 'String'>
   readonly postalCode: Prisma.FieldRef<"Employee", 'String'>

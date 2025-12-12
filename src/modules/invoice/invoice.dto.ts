@@ -17,6 +17,7 @@ import {
 import { Type, Transform } from 'class-transformer';
 import { InvoiceStatusEnum } from 'src/database/generated/client';
 import { Currency } from 'src/common/constants/currency';
+import { NetworkDto, TokenDto } from '../employee/employee.dto';
 
 export class InvoiceItemDto {
   @ApiProperty({
@@ -471,6 +472,30 @@ export class CreateInvoiceDto {
   })
   total: string;
 
+  @ApiProperty({
+    description: 'Payment network details',
+    type: NetworkDto,
+  })
+  @ValidateNested()
+  @Type(() => NetworkDto)
+  network: NetworkDto;
+
+  @ApiProperty({
+    description: 'Payment token details',
+    type: TokenDto,
+  })
+  @ValidateNested()
+  @Type(() => TokenDto)
+  token: TokenDto;
+
+  @ApiProperty({
+    description: 'Payment wallet address',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
+  })
+  @IsString()
+  @IsNotEmpty()
+  walletAddress: string;
+
   @ApiPropertyOptional({
     description: 'Additional metadata',
   })
@@ -480,74 +505,37 @@ export class CreateInvoiceDto {
 }
 
 export class UpdateInvoiceDto {
-  @ApiPropertyOptional({
-    description: 'Employee details (from)',
-    type: FromDetailsDto,
+  @ApiProperty({
+    description: 'Payment token details',
+    type: TokenDto,
   })
-  @IsOptional()
   @ValidateNested()
-  @Type(() => FromDetailsDto)
-  fromDetails?: FromDetailsDto;
+  @Type(() => TokenDto)
+  token: TokenDto;
 
-  @ApiPropertyOptional({
-    description: 'Invoice items',
-    type: [InvoiceItemDto],
+  @ApiProperty({
+    description: 'Payment network details',
+    type: NetworkDto,
   })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => InvoiceItemDto)
-  items?: InvoiceItemDto[];
+  @ValidateNested()
+  @Type(() => NetworkDto)
+  network: NetworkDto;
 
-  @ApiPropertyOptional({
-    description: 'Subtotal amount (as string for precision)',
+  @ApiProperty({
+    description: 'Employee wallet address',
+    example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
   })
-  @IsOptional()
   @IsString()
-  @Matches(/^\d+(\.\d{1,8})?$/, {
-    message:
-      'Subtotal must be a valid positive number with up to 8 decimal places',
-  })
-  subtotal?: string;
+  @IsNotEmpty()
+  walletAddress: string;
 
-  @ApiPropertyOptional({
-    description: 'Tax rate as percentage (as string for precision)',
+  @ApiProperty({
+    description: 'Employee address',
+    example: '123 Main Street',
   })
-  @IsOptional()
   @IsString()
-  @Matches(/^\d+(\.\d{1,2})?$/, {
-    message: 'Tax rate must be a valid percentage with up to 2 decimal places',
-  })
-  taxRate?: string;
-
-  @ApiPropertyOptional({
-    description: 'Tax amount (as string for precision)',
-  })
-  @IsOptional()
-  @IsString()
-  @Matches(/^\d+(\.\d{1,8})?$/, {
-    message:
-      'Tax amount must be a valid positive number with up to 8 decimal places',
-  })
-  taxAmount?: string;
-
-  @ApiPropertyOptional({
-    description: 'Total amount (as string for precision)',
-  })
-  @IsOptional()
-  @IsString()
-  @Matches(/^\d+(\.\d{1,8})?$/, {
-    message:
-      'Total must be a valid positive number with up to 8 decimal places',
-  })
-  total?: string;
-
-  @ApiPropertyOptional({
-    description: 'Additional metadata',
-  })
-  @IsOptional()
-  @IsObject()
-  metadata?: Record<string, any>;
+  @IsNotEmpty()
+  address: string;
 }
 
 export class InvoiceQueryDto {

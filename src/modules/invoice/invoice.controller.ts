@@ -162,7 +162,7 @@ export class InvoiceController {
 
   @Post('generate/:payrollId')
   @CompanyAuth()
-  @ApiOperation({ summary: 'Generate invoice from payroll' })
+  @ApiOperation({ summary: 'Generate invoice from payroll (manual)' })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Invoice generated successfully',
@@ -200,8 +200,8 @@ export class InvoiceController {
     @CurrentUser() user: JwtPayload,
     @Param('invoiceUUID') invoiceUUID: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
-  ): Promise<InvoiceModel> {
-    return this.invoiceService.updateInvoice(
+  ): Promise<void> {
+    this.invoiceService.updateInvoice(
       invoiceUUID,
       updateInvoiceDto,
       user.email,

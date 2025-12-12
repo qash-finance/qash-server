@@ -13,9 +13,17 @@ import { PayrollModule } from '../payroll/payroll.module';
 import { MailModule } from '../mail/mail.module';
 import { AuthModule } from '../auth/auth.module';
 import { CompanyModule } from '../company/company.module';
+import { EmployeeModule } from '../employee/employee.module';
 
 @Module({
-  imports: [PrismaModule, PayrollModule, MailModule, AuthModule, CompanyModule],
+  imports: [
+    PrismaModule,
+    PayrollModule,
+    MailModule,
+    AuthModule,
+    CompanyModule,
+    EmployeeModule,
+  ],
   controllers: [InvoiceController],
   providers: [
     InvoiceService,

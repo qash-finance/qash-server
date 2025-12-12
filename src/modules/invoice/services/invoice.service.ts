@@ -35,17 +35,19 @@ import { ErrorInvoice, ErrorPayroll } from 'src/common/constants/errors';
 import { Currency } from 'src/common/constants/currency';
 import { handleError } from 'src/common/utils/errors';
 import { PrismaTransactionClient } from 'src/database/base.repository';
+import { EmployeeRepository } from 'src/modules/employee/repositories/employee.repository';
 
 @Injectable()
 export class InvoiceService {
   private readonly logger = new Logger(InvoiceService.name);
 
   constructor(
-    private readonly invoiceRepository: InvoiceRepository,
-    private readonly invoiceItemService: InvoiceItemService,
-    private readonly payrollRepository: PayrollRepository,
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
+    private readonly employeeRepository: EmployeeRepository,
+    private readonly invoiceItemService: InvoiceItemService,
+    private readonly invoiceRepository: InvoiceRepository,
+    private readonly payrollRepository: PayrollRepository,
   ) {}
 
   //#region GET METHODS
@@ -123,6 +125,7 @@ export class InvoiceService {
    */
   async getInvoiceByUUID(invoiceUUID: string): Promise<InvoiceWithRelations> {
     try {
+      console.log(invoiceUUID);
       const invoice = await this.invoiceRepository.findByUUID(invoiceUUID);
 
       if (!invoice) {
@@ -227,8 +230,23 @@ export class InvoiceService {
           emailTo: dto.billToDetails?.email || payroll.employee.email,
           emailCc: [],
           emailBcc: [],
-          fromDetails: dto.fromDetails as unknown as JsonValue,
-          toDetails: dto.billToDetails as unknown as JsonValue,
+          fromDetails: {
+            name: payroll.employee.name,
+            email: payroll.employee.email,
+            address: payroll.employee.address,
+            city: payroll.employee.city,
+            country: payroll.employee.country,
+            postalCode: payroll.employee.postalCode,
+          },
+          toDetails: {
+            companyName: payroll.company.companyName,
+            address1: payroll.company.address1,
+            address2: payroll.company.address2,
+            city: payroll.company.city,
+            country: payroll.company.country,
+            postalCode: payroll.company.postalCode,
+            email: payroll.company.notificationEmail,
+          },
           subtotal: dto.subtotal,
           taxRate: dto.taxRate,
           taxAmount: dto.taxAmount,
@@ -237,6 +255,9 @@ export class InvoiceService {
           currency: dto.currency,
           metadata: dto.metadata,
           status: InvoiceStatusEnum.SENT,
+          paymentNetwork: dto.network as unknown as JsonValue,
+          paymentToken: dto.token as unknown as JsonValue,
+          paymentWalletAddress: dto.walletAddress,
         };
 
         const invoice = await this.invoiceRepository.create(invoiceData, tx);
@@ -284,7 +305,7 @@ export class InvoiceService {
     invoiceUUID: string,
     dto: UpdateInvoiceDto,
     employeeEmail?: string,
-  ): Promise<InvoiceModel> {
+  ): Promise<void> {
     try {
       return this.prisma.$transaction(async (tx) => {
         const invoice = await this.invoiceRepository.findByUUID(
@@ -311,19 +332,32 @@ export class InvoiceService {
         }
 
         // transform dto to InvoiceUpdateInput
-        const { items, ...dtoWithoutItems } = dto;
+        const { address, network, token, walletAddress } = dto;
         const updateData: InvoiceUpdateInput = {
-          ...dtoWithoutItems,
-          fromDetails: dto.fromDetails as unknown as JsonValue,
+          fromDetails: {
+            ...(invoice.fromDetails as object),
+            address,
+          },
+          paymentWalletAddress: walletAddress,
+          paymentNetwork: network as unknown as JsonValue,
+          paymentToken: token as unknown as JsonValue,
         };
 
-        const updatedInvoice = await this.invoiceRepository.update(
+        if (address) {
+          // Means the employee is updating their address
+          // We update employee table with the new address
+          await this.employeeRepository.update(
+            { id: invoice.employeeId },
+            { address },
+            tx,
+          );
+        }
+
+        await this.invoiceRepository.update(
           { uuid: invoiceUUID },
           updateData,
           tx,
         );
-
-        return updatedInvoice;
       });
     } catch (error) {
       this.logger.error('Error updating invoice:', error);
@@ -578,14 +612,10 @@ export class InvoiceService {
     const fromDetails = {
       name: payroll.employee.name,
       email: payroll.employee.email,
-      address1: payroll.employee.address1,
-      address2: payroll.employee.address2,
+      address: payroll.employee.address,
       city: payroll.employee.city,
       country: payroll.employee.country,
       postalCode: payroll.employee.postalCode,
-      walletAddress: payroll.employee.walletAddress,
-      network: payroll.network,
-      token: payroll.token,
     };
 
     const toDetails = {
@@ -630,6 +660,9 @@ export class InvoiceService {
       status: InvoiceStatusEnum.SENT,
       isAutoGenerated: options?.isAutoGenerated || false,
       autoGenerateFromPayrollId: options?.autoGenerateFromPayrollId,
+      paymentNetwork: payroll.network as unknown as JsonValue,
+      paymentToken: payroll.token as unknown as JsonValue,
+      paymentWalletAddress: payroll.employee.walletAddress,
     };
 
     const invoice = await this.invoiceRepository.create(invoiceData, tx);

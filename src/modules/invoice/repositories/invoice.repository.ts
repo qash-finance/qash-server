@@ -16,14 +16,8 @@ import {
 
 export type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
   include: {
-    // Employee-Employer relations (for EMPLOYEE invoices)
     payroll: {
       include: {
-        employee: {
-          include: {
-            group: true;
-          };
-        };
         company: true;
       };
     };
@@ -32,10 +26,8 @@ export type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
         group: true;
       };
     };
-    // B2B relations (for B2B invoices)
     fromCompany: true;
     toCompany: true;
-    // Common relations
     items: true;
     bill: true;
   };
@@ -108,14 +100,8 @@ export class InvoiceRepository extends BaseRepository<
     return model.findUnique({
       where: { uuid },
       include: {
-        // Employee-Employer relations (for EMPLOYEE invoices)
         payroll: {
           include: {
-            employee: {
-              include: {
-                group: true,
-              },
-            },
             company: true,
           },
         },

@@ -5,6 +5,7 @@ import {
   BaseRepository,
   PrismaTransactionClient,
 } from 'src/database/base.repository';
+import { ErrorInvoice } from 'src/common/constants/errors';
 
 export interface CreateInvoiceItemData {
   invoiceUuid: string;
@@ -62,7 +63,7 @@ export class InvoiceItemRepository extends BaseRepository<
       select: { id: true },
     });
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error(ErrorInvoice.InvoiceNotFound);
     }
     return invoice.id;
   }
