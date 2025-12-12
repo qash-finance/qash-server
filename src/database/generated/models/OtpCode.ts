@@ -48,6 +48,7 @@ export type OtpCodeMinAggregateOutputType = {
   isUsed: boolean | null
   attempts: number | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type OtpCodeMaxAggregateOutputType = {
@@ -60,6 +61,7 @@ export type OtpCodeMaxAggregateOutputType = {
   isUsed: boolean | null
   attempts: number | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type OtpCodeCountAggregateOutputType = {
@@ -72,6 +74,7 @@ export type OtpCodeCountAggregateOutputType = {
   isUsed: number
   attempts: number
   createdAt: number
+  updatedAt: number
   _all: number
 }
 
@@ -98,6 +101,7 @@ export type OtpCodeMinAggregateInputType = {
   isUsed?: true
   attempts?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type OtpCodeMaxAggregateInputType = {
@@ -110,6 +114,7 @@ export type OtpCodeMaxAggregateInputType = {
   isUsed?: true
   attempts?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type OtpCodeCountAggregateInputType = {
@@ -122,6 +127,7 @@ export type OtpCodeCountAggregateInputType = {
   isUsed?: true
   attempts?: true
   createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -221,6 +227,7 @@ export type OtpCodeGroupByOutputType = {
   isUsed: boolean
   attempts: number
   createdAt: Date
+  updatedAt: Date
   _count: OtpCodeCountAggregateOutputType | null
   _avg: OtpCodeAvgAggregateOutputType | null
   _sum: OtpCodeSumAggregateOutputType | null
@@ -256,6 +263,7 @@ export type OtpCodeWhereInput = {
   isUsed?: Prisma.BoolFilter<"OtpCode"> | boolean
   attempts?: Prisma.IntFilter<"OtpCode"> | number
   createdAt?: Prisma.DateTimeFilter<"OtpCode"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"OtpCode"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
@@ -269,6 +277,7 @@ export type OtpCodeOrderByWithRelationInput = {
   isUsed?: Prisma.SortOrder
   attempts?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
 }
 
@@ -285,6 +294,7 @@ export type OtpCodeWhereUniqueInput = Prisma.AtLeast<{
   isUsed?: Prisma.BoolFilter<"OtpCode"> | boolean
   attempts?: Prisma.IntFilter<"OtpCode"> | number
   createdAt?: Prisma.DateTimeFilter<"OtpCode"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"OtpCode"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id" | "uuid">
 
@@ -298,6 +308,7 @@ export type OtpCodeOrderByWithAggregationInput = {
   isUsed?: Prisma.SortOrder
   attempts?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.OtpCodeCountOrderByAggregateInput
   _avg?: Prisma.OtpCodeAvgOrderByAggregateInput
   _max?: Prisma.OtpCodeMaxOrderByAggregateInput
@@ -318,6 +329,7 @@ export type OtpCodeScalarWhereWithAggregatesInput = {
   isUsed?: Prisma.BoolWithAggregatesFilter<"OtpCode"> | boolean
   attempts?: Prisma.IntWithAggregatesFilter<"OtpCode"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"OtpCode"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"OtpCode"> | Date | string
 }
 
 export type OtpCodeCreateInput = {
@@ -328,6 +340,7 @@ export type OtpCodeCreateInput = {
   isUsed?: boolean
   attempts?: number
   createdAt?: Date | string
+  updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutOtpCodesInput
 }
 
@@ -341,6 +354,7 @@ export type OtpCodeUncheckedCreateInput = {
   isUsed?: boolean
   attempts?: number
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type OtpCodeUpdateInput = {
@@ -351,6 +365,7 @@ export type OtpCodeUpdateInput = {
   isUsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutOtpCodesNestedInput
 }
 
@@ -364,6 +379,7 @@ export type OtpCodeUncheckedUpdateInput = {
   isUsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OtpCodeCreateManyInput = {
@@ -376,6 +392,7 @@ export type OtpCodeCreateManyInput = {
   isUsed?: boolean
   attempts?: number
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type OtpCodeUpdateManyMutationInput = {
@@ -386,6 +403,7 @@ export type OtpCodeUpdateManyMutationInput = {
   isUsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OtpCodeUncheckedUpdateManyInput = {
@@ -398,6 +416,7 @@ export type OtpCodeUncheckedUpdateManyInput = {
   isUsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OtpCodeCountOrderByAggregateInput = {
@@ -410,6 +429,7 @@ export type OtpCodeCountOrderByAggregateInput = {
   isUsed?: Prisma.SortOrder
   attempts?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type OtpCodeAvgOrderByAggregateInput = {
@@ -428,6 +448,7 @@ export type OtpCodeMaxOrderByAggregateInput = {
   isUsed?: Prisma.SortOrder
   attempts?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type OtpCodeMinOrderByAggregateInput = {
@@ -440,6 +461,7 @@ export type OtpCodeMinOrderByAggregateInput = {
   isUsed?: Prisma.SortOrder
   attempts?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type OtpCodeSumOrderByAggregateInput = {
@@ -532,6 +554,7 @@ export type OtpCodeCreateWithoutUserInput = {
   isUsed?: boolean
   attempts?: number
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type OtpCodeUncheckedCreateWithoutUserInput = {
@@ -543,6 +566,7 @@ export type OtpCodeUncheckedCreateWithoutUserInput = {
   isUsed?: boolean
   attempts?: number
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type OtpCodeCreateOrConnectWithoutUserInput = {
@@ -584,6 +608,7 @@ export type OtpCodeScalarWhereInput = {
   isUsed?: Prisma.BoolFilter<"OtpCode"> | boolean
   attempts?: Prisma.IntFilter<"OtpCode"> | number
   createdAt?: Prisma.DateTimeFilter<"OtpCode"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"OtpCode"> | Date | string
 }
 
 export type OtpCodeCreateManyUserInput = {
@@ -595,6 +620,7 @@ export type OtpCodeCreateManyUserInput = {
   isUsed?: boolean
   attempts?: number
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type OtpCodeUpdateWithoutUserInput = {
@@ -605,6 +631,7 @@ export type OtpCodeUpdateWithoutUserInput = {
   isUsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OtpCodeUncheckedUpdateWithoutUserInput = {
@@ -616,6 +643,7 @@ export type OtpCodeUncheckedUpdateWithoutUserInput = {
   isUsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OtpCodeUncheckedUpdateManyWithoutUserInput = {
@@ -627,6 +655,7 @@ export type OtpCodeUncheckedUpdateManyWithoutUserInput = {
   isUsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -641,6 +670,7 @@ export type OtpCodeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   isUsed?: boolean
   attempts?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["otpCode"]>
 
@@ -654,6 +684,7 @@ export type OtpCodeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   isUsed?: boolean
   attempts?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["otpCode"]>
 
@@ -667,6 +698,7 @@ export type OtpCodeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   isUsed?: boolean
   attempts?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["otpCode"]>
 
@@ -680,9 +712,10 @@ export type OtpCodeSelectScalar = {
   isUsed?: boolean
   attempts?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type OtpCodeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "userId" | "code" | "type" | "expiresAt" | "isUsed" | "attempts" | "createdAt", ExtArgs["result"]["otpCode"]>
+export type OtpCodeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "userId" | "code" | "type" | "expiresAt" | "isUsed" | "attempts" | "createdAt" | "updatedAt", ExtArgs["result"]["otpCode"]>
 export type OtpCodeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -708,6 +741,7 @@ export type $OtpCodePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     isUsed: boolean
     attempts: number
     createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["otpCode"]>
   composites: {}
 }
@@ -1141,6 +1175,7 @@ export interface OtpCodeFieldRefs {
   readonly isUsed: Prisma.FieldRef<"OtpCode", 'Boolean'>
   readonly attempts: Prisma.FieldRef<"OtpCode", 'Int'>
   readonly createdAt: Prisma.FieldRef<"OtpCode", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"OtpCode", 'DateTime'>
 }
     
 

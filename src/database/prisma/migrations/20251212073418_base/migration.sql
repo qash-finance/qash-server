@@ -54,6 +54,7 @@ CREATE TABLE "otp_codes" (
     "is_used" BOOLEAN NOT NULL DEFAULT false,
     "attempts" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL,
 
     CONSTRAINT "otp_codes_pkey" PRIMARY KEY ("id")
 );

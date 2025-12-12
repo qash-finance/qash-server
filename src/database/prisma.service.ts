@@ -92,7 +92,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   get $transaction() {
-    return this.client.$transaction;
+    return this.client.$transaction.bind(this.client);
   }
 
   get $connect() {

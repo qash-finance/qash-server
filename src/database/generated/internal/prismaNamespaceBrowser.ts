@@ -93,7 +93,8 @@ export const OtpCodeScalarFieldEnum = {
   expiresAt: 'expiresAt',
   isUsed: 'isUsed',
   attempts: 'attempts',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type OtpCodeScalarFieldEnum = (typeof OtpCodeScalarFieldEnum)[keyof typeof OtpCodeScalarFieldEnum]
