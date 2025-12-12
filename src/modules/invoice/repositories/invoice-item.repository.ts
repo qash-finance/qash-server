@@ -56,8 +56,8 @@ export class InvoiceItemRepository extends BaseRepository<
     invoiceUuid: string,
     tx?: PrismaTransactionClient,
   ): Promise<number> {
-    const model = this.getModel(tx);
-    const invoice = await model.findUnique({
+    const invoiceModel = tx ? tx.invoice : this.prisma.invoice;
+    const invoice = await invoiceModel.findUnique({
       where: { uuid: invoiceUuid },
       select: { id: true },
     });
@@ -97,7 +97,7 @@ export class InvoiceItemRepository extends BaseRepository<
    */
   async createItems(
     items: CreateInvoiceItemData[],
-    tx?: PrismaTransactionClient,
+    tx: PrismaTransactionClient,
   ): Promise<void> {
     const model = this.getModel(tx);
     if (items.length === 0) return;

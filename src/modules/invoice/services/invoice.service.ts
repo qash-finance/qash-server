@@ -644,6 +644,7 @@ export class InvoiceService {
 
     const startDateFormatted = formatDateDDMMYYYY(payroll.payStartDate);
     const endDateFormatted = formatDateDDMMYYYY(payroll.payEndDate);
+    console.log('HALO');
 
     // Create invoice items
     await this.invoiceItemService.createItems(
