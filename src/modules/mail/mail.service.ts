@@ -145,7 +145,7 @@ export class MailService {
         <div class="wrapper">
           <div class="card">
             <div class="card-header">
-              <img class="logo" src="https://drive.google.com/file/d/1XeTw7AnxzxerrAQDwPmv-gmFg3ned-rM/view?usp=sharing" alt="Qash logo" />
+              <img class="logo" src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/feat/v2/images/qash-logo.png" alt="Qash logo" />
               <h1 class="title">Login OTP code</h1>
               <p class="greeting">Hi,</p>
             </div>
