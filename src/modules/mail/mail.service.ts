@@ -39,6 +39,151 @@ export class MailService {
   }
 
   /**
+   * Send OTP email
+   */
+  async sendOtpEmail(email: string, otpCode: string): Promise<void> {
+    try {
+      const fromEmail = 'noreply@qash.finance';
+
+      const subject = `Your OTP Code`;
+      const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login OTP code</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            background: #0e3ee0;
+            font-family: 'Inter', Arial, sans-serif;
+            color: #0f172a;
+          }
+          .wrapper {
+            width: 100%;
+            background: #0e3ee0;
+            padding: 32px 12px;
+            box-sizing: border-box;
+          }
+          .card {
+            max-width: 720px;
+            margin: 0 auto;
+            background: #f5f7fb;
+            border-radius: 12px;
+            box-shadow: 0 12px 35px rgba(0, 33, 117, 0.25);
+            overflow: hidden;
+          }
+          .card-header {
+            padding: 28px 36px 0 36px;
+            text-align: left;
+          }
+          .logo {
+            height: 40px;
+            margin-bottom: 8px;
+          }
+          .title {
+            font-size: 26px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            color: #0f172a;
+          }
+          .greeting {
+            font-size: 16px;
+            margin: 0;
+            color: #1f2937;
+          }
+          .content {
+            padding: 0 36px 32px 36px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #1f2937;
+          }
+          .highlight {
+            font-weight: 600;
+            color: #0e3ee0;
+          }
+          .otp-box {
+            margin: 24px 0 12px 0;
+            padding: 22px;
+            background: #e8edff;
+            border: 2px solid #d3ddff;
+            border-radius: 10px;
+            text-align: center;
+          }
+          .otp-code {
+            font-size: 40px;
+            font-weight: 800;
+            letter-spacing: 6px;
+            color: #0b2db3;
+            margin: 0;
+          }
+          .meta {
+            margin-top: 16px;
+            font-size: 14px;
+            color: #4b5563;
+          }
+          .footer {
+            padding: 0 36px 28px 36px;
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.5;
+          }
+          .warning {
+            margin-top: 18px;
+            padding: 14px 16px;
+            background: #fff4e5;
+            border-radius: 10px;
+            border: 1px solid #ffd9a8;
+            color: #92400e;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="wrapper">
+          <div class="card">
+            <div class="card-header">
+              <img class="logo" src="https://drive.google.com/file/d/1XeTw7AnxzxerrAQDwPmv-gmFg3ned-rM/view?usp=sharing" alt="Qash logo" />
+              <h1 class="title">Login OTP code</h1>
+              <p class="greeting">Hi,</p>
+            </div>
+            <div class="content">
+              <p>
+                Your 6-digit login OTP code associated with
+                <span class="highlight">${email}</span> is:
+              </p>
+              <div class="otp-box">
+                <p class="otp-code">${otpCode}</p>
+              </div>
+              <p class="meta">This OTP code expires in 10 minutes. If you didn't request this, just ignore and delete this message.</p>
+            </div>
+            <div class="footer">
+              <div class="warning">
+                To keep your account secure, please don't forward this email to anyone.
+              </div>
+              <p>This is an automated message, please do not reply to this email.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+      `;
+
+      await this.sendEmail({
+        to: email,
+        fromEmail,
+        subject,
+        html,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send OTP email to ${email}:`, error);
+      throw new BadRequestException(ErrorMail.EmailNotSent);
+    }
+  }
+
+  /**
    * Send invoice notification to employee
    */
   async sendInvoiceNotification(
