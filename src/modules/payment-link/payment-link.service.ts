@@ -187,15 +187,17 @@ export class PaymentLinkService {
 
       // Create payment record
       const now = new Date();
-      const paymentRecord = await this.paymentLinkRecordRepository.create({
-        payer: normalizedPayer,
-        txid: paymentDto.txid,
-        token: paymentDto.token ? (paymentDto.token as any) : undefined,
-        chain: paymentDto.chain ? (paymentDto.chain as any) : undefined,
-        PaymentLink: { connect: { id: link.id } },
-        createdAt: now,
-        updatedAt: now,
-      });
+      const paymentRecord = await this.paymentLinkRecordRepository.createRecord(
+        {
+          payer: normalizedPayer,
+          txid: paymentDto.txid,
+          token: paymentDto.token ? (paymentDto.token as any) : undefined,
+          chain: paymentDto.chain ? (paymentDto.chain as any) : undefined,
+          PaymentLink: { connect: { id: link.id } },
+          createdAt: now,
+          updatedAt: now,
+        },
+      );
 
       return paymentRecord;
     } catch (error) {

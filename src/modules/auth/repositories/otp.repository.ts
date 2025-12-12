@@ -2,6 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { OtpCodeModel } from '../../../database/generated/models/OtpCode';
 import { OtpTypeEnum } from '../../../database/generated/enums';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from 'src/database/base.repository';
+import { Prisma, PrismaClient } from 'src/database/generated/client';
 
 export interface CreateOtpData {
   userId: number;
@@ -16,25 +21,32 @@ export interface UpdateOtpData {
 }
 
 @Injectable()
-export class OtpRepository {
-  constructor(private readonly prisma: PrismaService) {}
+export class OtpRepository extends BaseRepository<
+  OtpCodeModel,
+  Prisma.OtpCodeWhereInput,
+  Prisma.OtpCodeCreateInput,
+  Prisma.OtpCodeUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
+  }
 
-  /**
-   * Create new OTP code
-   */
-  async create(data: CreateOtpData): Promise<OtpCodeModel> {
-    return this.prisma.otpCode.create({
-      data,
-    });
+  protected getModel(tx?: PrismaTransactionClient): PrismaClient['otpCode'] {
+    return tx ? tx.otpCode : this.prisma.otpCode;
+  }
+
+  protected getModelName(): string {
+    return 'OtpCode';
   }
 
   /**
    * Find OTP by ID
    */
-  async findById(id: number): Promise<OtpCodeModel | null> {
-    return this.prisma.otpCode.findUnique({
-      where: { id },
-    });
+  async findById(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<OtpCodeModel | null> {
+    return this.findOne({ id }, tx);
   }
 
   /**
@@ -43,8 +55,10 @@ export class OtpRepository {
   async findValidOtpForUser(
     userId: number,
     type: OtpTypeEnum = OtpTypeEnum.LOGIN,
+    tx?: PrismaTransactionClient,
   ): Promise<OtpCodeModel | null> {
-    return this.prisma.otpCode.findFirst({
+    const model = this.getModel(tx);
+    return model.findFirst({
       where: {
         userId,
         type,
@@ -62,8 +76,13 @@ export class OtpRepository {
   /**
    * Update OTP by ID
    */
-  async updateById(id: number, data: UpdateOtpData): Promise<OtpCodeModel> {
-    return this.prisma.otpCode.update({
+  async updateById(
+    id: number,
+    data: UpdateOtpData,
+    tx?: PrismaTransactionClient,
+  ): Promise<OtpCodeModel> {
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data,
     });
@@ -72,8 +91,12 @@ export class OtpRepository {
   /**
    * Mark OTP as used
    */
-  async markAsUsed(id: number): Promise<OtpCodeModel> {
-    return this.prisma.otpCode.update({
+  async markAsUsed(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<OtpCodeModel> {
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data: { isUsed: true },
     });
@@ -82,8 +105,12 @@ export class OtpRepository {
   /**
    * Increment OTP attempts
    */
-  async incrementAttempts(id: number): Promise<OtpCodeModel> {
-    return this.prisma.otpCode.update({
+  async incrementAttempts(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<OtpCodeModel> {
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data: {
         attempts: {
@@ -99,8 +126,10 @@ export class OtpRepository {
   async invalidateExistingOtps(
     userId: number,
     type: OtpTypeEnum,
+    tx?: PrismaTransactionClient,
   ): Promise<void> {
-    await this.prisma.otpCode.updateMany({
+    const model = this.getModel(tx);
+    await model.updateMany({
       where: {
         userId,
         type,
@@ -115,11 +144,16 @@ export class OtpRepository {
   /**
    * Check if user has recent OTP (for rate limiting)
    */
-  async hasRecentOtp(userId: number, minutesAgo: number): Promise<boolean> {
+  async hasRecentOtp(
+    userId: number,
+    minutesAgo: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<boolean> {
+    const model = this.getModel(tx);
     const cutoffTime = new Date();
     cutoffTime.setMinutes(cutoffTime.getMinutes() - minutesAgo);
 
-    const recentOtp = await this.prisma.otpCode.findFirst({
+    const recentOtp = await model.findFirst({
       where: {
         userId,
         createdAt: {
@@ -134,8 +168,9 @@ export class OtpRepository {
   /**
    * Clean up expired and used OTPs
    */
-  async cleanupExpired(): Promise<number> {
-    const result = await this.prisma.otpCode.deleteMany({
+  async cleanupExpired(tx?: PrismaTransactionClient): Promise<number> {
+    const model = this.getModel(tx);
+    const result = await model.deleteMany({
       where: {
         OR: [{ expiresAt: { lt: new Date() } }, { isUsed: true }],
       },
@@ -147,22 +182,23 @@ export class OtpRepository {
   /**
    * Get OTP statistics for monitoring
    */
-  async getStats() {
+  async getStats(tx?: PrismaTransactionClient) {
+    const model = this.getModel(tx);
     const [total, active, expired, used] = await Promise.all([
-      this.prisma.otpCode.count(),
-      this.prisma.otpCode.count({
+      model.count(),
+      model.count({
         where: {
           isUsed: false,
           expiresAt: { gt: new Date() },
         },
       }),
-      this.prisma.otpCode.count({
+      model.count({
         where: {
           isUsed: false,
           expiresAt: { lt: new Date() },
         },
       }),
-      this.prisma.otpCode.count({
+      model.count({
         where: { isUsed: true },
       }),
     ]);

@@ -17,7 +17,6 @@ export class AuthCleanupService {
 
     try {
       await this.authService.cleanupExpiredData();
-      this.logger.log('Scheduled cleanup completed successfully');
     } catch (error) {
       this.logger.error('Scheduled cleanup failed:', error);
     }
@@ -27,7 +26,6 @@ export class AuthCleanupService {
    * Manual cleanup trigger (can be called via admin endpoint)
    */
   async triggerManualCleanup() {
-    this.logger.log('Manual cleanup triggered');
     await this.authService.cleanupExpiredData();
   }
 }

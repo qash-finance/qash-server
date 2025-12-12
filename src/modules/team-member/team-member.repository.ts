@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { TeamMemberModel } from '../../database/generated/models/TeamMember';
-import { Prisma, TeamMemberRoleEnum } from '../../database/generated/client';
+import {
+  Prisma,
+  PrismaClient,
+  TeamMemberRoleEnum,
+} from '../../database/generated/client';
 import {
   BaseRepository,
   PrismaTransactionClient,
@@ -57,7 +61,7 @@ export class TeamMemberRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel(tx?: PrismaTransactionClient) {
+  protected getModel(tx?: PrismaTransactionClient): PrismaClient['teamMember'] {
     return tx ? tx.teamMember : this.prisma.teamMember;
   }
 
@@ -80,8 +84,10 @@ export class TeamMemberRepository extends BaseRepository<
    */
   async findByIdWithRelations(
     id: number,
+    tx?: PrismaTransactionClient,
   ): Promise<TeamMemberWithRelations | null> {
-    return this.prisma.teamMember.findUnique({
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: { id },
       include: {
         company: {
@@ -113,8 +119,10 @@ export class TeamMemberRepository extends BaseRepository<
   async findByCompanyAndEmail(
     companyId: number,
     email: string,
+    tx?: PrismaTransactionClient,
   ): Promise<TeamMemberModel | null> {
-    return this.prisma.teamMember.findFirst({
+    const model = this.getModel(tx);
+    return model.findFirst({
       where: {
         companyId,
         user: {
@@ -134,6 +142,7 @@ export class TeamMemberRepository extends BaseRepository<
   async findByCompany(
     companyId: number,
     filters?: TeamMemberFilters,
+    tx?: PrismaTransactionClient,
   ): Promise<TeamMemberModel[]> {
     const whereClause: any = {
       companyId,
@@ -159,10 +168,13 @@ export class TeamMemberRepository extends BaseRepository<
       }
     }
 
-    return this.prisma.teamMember.findMany({
-      where: whereClause,
-      orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
-    });
+    return this.findMany(
+      whereClause,
+      {
+        orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
+      },
+      tx,
+    );
   }
 
   /**
@@ -172,7 +184,8 @@ export class TeamMemberRepository extends BaseRepository<
     userId: number,
     tx?: PrismaTransactionClient,
   ): Promise<TeamMemberWithRelations | null> {
-    return this.prisma.teamMember.findUnique({
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: {
         userId,
       },
@@ -196,11 +209,9 @@ export class TeamMemberRepository extends BaseRepository<
   async updateById(
     id: number,
     data: UpdateTeamMemberData,
+    tx?: PrismaTransactionClient,
   ): Promise<TeamMemberModel> {
-    return this.prisma.teamMember.update({
-      where: { id },
-      data,
-    });
+    return this.update({ id }, data as Prisma.TeamMemberUpdateInput, tx);
   }
 
   /**
@@ -210,8 +221,10 @@ export class TeamMemberRepository extends BaseRepository<
     companyId: number,
     userId: number,
     requiredRoles: TeamMemberRoleEnum[],
+    tx?: PrismaTransactionClient,
   ): Promise<boolean> {
-    const teamMember = await this.prisma.teamMember.findFirst({
+    const model = this.getModel(tx);
+    const teamMember = await model.findFirst({
       where: {
         companyId,
         userId,
@@ -228,8 +241,10 @@ export class TeamMemberRepository extends BaseRepository<
   async getUserRoleInCompany(
     companyId: number,
     userId: number,
+    tx?: PrismaTransactionClient,
   ): Promise<TeamMemberRoleEnum | null> {
-    const teamMember = await this.prisma.teamMember.findFirst({
+    const model = this.getModel(tx);
+    const teamMember = await model.findFirst({
       where: {
         companyId,
         userId,
@@ -246,6 +261,7 @@ export class TeamMemberRepository extends BaseRepository<
   async countByCompany(
     companyId: number,
     filters?: TeamMemberFilters,
+    tx?: PrismaTransactionClient,
   ): Promise<number> {
     const whereClause: any = { companyId };
 
@@ -258,29 +274,30 @@ export class TeamMemberRepository extends BaseRepository<
       }
     }
 
-    return this.prisma.teamMember.count({ where: whereClause });
+    return this.count(whereClause, tx);
   }
 
   /**
    * Get team member statistics for company
    */
-  async getCompanyStats(companyId: number) {
+  async getCompanyStats(companyId: number, tx?: PrismaTransactionClient) {
+    const model = this.getModel(tx);
     const [total, owners, admins, viewers, active, pending] = await Promise.all(
       [
-        this.prisma.teamMember.count({ where: { companyId } }),
-        this.prisma.teamMember.count({
+        model.count({ where: { companyId } }),
+        model.count({
           where: { companyId, role: 'OWNER' },
         }),
-        this.prisma.teamMember.count({
+        model.count({
           where: { companyId, role: 'ADMIN' },
         }),
-        this.prisma.teamMember.count({
+        model.count({
           where: { companyId, role: 'VIEWER' },
         }),
-        this.prisma.teamMember.count({
+        model.count({
           where: { companyId, isActive: true },
         }),
-        this.prisma.teamMember.count({
+        model.count({
           where: { companyId, userId: null, isActive: true },
         }),
       ],
@@ -299,34 +316,43 @@ export class TeamMemberRepository extends BaseRepository<
   /**
    * Link team member to user account
    */
-  async linkToUser(id: number, userId: number): Promise<TeamMemberModel> {
-    return this.prisma.teamMember.update({
-      where: { id },
-      data: {
-        userId,
+  async linkToUser(
+    id: number,
+    userId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<TeamMemberModel> {
+    return this.update(
+      { id },
+      {
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
         joinedAt: new Date(),
       },
-    });
+      tx,
+    );
   }
 
   /**
    * Deactivate team member
    */
-  async deactivate(id: number): Promise<TeamMemberModel> {
-    return this.prisma.teamMember.update({
-      where: { id },
-      data: { isActive: false },
-    });
+  async deactivate(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<TeamMemberModel> {
+    return this.update({ id }, { isActive: false }, tx);
   }
 
   /**
    * Activate team member
    */
-  async activate(id: number): Promise<TeamMemberModel> {
-    return this.prisma.teamMember.update({
-      where: { id },
-      data: { isActive: true },
-    });
+  async activate(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<TeamMemberModel> {
+    return this.update({ id }, { isActive: true }, tx);
   }
 
   /**
@@ -334,11 +360,13 @@ export class TeamMemberRepository extends BaseRepository<
    */
   async findPendingInvitationsByEmail(
     email: string,
+    tx?: PrismaTransactionClient,
   ): Promise<TeamMemberWithRelations[]> {
-    return this.prisma.teamMember.findMany({
+    const model = this.getModel(tx);
+    return model.findMany({
       where: {
         user: {
-        email,
+          email,
         },
         isActive: true,
       },
@@ -367,20 +395,23 @@ export class TeamMemberRepository extends BaseRepository<
   async updateRole(
     id: number,
     role: TeamMemberRoleEnum,
+    tx?: PrismaTransactionClient,
   ): Promise<TeamMemberModel> {
-    return this.prisma.teamMember.update({
-      where: { id },
-      data: { role },
-    });
+    return this.update({ id }, { role }, tx);
   }
 
   /**
    * Check if email is already invited to company
    */
-  async isEmailInvited(companyId: number, email: string): Promise<boolean> {
-    const existing = await this.prisma.teamMember.findFirst({
+  async isEmailInvited(
+    companyId: number,
+    email: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<boolean> {
+    const model = this.getModel(tx);
+    const existing = await model.findFirst({
       where: {
-          companyId,
+        companyId,
         user: {
           email,
         },

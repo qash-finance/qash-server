@@ -1,13 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import { CompanyVerificationStatusEnum } from '../../../database/generated/client';
+import {
+  CompanyVerificationStatusEnum,
+  Prisma,
+  PrismaClient,
+} from '../../../database/generated/client';
 import { CompanyModel } from '../../../database/generated/models';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from 'src/database/base.repository';
 
 export interface AdminCompanyFilters {
   verificationStatus?: CompanyVerificationStatusEnum;
   country?: string;
   companyType?: string;
-  search?: string; // Search by company name or registration number
+  search?: string;
 }
 
 export interface AdminCompanyStats {
@@ -20,8 +28,23 @@ export interface AdminCompanyStats {
 }
 
 @Injectable()
-export class AdminCompanyRepository {
-  constructor(private readonly prisma: PrismaService) {}
+export class AdminCompanyRepository extends BaseRepository<
+  CompanyModel,
+  Prisma.CompanyWhereInput,
+  Prisma.CompanyCreateInput,
+  Prisma.CompanyUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
+  }
+
+  protected getModel(tx?: PrismaTransactionClient): PrismaClient['company'] {
+    return tx ? tx.company : this.prisma.company;
+  }
+
+  protected getModelName(): string {
+    return 'Company';
+  }
 
   /**
    * Update company verification status
@@ -30,8 +53,10 @@ export class AdminCompanyRepository {
     id: number,
     status: CompanyVerificationStatusEnum,
     adminNotes?: string,
+    tx?: PrismaTransactionClient,
   ): Promise<CompanyModel> {
-    return this.prisma.company.update({
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data: {
         verificationStatus: status,
@@ -44,8 +69,12 @@ export class AdminCompanyRepository {
   /**
    * Get company by ID with full details for admin view
    */
-  async findByIdWithFullDetails(id: number): Promise<CompanyModel | null> {
-    return this.prisma.company.findUnique({
+  async findByIdWithFullDetails(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<CompanyModel | null> {
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: { id },
       include: {
         teamMembers: {

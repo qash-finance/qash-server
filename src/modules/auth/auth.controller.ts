@@ -60,14 +60,7 @@ export class AuthController {
   async getCurrentUser(
     @CurrentUser() user: JwtPayload,
   ): Promise<UserMeResponseDto> {
-    try {
-      const userDetails = await this.authService.getCurrentUserWithCompany(
-        user.sub || user.userId,
-      );
-      return userDetails;
-    } catch (error) {
-      throw error;
-    }
+    return this.authService.getCurrentUserWithCompany(user.sub || user.userId);
   }
 
   //#endregion GET METHODS
@@ -102,8 +95,7 @@ export class AuthController {
     },
   })
   async sendOtp(@Body() sendOtpDto: SendOtpDto): Promise<MessageResponseDto> {
-    await this.authService.sendOtp(sendOtpDto.email);
-    return { message: 'OTP sent successfully to your email' };
+    return this.authService.sendOtp(sendOtpDto.email);
   }
 
   @Public()
@@ -129,21 +121,14 @@ export class AuthController {
     @Body() verifyOtpDto: VerifyOtpDto,
     @Req() request: Request,
   ): Promise<AuthResponseDto> {
-    try {
-      const userAgent = request.headers['user-agent'];
-      const ipAddress = request.ip || request.connection.remoteAddress;
+    const userAgent = request.headers['user-agent'];
+    const ipAddress = request.ip || request.connection.remoteAddress;
 
-      const result = await this.authService.verifyOtpAndAuthenticate(
-        verifyOtpDto.email,
-        verifyOtpDto.otp,
-        { userAgent, ipAddress },
-      );
-
-      return result;
-    } catch (error) {
-      this.logger.error(`Verify OTP failed for ${verifyOtpDto.email}:`, error);
-      throw error;
-    }
+    return this.authService.verifyOtpAndAuthenticate(
+      verifyOtpDto.email,
+      verifyOtpDto.otp,
+      { userAgent, ipAddress },
+    );
   }
 
   @Public()

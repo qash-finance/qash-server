@@ -17,6 +17,7 @@ import { TeamMemberRoleEnum } from '../../database/generated/client';
 import { CompanyModel } from 'src/database/generated/models';
 import { PrismaService } from 'src/database/prisma.service';
 import { ErrorCompany } from 'src/common/constants/errors';
+import { handleError } from 'src/common/utils/errors';
 
 @Injectable()
 export class CompanyService {
@@ -28,61 +29,10 @@ export class CompanyService {
     private readonly prisma: PrismaService,
   ) {}
 
-  /**
-   * Create new company
-   */
-  async createCompany(
-    userId: number,
-    dto: CreateCompanyDto,
-  ): Promise<CompanyModel> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      const existingCompany =
-        await this.companyRepository.findByRegistrationNumber(
-          dto.registrationNumber,
-          tx,
-        );
-
-      if (existingCompany) {
-        throw new ConflictException(
-          ErrorCompany.RegistrationNumberAlreadyExists,
-        );
-      }
-
-      // Find if the user is already a team member of any company
-      const existingTeamMember = await this.teamMemberRepository.findByUserId(
-        userId,
-        tx,
-      );
-      if (existingTeamMember) {
-        throw new ConflictException(ErrorCompany.UserAlreadyTeamMember);
-      }
-
-      const company = await this.companyRepository.create({
-        ...(({ companyOwnerFirstName, companyOwnerLastName, ...rest }) => rest)(
-          dto,
-        ),
-      });
-
-      await this.teamMemberRepository.create({
-        firstName: dto.companyOwnerFirstName,
-        lastName: dto.companyOwnerLastName,
-        role: TeamMemberRoleEnum.OWNER,
-        company: {
-          connect: {
-            id: company.id,
-          },
-        },
-        user: {
-          connect: {
-            id: userId,
-          },
-        },
-      });
-
-      return company;
-    }, 'createCompany');
-  }
-
+  //#region GET METHODS
+  // *************************************************
+  // **************** GET METHODS ********************
+  // *************************************************
   async getMyCompany(companyId: number): Promise<CompanyModel | null> {
     // find company details, its team members and creator
     return this.companyRepository.findByIdWithTeamMembers(companyId);
@@ -91,70 +41,6 @@ export class CompanyService {
   async getCompanyByUserId(userId: number): Promise<CompanyModel | null> {
     const teamMember = await this.teamMemberRepository.findByUserId(userId);
     return teamMember?.company || null;
-  }
-
-  /**
-   * Update company
-   */
-  async updateCompany(
-    companyId: number,
-    userId: number,
-    updateCompanyDto: UpdateCompanyDto,
-  ) {
-    // Check if user is owner or admin
-    const hasPermission = await this.teamMemberRepository.hasPermission(
-      companyId,
-      userId,
-      [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
-    );
-
-    if (!hasPermission) {
-      throw new ForbiddenException(
-        'Insufficient permissions to update company',
-      );
-    }
-
-    const company = await this.companyRepository.findById(companyId);
-    if (!company) {
-      throw new NotFoundException('Company not found');
-    }
-
-    this.logger.log(`Updating company ${companyId} by user ${userId}`);
-    return this.companyRepository.updateById(companyId, updateCompanyDto);
-  }
-
-  /**
-   * Deactivate company
-   */
-  async deactivateCompany(companyId: number, userId: number) {
-    // Only company owner can deactivate
-    const isOwner = await this.companyRepository.isCompanyOwner(
-      companyId,
-      userId,
-    );
-    if (!isOwner) {
-      throw new ForbiddenException('Only company owner can deactivate company');
-    }
-
-    this.logger.log(`Deactivating company ${companyId} by owner ${userId}`);
-    return this.companyRepository.deactivate(companyId);
-  }
-
-  /**
-   * Activate company
-   */
-  async activateCompany(companyId: number, userId: number) {
-    // Only company owner can activate
-    const isOwner = await this.companyRepository.isCompanyOwner(
-      companyId,
-      userId,
-    );
-    if (!isOwner) {
-      throw new ForbiddenException('Only company owner can activate company');
-    }
-
-    this.logger.log(`Activating company ${companyId} by owner ${userId}`);
-    return this.companyRepository.activate(companyId);
   }
 
   /**
@@ -174,6 +60,190 @@ export class CompanyService {
   }
 
   /**
+   * Get user's role in company
+   */
+  async getUserRoleInCompany(companyId: number, userId: number) {
+    return this.teamMemberRepository.getUserRoleInCompany(companyId, userId);
+  }
+
+  /**
+   * Get company where user is a team member (single company since 1:1 relationship)
+   */
+  async getUserMemberCompanies(userId: number) {
+    const teamMember = await this.teamMemberRepository.findByUserId(userId);
+    return teamMember ? [teamMember] : []; // Return as array for backward compatibility
+  }
+  //#endregion GET METHODS
+
+  //#region POST METHODS
+  // *************************************************
+  // **************** POST METHODS *******************
+  // *************************************************
+  /**
+   * Create new company
+   */
+  async createCompany(
+    userId: number,
+    dto: CreateCompanyDto,
+  ): Promise<CompanyModel> {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const existingCompany =
+          await this.companyRepository.findByRegistrationNumber(
+            dto.registrationNumber,
+            tx,
+          );
+
+        if (existingCompany) {
+          throw new ConflictException(
+            ErrorCompany.RegistrationNumberAlreadyExists,
+          );
+        }
+
+        // Find if the user is already a team member of any company
+        const existingTeamMember = await this.teamMemberRepository.findByUserId(
+          userId,
+          tx,
+        );
+
+        if (existingTeamMember) {
+          throw new ConflictException(ErrorCompany.UserAlreadyTeamMember);
+        }
+
+        const company = await this.companyRepository.create(
+          {
+            ...(({ companyOwnerFirstName, companyOwnerLastName, ...rest }) =>
+              rest)(dto),
+          },
+          tx,
+        );
+
+        await this.teamMemberRepository.create(
+          {
+            firstName: dto.companyOwnerFirstName,
+            lastName: dto.companyOwnerLastName,
+            role: TeamMemberRoleEnum.OWNER,
+            company: {
+              connect: {
+                id: company.id,
+              },
+            },
+            user: {
+              connect: {
+                id: userId,
+              },
+            },
+          },
+          tx,
+        );
+
+        return company;
+      });
+    } catch (error) {
+      this.logger.error('Failed to create company:', error);
+      handleError(error, this.logger);
+    }
+  }
+  //#endregion POST METHODS
+
+  //#region PUT METHODS
+  // *************************************************
+  // **************** PUT METHODS ********************
+  // *************************************************
+  /**
+   * Update company
+   */
+  async updateCompany(
+    companyId: number,
+    userId: number,
+    updateCompanyDto: UpdateCompanyDto,
+  ) {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        // Check if user is owner or admin
+        const hasPermission = await this.teamMemberRepository.hasPermission(
+          companyId,
+          userId,
+          [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
+          tx,
+        );
+
+        if (!hasPermission) {
+          throw new ForbiddenException(ErrorCompany.InsufficientPermissions);
+        }
+
+        const company = await this.companyRepository.findById(companyId, tx);
+        if (!company) {
+          throw new NotFoundException(ErrorCompany.CompanyNotFound);
+        }
+
+        return this.companyRepository.updateById(companyId, updateCompanyDto);
+      });
+    } catch (error) {
+      this.logger.error('Failed to update company:', error);
+      handleError(error, this.logger);
+    }
+  }
+
+  /**
+   * Deactivate company
+   */
+  async deactivateCompany(companyId: number, userId: number) {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        // Only company owner can deactivate
+        const isOwner = await this.companyRepository.isCompanyOwner(
+          companyId,
+          userId,
+          tx,
+        );
+        if (!isOwner) {
+          throw new ForbiddenException(
+            ErrorCompany.OnlyCompanyOwnerCanDeactivate,
+          );
+        }
+
+        return this.companyRepository.deactivate(companyId, tx);
+      });
+    } catch (error) {
+      this.logger.error('Failed to deactivate company:', error);
+      handleError(error, this.logger);
+    }
+  }
+
+  /**
+   * Activate company
+   */
+  async activateCompany(companyId: number, userId: number) {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        // Only company owner can activate
+        const isOwner = await this.companyRepository.isCompanyOwner(
+          companyId,
+          userId,
+          tx,
+        );
+        if (!isOwner) {
+          throw new ForbiddenException(
+            ErrorCompany.OnlyCompanyOwnerCanActivate,
+          );
+        }
+
+        return this.companyRepository.activate(companyId, tx);
+      });
+    } catch (error) {
+      this.logger.error('Failed to activate company:', error);
+      handleError(error, this.logger);
+    }
+  }
+
+  //#endregion PUT METHODS
+
+  //#region Checker Methods
+  // *************************************************
+  // **************** CHECKER METHODS ***************
+  // *************************************************
+  /**
    * Check if user has access to company
    */
   async hasCompanyAccess(companyId: number, userId: number): Promise<boolean> {
@@ -182,6 +252,7 @@ export class CompanyService {
       companyId,
       userId,
     );
+
     if (isOwner) {
       return true;
     }
@@ -198,13 +269,6 @@ export class CompanyService {
     );
 
     return hasRole;
-  }
-
-  /**
-   * Get user's role in company
-   */
-  async getUserRoleInCompany(companyId: number, userId: number) {
-    return this.teamMemberRepository.getUserRoleInCompany(companyId, userId);
   }
 
   /**
@@ -225,31 +289,25 @@ export class CompanyService {
   }
 
   /**
-   * Get company where user is a team member (single company since 1:1 relationship)
-   */
-  async getUserMemberCompanies(userId: number) {
-    const teamMember = await this.teamMemberRepository.findByUserId(userId);
-    return teamMember ? [teamMember] : []; // Return as array for backward compatibility
-  }
-
-  /**
    * Validate company exists and user has access
    */
   async validateCompanyAccess(companyId: number, userId: number) {
     const company = await this.companyRepository.findById(companyId);
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException(ErrorCompany.CompanyNotFound);
     }
 
     if (!company.isActive) {
-      throw new BadRequestException('Company is deactivated');
+      throw new BadRequestException(ErrorCompany.CompanyDeactivated);
     }
 
     const hasAccess = await this.hasCompanyAccess(companyId, userId);
     if (!hasAccess) {
-      throw new ForbiddenException('Access denied to this company');
+      throw new ForbiddenException(ErrorCompany.AccessDeniedToCompany);
     }
 
     return company;
   }
+
+  //#endregion Checker Methods
 }

@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import {
   PaymentLink,
   PaymentLinkRecord,
   Prisma,
+  PrismaClient,
   PaymentLinkStatusEnum,
 } from 'src/database/generated/client';
 import {
@@ -22,7 +23,9 @@ export class PaymentLinkRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel(tx?: PrismaTransactionClient) {
+  protected getModel(
+    tx?: PrismaTransactionClient,
+  ): PrismaClient['paymentLink'] {
     return tx ? tx.paymentLink : this.prisma.paymentLink;
   }
 
@@ -42,16 +45,13 @@ export class PaymentLinkRepository extends BaseRepository<
    */
   async findByCodeWithRecords(
     code: string,
+    tx?: PrismaTransactionClient,
   ): Promise<(PaymentLink & { records: PaymentLinkRecord[] }) | null> {
-    try {
-      return await this.prisma.paymentLink.findFirst({
-        where: { code },
-        include: { records: true },
-      });
-    } catch (error) {
-      this.logger.error(`Error finding payment link with records:`, error);
-      throw error;
-    }
+    const model = this.getModel(tx);
+    return model.findFirst({
+      where: { code },
+      include: { records: true },
+    });
   }
 
   /**
@@ -85,25 +85,19 @@ export class PaymentLinkRepository extends BaseRepository<
       take?: number;
       status?: PaymentLinkStatusEnum;
     },
+    tx?: PrismaTransactionClient,
   ): Promise<(PaymentLink & { records: PaymentLinkRecord[] })[]> {
-    try {
-      const where: Prisma.PaymentLinkWhereInput = { payee: payeeAddress };
-      if (options?.status) where.status = options.status;
+    const model = this.getModel(tx);
+    const where: Prisma.PaymentLinkWhereInput = { payee: payeeAddress };
+    if (options?.status) where.status = options.status;
 
-      return await this.prisma.paymentLink.findMany({
-        where,
-        include: { records: true },
-        skip: options?.skip,
-        take: options?.take,
-        orderBy: { order: 'asc' },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Error finding payment links by payee with records:`,
-        error,
-      );
-      throw error;
-    }
+    return model.findMany({
+      where,
+      include: { records: true },
+      skip: options?.skip,
+      take: options?.take,
+      orderBy: { order: 'asc' },
+    });
   }
 
   /**
@@ -137,46 +131,44 @@ export class PaymentLinkRepository extends BaseRepository<
    * Delete payment link by code
    * This method handles cascade deletion of related records
    */
-  async deleteByCode(code: string): Promise<PaymentLink> {
-    try {
-      // First, delete all related PaymentLinkRecord entries
-      await this.prisma.paymentLinkRecord.deleteMany({
-        where: {
-          PaymentLink: {
-            code: code,
-          },
+  async deleteByCode(
+    code: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<PaymentLink> {
+    const client = tx || this.prisma;
+    // First, delete all related PaymentLinkRecord entries
+    await client.paymentLinkRecord.deleteMany({
+      where: {
+        PaymentLink: {
+          code: code,
         },
-      });
+      },
+    });
 
-      // Then delete the PaymentLink entry
-      return this.delete({ code });
-    } catch (error) {
-      this.logger.error(`Error deleting payment link with cascade:`, error);
-      throw error;
-    }
+    // Then delete the PaymentLink entry
+    return this.delete({ code }, tx);
   }
 
   /**
    * Delete multiple payment links by codes
    * This method handles cascade deletion of related records
    */
-  async deleteByCodes(codes: string[]): Promise<{ count: number }> {
-    try {
-      // First, delete all related PaymentLinkRecord entries
-      await this.prisma.paymentLinkRecord.deleteMany({
-        where: {
-          PaymentLink: {
-            code: { in: codes },
-          },
+  async deleteByCodes(
+    codes: string[],
+    tx?: PrismaTransactionClient,
+  ): Promise<{ count: number }> {
+    const client = tx || this.prisma;
+    // First, delete all related PaymentLinkRecord entries
+    await client.paymentLinkRecord.deleteMany({
+      where: {
+        PaymentLink: {
+          code: { in: codes },
         },
-      });
+      },
+    });
 
-      // Then delete the PaymentLink entries
-      return await this.deleteMany({ code: { in: codes } });
-    } catch (error) {
-      this.logger.error(`Error deleting payment links with cascade:`, error);
-      throw error;
-    }
+    // Then delete the PaymentLink entries
+    return this.deleteMany({ code: { in: codes } }, tx);
   }
 
   /**
@@ -219,30 +211,42 @@ export class PaymentLinkRepository extends BaseRepository<
 }
 
 @Injectable()
-export class PaymentLinkRecordRepository {
-  protected readonly logger = new Logger(PaymentLinkRecordRepository.name);
+export class PaymentLinkRecordRepository extends BaseRepository<
+  PaymentLinkRecord,
+  Prisma.PaymentLinkRecordWhereInput,
+  Prisma.PaymentLinkRecordCreateInput,
+  Prisma.PaymentLinkRecordUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
+  }
 
-  constructor(protected readonly prisma: PrismaService) {}
+  protected getModel(
+    tx?: PrismaTransactionClient,
+  ): PrismaClient['paymentLinkRecord'] {
+    return tx ? tx.paymentLinkRecord : this.prisma.paymentLinkRecord;
+  }
+
+  protected getModelName(): string {
+    return 'PaymentLinkRecord';
+  }
 
   /**
    * Create a payment record
    */
-  async create(
+  async createRecord(
     data: Prisma.PaymentLinkRecordCreateInput,
+    tx?: PrismaTransactionClient,
   ): Promise<PaymentLinkRecord> {
-    try {
-      const now = new Date();
-      return await this.prisma.paymentLinkRecord.create({
-        data: {
-          ...data,
-          createdAt: now,
-          updatedAt: now,
-        },
-      });
-    } catch (error) {
-      this.logger.error(`Error creating payment link record:`, error);
-      throw error;
-    }
+    const model = this.getModel(tx);
+    const now = new Date();
+    return model.create({
+      data: {
+        ...data,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
   }
 
   /**
@@ -250,83 +254,68 @@ export class PaymentLinkRecordRepository {
    */
   async findByPaymentLinkId(
     paymentLinkId: number,
+    tx?: PrismaTransactionClient,
   ): Promise<PaymentLinkRecord[]> {
-    try {
-      return await this.prisma.paymentLinkRecord.findMany({
-        where: { paymentLinkId },
+    return this.findMany(
+      { paymentLinkId },
+      {
         orderBy: { createdAt: 'desc' },
-      });
-    } catch (error) {
-      this.logger.error(`Error finding records by payment link ID:`, error);
-      throw error;
-    }
+      },
+      tx,
+    );
   }
 
   /**
    * Find record by ID
    */
-  async findById(id: number): Promise<PaymentLinkRecord | null> {
-    try {
-      return await this.prisma.paymentLinkRecord.findUnique({
-        where: { id },
-      });
-    } catch (error) {
-      this.logger.error(`Error finding payment link record by ID:`, error);
-      throw error;
-    }
+  async findById(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<PaymentLinkRecord | null> {
+    return this.findOne({ id }, tx);
   }
 
   /**
    * Update record with txid
    */
-  async updateTxid(id: number, txid: string): Promise<PaymentLinkRecord> {
-    try {
-      return await this.prisma.paymentLinkRecord.update({
-        where: { id },
-        data: {
-          txid,
-          updatedAt: new Date(),
-        },
-      });
-    } catch (error) {
-      this.logger.error(`Error updating payment link record txid:`, error);
-      throw error;
-    }
+  async updateTxid(
+    id: number,
+    txid: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<PaymentLinkRecord> {
+    return this.update(
+      { id },
+      {
+        txid,
+        updatedAt: new Date(),
+      },
+      tx,
+    );
   }
 
   /**
    * Count records for a payment link
    */
-  async countByPaymentLinkId(paymentLinkId: number): Promise<number> {
-    try {
-      return await this.prisma.paymentLinkRecord.count({
-        where: { paymentLinkId },
-      });
-    } catch (error) {
-      this.logger.error(`Error counting records for payment link:`, error);
-      throw error;
-    }
+  async countByPaymentLinkId(
+    paymentLinkId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<number> {
+    return this.count({ paymentLinkId }, tx);
   }
 
   /**
    * Count records with txid (completed payments)
    */
-  async countCompletedByPaymentLinkId(paymentLinkId: number): Promise<number> {
-    try {
-      return await this.prisma.paymentLinkRecord.count({
-        where: {
-          paymentLinkId,
-          txid: { not: null },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Error counting completed records for payment link:`,
-        error,
-      );
-      throw error;
-    }
+  async countCompletedByPaymentLinkId(
+    paymentLinkId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<number> {
+    return this.count(
+      {
+        paymentLinkId,
+        txid: { not: null },
+      },
+      tx,
+    );
   }
 }
-
-import { Logger } from '@nestjs/common';

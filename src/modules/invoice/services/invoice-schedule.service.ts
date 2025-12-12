@@ -15,6 +15,7 @@ import {
   ErrorInvoiceSchedule,
   ErrorPayroll,
 } from 'src/common/constants/errors';
+import { PrismaTransactionClient } from 'src/database/base.repository';
 
 @Injectable()
 export class InvoiceScheduleService {
@@ -34,8 +35,7 @@ export class InvoiceScheduleService {
     companyId: number,
     dto: CreateInvoiceScheduleDto,
   ): Promise<any> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      // Verify payroll exists and belongs to company
+    return this.prisma.$transaction(async (tx) => {
       const payroll = await this.payrollRepository.findById(
         payrollId,
         companyId,
@@ -66,7 +66,7 @@ export class InvoiceScheduleService {
         dto.generateDaysBefore,
       );
 
-      const schedule = await this.scheduleRepository.create(
+      const schedule = await this.scheduleRepository.createSchedule(
         {
           payrollId,
           frequency: dto.frequency,
@@ -82,7 +82,7 @@ export class InvoiceScheduleService {
       );
 
       return schedule;
-    }, 'createInvoiceSchedule');
+    });
   }
 
   /**
@@ -93,7 +93,7 @@ export class InvoiceScheduleService {
     companyId: number,
     dto: UpdateInvoiceScheduleDto,
   ): Promise<any> {
-    return this.prisma.executeInTransaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const schedule = await this.scheduleRepository.findById(id, tx);
 
       if (!schedule) {
@@ -127,17 +127,21 @@ export class InvoiceScheduleService {
         );
       }
 
-      const updated = await this.scheduleRepository.update(id, updateData, tx);
+      const updated = await this.scheduleRepository.updateSchedule(
+        id,
+        updateData,
+        tx,
+      );
 
       return updated;
-    }, 'updateInvoiceSchedule');
+    });
   }
 
   /**
    * Delete invoice schedule
    */
   async deleteSchedule(id: number, companyId: number): Promise<void> {
-    return this.prisma.executeInTransaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const schedule = await this.scheduleRepository.findById(id, tx);
 
       if (!schedule) {
@@ -152,8 +156,8 @@ export class InvoiceScheduleService {
         );
       }
 
-      await this.scheduleRepository.delete(id, tx);
-    }, 'deleteInvoiceSchedule');
+      await this.scheduleRepository.deleteSchedule(id, tx);
+    });
   }
 
   /**
@@ -251,11 +255,13 @@ export class InvoiceScheduleService {
     scheduleId: number,
     lastGeneratedAt: Date,
     nextGenerateDate: Date,
+    tx: PrismaTransactionClient,
   ): Promise<void> {
     await this.scheduleRepository.updateLastGenerated(
       scheduleId,
       lastGeneratedAt,
       nextGenerateDate,
+      tx,
     );
   }
 }

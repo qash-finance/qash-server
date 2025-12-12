@@ -19,15 +19,19 @@ import {
   BulkInviteTeamMembersDto,
 } from './team-member.dto';
 import { TeamMemberRoleEnum } from '../../database/generated/client';
+import { ErrorCompany, ErrorTeamMember } from 'src/common/constants/errors';
+import { PrismaService } from 'src/database/prisma.service';
+import { handleError } from 'src/common/utils/errors';
 
 @Injectable()
 export class TeamMemberService {
   private readonly logger = new Logger(TeamMemberService.name);
 
   constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
     private readonly teamMemberRepository: TeamMemberRepository,
     private readonly companyRepository: CompanyRepository,
-    private readonly mailService: MailService,
     private readonly userRepository: UserRepository,
   ) {}
 
@@ -38,58 +42,67 @@ export class TeamMemberService {
     userId: number,
     createTeamMemberDto: CreateTeamMemberDto,
   ) {
-    const { companyId } = createTeamMemberDto;
+    try {
+      this.prisma.$transaction(async (tx) => {
+        const { companyId } = createTeamMemberDto;
 
-    // Check if user can manage team
-    const canManage = await this.teamMemberRepository.hasPermission(
-      companyId,
-      userId,
-      [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
-    );
+        // Check if user can manage team
+        const canManage = await this.teamMemberRepository.hasPermission(
+          companyId,
+          userId,
+          [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
+          tx,
+        );
 
-    if (!canManage) {
-      throw new ForbiddenException(
-        'Insufficient permissions to add team members',
-      );
+        if (!canManage) {
+          throw new ForbiddenException(ErrorTeamMember.InsufficientPermissions);
+        }
+
+        // Check if email is already invited
+        const existing = await this.teamMemberRepository.findByCompanyAndEmail(
+          companyId,
+          createTeamMemberDto.email,
+          tx,
+        );
+
+        if (existing) {
+          throw new ConflictException(ErrorTeamMember.EmailAlreadyExists);
+        }
+
+        // Create user first (required for 1:1 relationship)
+        const user = await this.userRepository.create(
+          {
+            email: createTeamMemberDto.email,
+          },
+          tx,
+        );
+
+        return this.teamMemberRepository.create(
+          {
+            ...createTeamMemberDto,
+            user: {
+              connect: {
+                id: user.id,
+              },
+            },
+            inviter: {
+              connect: {
+                id: userId,
+              },
+            },
+            company: {
+              connect: {
+                id: companyId,
+              },
+            },
+          },
+          tx,
+        );
+      });
+    } catch (error) {
+      this.logger.error('Failed to create team member:', error);
+      handleError(error, this.logger);
     }
-
-    // Check if email is already invited
-    const existing = await this.teamMemberRepository.findByCompanyAndEmail(
-      companyId,
-      createTeamMemberDto.email,
-    );
-
-    if (existing) {
-      throw new ConflictException('Email already exists in this company');
-    }
-
-    this.logger.log(
-      `Creating team member for company ${companyId}: ${createTeamMemberDto.email}`,
-    );
-
-    // Create user first (required for 1:1 relationship)
-    const user = await this.userRepository.create({
-      email: createTeamMemberDto.email,
-    });
-
-    return this.teamMemberRepository.create({
-      ...createTeamMemberDto,
-      user: {
-        connect: {
-          id: user.id,
-        },
-      },
-      inviter: {
-        connect: {
-          id: userId,
-        },
-      },
-      company: {
-        connect: {
-          id: companyId,
-        },
-      },
-    });
   }
 
   /**
@@ -100,77 +113,88 @@ export class TeamMemberService {
     companyId: number,
     inviteDto: InviteTeamMemberDto,
   ) {
-    // Check if user can manage team
-    const canManage = await this.teamMemberRepository.hasPermission(
-      companyId,
-      userId,
-      [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
-    );
-
-    if (!canManage) {
-      throw new ForbiddenException(
-        'Insufficient permissions to invite team members',
-      );
-    }
-
-    // Get company details
-    const company = await this.companyRepository.findById(companyId);
-    if (!company) {
-      throw new NotFoundException('Company not found');
-    }
-
-    // Check if email is already invited
-    const existing = await this.teamMemberRepository.findByCompanyAndEmail(
-      companyId,
-      inviteDto.email,
-    );
-
-    if (existing) {
-      throw new ConflictException('Email already invited to this company');
-    }
-
-    this.logger.log(
-      `Inviting team member to company ${companyId}: ${inviteDto.email}`,
-    );
-
-    // Create user first (required for 1:1 relationship)
-    const user = await this.userRepository.create({
-      email: inviteDto.email,
-    });
-
-    // Create team member record
-    const teamMember = await this.teamMemberRepository.create({
-      firstName: inviteDto.firstName,
-      lastName: inviteDto.lastName,
-      position: inviteDto.position,
-      role: inviteDto.role,
-      company: {
-        connect: {
-          id: companyId,
-        },
-      },
-      user: {
-        connect: {
-          id: user.id,
-        },
-      },
-      inviter: {
-        connect: {
-          id: userId,
-        },
-      },
-      metadata: inviteDto.metadata,
-    });
-
-    // Send invitation email
     try {
-      await this.sendInvitationEmail(teamMember, company);
-    } catch (error) {
-      this.logger.error('Failed to send invitation email:', error);
-      // Don't throw error, invitation is created but email failed
-    }
+      return this.prisma.$transaction(async (tx) => {
+        // Check if user can manage team
+        const canManage = await this.teamMemberRepository.hasPermission(
+          companyId,
+          userId,
+          [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
+          tx,
+        );
 
-    return teamMember;
+        if (!canManage) {
+          throw new ForbiddenException(
+            ErrorTeamMember.InsufficientPermissionsToInvite,
+          );
+        }
+
+        // Get company details
+        const company = await this.companyRepository.findById(companyId, tx);
+        if (!company) {
+          throw new NotFoundException(ErrorCompany.CompanyNotFound);
+        }
+
+        // Check if email is already invited
+        const existing = await this.teamMemberRepository.findByCompanyAndEmail(
+          companyId,
+          inviteDto.email,
+          tx,
+        );
+
+        if (existing) {
+          throw new ConflictException(ErrorTeamMember.EmailAlreadyInvited);
+        }
+
+        // Create user first (required for 1:1 relationship)
+        const user = await this.userRepository.create(
+          {
+            email: inviteDto.email,
+          },
+          tx,
+        );
+
+        // Create team member record
+        const teamMember = await this.teamMemberRepository.create(
+          {
+            firstName: inviteDto.firstName,
+            lastName: inviteDto.lastName,
+            position: inviteDto.position,
+            role: inviteDto.role,
+            company: {
+              connect: {
+                id: companyId,
+              },
+            },
+            user: {
+              connect: {
+                id: user.id,
+              },
+            },
+            inviter: {
+              connect: {
+                id: userId,
+              },
+            },
+            metadata: inviteDto.metadata,
+          },
+          tx,
+        );
+
+        // Send invitation email
+        try {
+          await this.sendInvitationEmail(teamMember, company);
+        } catch (error) {
+          this.logger.error('Failed to send invitation email:', error);
+          // Don't throw error, invitation is created but email failed
+        }
+
+        return teamMember;
+      });
+    } catch (error) {
+      this.logger.error('Failed to invite team member:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
@@ -181,74 +205,84 @@ export class TeamMemberService {
     companyId: number,
     bulkInviteDto: BulkInviteTeamMembersDto,
   ) {
-    // Check if user can manage team
-    const canManage = await this.teamMemberRepository.hasPermission(
-      companyId,
-      userId,
-      [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
-    );
-
-    if (!canManage) {
-      throw new ForbiddenException(
-        'Insufficient permissions to invite team members',
+    try {
+      // Check if user can manage team
+      const canManage = await this.teamMemberRepository.hasPermission(
+        companyId,
+        userId,
+        [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
       );
-    }
 
-    const results = [];
-    const errors = [];
-
-    for (const memberDto of bulkInviteDto.members) {
-      try {
-        const result = await this.inviteTeamMember(
-          userId,
-          companyId,
-          memberDto,
+      if (!canManage) {
+        throw new ForbiddenException(
+          ErrorTeamMember.InsufficientPermissionsToInvite,
         );
-        results.push(result);
-      } catch (error) {
-        errors.push({
-          email: memberDto.email,
-          error: error.message,
-        });
       }
-    }
 
-    return {
-      successful: results,
-      failed: errors,
-      totalProcessed: bulkInviteDto.members.length,
-      successCount: results.length,
-      failureCount: errors.length,
-    };
+      const results = [];
+      const errors = [];
+
+      for (const memberDto of bulkInviteDto.members) {
+        try {
+          const result = await this.inviteTeamMember(
+            userId,
+            companyId,
+            memberDto,
+          );
+          results.push(result);
+        } catch (error) {
+          errors.push({
+            email: memberDto.email,
+            error: error.message,
+          });
+        }
+      }
+
+      return {
+        successful: results,
+        failed: errors,
+        totalProcessed: bulkInviteDto.members.length,
+        successCount: results.length,
+        failureCount: errors.length,
+      };
+    } catch (error) {
+      this.logger.error('Failed to bulk invite team members:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
    * Get team member by ID
    */
   async getTeamMemberById(teamMemberId: number, userId: number) {
-    const teamMember =
-      await this.teamMemberRepository.findByIdWithRelations(teamMemberId);
+    try {
+      const teamMember =
+        await this.teamMemberRepository.findByIdWithRelations(teamMemberId);
 
-    if (!teamMember) {
-      throw new NotFoundException('Team member not found');
+      if (!teamMember) {
+        throw new NotFoundException(ErrorTeamMember.NotFound);
+      }
+
+      // Check if user has access to this company
+      const hasAccess = await this.teamMemberRepository.hasPermission(
+        teamMember.companyId,
+        userId,
+        [
+          TeamMemberRoleEnum.OWNER,
+          TeamMemberRoleEnum.ADMIN,
+          TeamMemberRoleEnum.VIEWER,
+        ],
+      );
+
+      if (!hasAccess) {
+        throw new ForbiddenException(ErrorTeamMember.AccessDenied);
+      }
+
+      return teamMember;
+    } catch (error) {
+      this.logger.error('Failed to get team member by ID:', error);
+      handleError(error, this.logger);
     }
-
-    // Check if user has access to this company
-    const hasAccess = await this.teamMemberRepository.hasPermission(
-      teamMember.companyId,
-      userId,
-      [
-        TeamMemberRoleEnum.OWNER,
-        TeamMemberRoleEnum.ADMIN,
-        TeamMemberRoleEnum.VIEWER,
-      ],
-    );
-
-    if (!hasAccess) {
-      throw new ForbiddenException('Access denied');
-    }
-
-    return teamMember;
   }
 
   /**
@@ -259,22 +293,27 @@ export class TeamMemberService {
     userId: number,
     filters?: TeamMemberSearchQueryDto,
   ) {
-    // Check if user has access to company
-    const hasAccess = await this.teamMemberRepository.hasPermission(
-      companyId,
-      userId,
-      [
-        TeamMemberRoleEnum.OWNER,
-        TeamMemberRoleEnum.ADMIN,
-        TeamMemberRoleEnum.VIEWER,
-      ],
-    );
+    try {
+      // Check if user has access to company
+      const hasAccess = await this.teamMemberRepository.hasPermission(
+        companyId,
+        userId,
+        [
+          TeamMemberRoleEnum.OWNER,
+          TeamMemberRoleEnum.ADMIN,
+          TeamMemberRoleEnum.VIEWER,
+        ],
+      );
 
-    if (!hasAccess) {
-      throw new ForbiddenException('Access denied to this company');
+      if (!hasAccess) {
+        throw new ForbiddenException(ErrorTeamMember.AccessDenied);
+      }
+
+      return this.teamMemberRepository.findByCompany(companyId, filters);
+    } catch (error) {
+      this.logger.error('Failed to get company team members:', error);
+      handleError(error, this.logger);
     }
-
-    return this.teamMemberRepository.findByCompany(companyId, filters);
   }
 
   /**
@@ -285,41 +324,55 @@ export class TeamMemberService {
     userId: number,
     updateDto: UpdateTeamMemberDto,
   ) {
-    const teamMember =
-      await this.teamMemberRepository.findByIdWithRelations(teamMemberId);
-    if (!teamMember) {
-      throw new NotFoundException('Team member not found');
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const teamMember =
+          await this.teamMemberRepository.findByIdWithRelations(
+            teamMemberId,
+            tx,
+          );
+        if (!teamMember) {
+          throw new NotFoundException(ErrorTeamMember.NotFound);
+        }
+
+        // Check if user can manage team or is updating their own profile
+        const canManage = await this.teamMemberRepository.hasPermission(
+          teamMember.companyId,
+          userId,
+          [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
+          tx,
+        );
+
+        const isOwnProfile = teamMember.userId === userId;
+
+        if (!canManage && !isOwnProfile) {
+          throw new ForbiddenException(ErrorTeamMember.InsufficientPermissions);
+        }
+
+        // If updating email, check for conflicts
+        if (updateDto.email && updateDto.email !== teamMember.user?.email) {
+          const existing =
+            await this.teamMemberRepository.findByCompanyAndEmail(
+              teamMember.companyId,
+              updateDto.email,
+              tx,
+            );
+
+          if (existing && existing.id !== teamMemberId) {
+            throw new ConflictException(ErrorTeamMember.EmailAlreadyExists);
+          }
+        }
+
+        return this.teamMemberRepository.updateById(
+          teamMemberId,
+          updateDto,
+          tx,
+        );
+      });
+    } catch (error) {
+      this.logger.error(`Failed to update team member ${teamMemberId}:`, error);
+      handleError(error, this.logger);
     }
-
-    // Check if user can manage team or is updating their own profile
-    const canManage = await this.teamMemberRepository.hasPermission(
-      teamMember.companyId,
-      userId,
-      [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
-    );
-
-    const isOwnProfile = teamMember.userId === userId;
-
-    if (!canManage && !isOwnProfile) {
-      throw new ForbiddenException(
-        'Insufficient permissions to update team member',
-      );
-    }
-
-    // If updating email, check for conflicts
-    if (updateDto.email && updateDto.email !== teamMember.user.email) {
-      const existing = await this.teamMemberRepository.findByCompanyAndEmail(
-        teamMember.companyId,
-        updateDto.email,
-      );
-
-      if (existing && existing.id !== teamMemberId) {
-        throw new ConflictException('Email already exists in this company');
-      }
-    }
-
-    this.logger.log(`Updating team member ${teamMemberId} by user ${userId}`);
-    return this.teamMemberRepository.updateById(teamMemberId, updateDto);
   }
 
   /**
@@ -330,100 +383,120 @@ export class TeamMemberService {
     userId: number,
     newRole: TeamMemberRoleEnum,
   ) {
-    const teamMember = await this.teamMemberRepository.findById(teamMemberId);
-    if (!teamMember) {
-      throw new NotFoundException('Team member not found');
-    }
-
-    // Only owners can change roles, and admins can change viewer roles
-    const userRole = await this.teamMemberRepository.getUserRoleInCompany(
-      teamMember.companyId,
-      userId,
-    );
-
-    if (!userRole) {
-      throw new ForbiddenException('Access denied');
-    }
-
-    // Role change permissions
-    if (userRole === TeamMemberRoleEnum.OWNER) {
-      // Owners can change any role
-    } else if (userRole === TeamMemberRoleEnum.ADMIN) {
-      // Admins can only change viewer roles and cannot promote to owner
-      if (
-        teamMember.role !== TeamMemberRoleEnum.VIEWER ||
-        newRole === TeamMemberRoleEnum.OWNER
-      ) {
-        throw new ForbiddenException(
-          'Insufficient permissions to change this role',
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const teamMember = await this.teamMemberRepository.findById(
+          teamMemberId,
+          tx,
         );
-      }
-    } else {
-      throw new ForbiddenException('Insufficient permissions to change roles');
-    }
+        if (!teamMember) {
+          throw new NotFoundException(ErrorTeamMember.NotFound);
+        }
 
-    // Prevent removing the last owner
-    if (
-      teamMember.role === TeamMemberRoleEnum.OWNER &&
-      newRole !== TeamMemberRoleEnum.OWNER
-    ) {
-      const ownerCount = await this.teamMemberRepository.countByCompany(
-        teamMember.companyId,
-        { role: TeamMemberRoleEnum.OWNER, isActive: true },
+        // Only owners can change roles, and admins can change viewer roles
+        const userRole = await this.teamMemberRepository.getUserRoleInCompany(
+          teamMember.companyId,
+          userId,
+          tx,
+        );
+
+        if (!userRole) {
+          throw new ForbiddenException(ErrorTeamMember.AccessDenied);
+        }
+
+        // Role change permissions
+        if (userRole === TeamMemberRoleEnum.OWNER) {
+          // Owners can change any role
+        } else if (userRole === TeamMemberRoleEnum.ADMIN) {
+          // Admins can only change viewer roles and cannot promote to owner
+          if (
+            teamMember.role !== TeamMemberRoleEnum.VIEWER ||
+            newRole === TeamMemberRoleEnum.OWNER
+          ) {
+            throw new ForbiddenException(
+              ErrorTeamMember.InsufficientPermissions,
+            );
+          }
+        } else {
+          throw new ForbiddenException(ErrorTeamMember.InsufficientPermissions);
+        }
+
+        // Prevent removing the last owner
+        if (
+          teamMember.role === TeamMemberRoleEnum.OWNER &&
+          newRole !== TeamMemberRoleEnum.OWNER
+        ) {
+          const ownerCount = await this.teamMemberRepository.countByCompany(
+            teamMember.companyId,
+            { role: TeamMemberRoleEnum.OWNER, isActive: true },
+            tx,
+          );
+
+          if (ownerCount <= 1) {
+            throw new BadRequestException(
+              ErrorTeamMember.CannotRemoveLastOwner,
+            );
+          }
+        }
+
+        return this.teamMemberRepository.updateRole(teamMemberId, newRole, tx);
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to update team member role ${teamMemberId}:`,
+        error,
       );
-
-      if (ownerCount <= 1) {
-        throw new BadRequestException(
-          'Cannot remove the last owner of the company',
-        );
-      }
+      handleError(error, this.logger);
     }
-
-    this.logger.log(
-      `Updating role of team member ${teamMemberId} from ${teamMember.role} to ${newRole}`,
-    );
-
-    return this.teamMemberRepository.updateRole(teamMemberId, newRole);
   }
 
   /**
    * Remove team member
    */
   async removeTeamMember(teamMemberId: number, userId: number) {
-    const teamMember = await this.teamMemberRepository.findById(teamMemberId);
-    if (!teamMember) {
-      throw new NotFoundException('Team member not found');
-    }
-
-    // Check permissions
-    const canManage = await this.teamMemberRepository.hasPermission(
-      teamMember.companyId,
-      userId,
-      [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
-    );
-
-    if (!canManage) {
-      throw new ForbiddenException(
-        'Insufficient permissions to remove team member',
-      );
-    }
-
-    // Prevent removing the last owner
-    if (teamMember.role === TeamMemberRoleEnum.OWNER) {
-      const ownerCount = await this.teamMemberRepository.countByCompany(
-        teamMember.companyId,
-        { role: TeamMemberRoleEnum.OWNER, isActive: true },
-      );
-
-      if (ownerCount <= 1) {
-        throw new BadRequestException(
-          'Cannot remove the last owner of the company',
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const teamMember = await this.teamMemberRepository.findById(
+          teamMemberId,
+          tx,
         );
-      }
-    }
+        if (!teamMember) {
+          throw new NotFoundException(ErrorTeamMember.NotFound);
+        }
 
-    this.logger.log(`Removing team member ${teamMemberId} by user ${userId}`);
-    return this.teamMemberRepository.deactivate(teamMemberId);
+        // Check permissions
+        const canManage = await this.teamMemberRepository.hasPermission(
+          teamMember.companyId,
+          userId,
+          [TeamMemberRoleEnum.OWNER, TeamMemberRoleEnum.ADMIN],
+          tx,
+        );
+
+        if (!canManage) {
+          throw new ForbiddenException(ErrorTeamMember.InsufficientPermissions);
+        }
+
+        // Prevent removing the last owner
+        if (teamMember.role === TeamMemberRoleEnum.OWNER) {
+          const ownerCount = await this.teamMemberRepository.countByCompany(
+            teamMember.companyId,
+            { role: TeamMemberRoleEnum.OWNER, isActive: true },
+            tx,
+          );
+
+          if (ownerCount <= 1) {
+            throw new BadRequestException(
+              ErrorTeamMember.CannotRemoveLastOwner,
+            );
+          }
+        }
+
+        return this.teamMemberRepository.deactivate(teamMemberId, tx);
+      });
+    } catch (error) {
+      this.logger.error(`Failed to remove team member ${teamMemberId}:`, error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
@@ -434,86 +507,137 @@ export class TeamMemberService {
     userId: number,
     acceptDto?: AcceptInvitationDto,
   ) {
-    const teamMember = await this.teamMemberRepository.findById(teamMemberId);
-    if (!teamMember) {
-      throw new NotFoundException('Invitation not found');
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const teamMember = await this.teamMemberRepository.findById(
+          teamMemberId,
+          tx,
+        );
+        if (!teamMember) {
+          throw new NotFoundException(ErrorTeamMember.NotFound);
+        }
+
+        if (teamMember.userId) {
+          throw new BadRequestException(ErrorTeamMember.UserAlreadyJoined);
+        }
+
+        if (!teamMember.isActive) {
+          throw new BadRequestException(ErrorTeamMember.InvitationNotActive);
+        }
+
+        // Prepare update data
+        const updateData: any = {
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          joinedAt: new Date(),
+        };
+
+        if (acceptDto?.profilePicture) {
+          updateData.profilePicture = acceptDto.profilePicture;
+        }
+
+        if (acceptDto?.metadata) {
+          const existingMetadata =
+            teamMember.metadata && typeof teamMember.metadata === 'object'
+              ? teamMember.metadata
+              : {};
+          updateData.metadata = {
+            ...existingMetadata,
+            ...acceptDto.metadata,
+          };
+        }
+
+        return this.teamMemberRepository.updateById(
+          teamMemberId,
+          updateData,
+          tx,
+        );
+      });
+    } catch (error) {
+      this.logger.error(`Failed to accept invitation ${teamMemberId}:`, error);
+      handleError(error, this.logger);
     }
-
-    if (teamMember.userId) {
-      throw new BadRequestException('Invitation already accepted');
-    }
-
-    if (!teamMember.isActive) {
-      throw new BadRequestException('Invitation is no longer active');
-    }
-
-    this.logger.log(`User ${userId} accepting invitation ${teamMemberId}`);
-
-    // Link team member to user account
-    const updateData: any = {
-      joinedAt: new Date(),
-    };
-
-    if (acceptDto?.profilePicture) {
-      updateData.profilePicture = acceptDto.profilePicture;
-    }
-
-    if (acceptDto?.metadata) {
-      const existingMetadata =
-        teamMember.metadata && typeof teamMember.metadata === 'object'
-          ? teamMember.metadata
-          : {};
-      updateData.metadata = {
-        ...existingMetadata,
-        ...acceptDto.metadata,
-      };
-    }
-
-    return this.teamMemberRepository.linkToUser(teamMemberId, userId);
   }
 
   /**
    * Get pending invitations for user email
    */
   async getPendingInvitations(email: string) {
-    return this.teamMemberRepository.findPendingInvitationsByEmail(email);
+    try {
+      return await this.teamMemberRepository.findPendingInvitationsByEmail(
+        email,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to get pending invitations for email ${email}:`,
+        error,
+      );
+      handleError(error, this.logger);
+    }
   }
 
   /**
    * Get team member statistics for company
    */
   async getTeamStats(companyId: number, userId: number) {
-    // Check access
-    const hasAccess = await this.teamMemberRepository.hasPermission(
-      companyId,
-      userId,
-      [
-        TeamMemberRoleEnum.OWNER,
-        TeamMemberRoleEnum.ADMIN,
-        TeamMemberRoleEnum.VIEWER,
-      ],
-    );
+    try {
+      // Check access
+      const hasAccess = await this.teamMemberRepository.hasPermission(
+        companyId,
+        userId,
+        [
+          TeamMemberRoleEnum.OWNER,
+          TeamMemberRoleEnum.ADMIN,
+          TeamMemberRoleEnum.VIEWER,
+        ],
+      );
 
-    if (!hasAccess) {
-      throw new ForbiddenException('Access denied');
+      if (!hasAccess) {
+        throw new ForbiddenException(ErrorTeamMember.AccessDenied);
+      }
+
+      return await this.teamMemberRepository.getCompanyStats(companyId);
+    } catch (error) {
+      this.logger.error(
+        `Failed to get team stats for company ${companyId}:`,
+        error,
+      );
+      handleError(error, this.logger);
     }
-
-    return this.teamMemberRepository.getCompanyStats(companyId);
   }
 
   /**
    * Get user's team membership (single company since 1:1 relationship)
    */
   async getUserMemberships(userId: number) {
-    const teamMember = await this.teamMemberRepository.findByUserId(userId);
-    return teamMember ? [teamMember] : []; // Return as array for backward compatibility
+    try {
+      const teamMember = await this.teamMemberRepository.findByUserId(userId);
+      return teamMember ? [teamMember] : []; // Return as array for backward compatibility
+    } catch (error) {
+      this.logger.error(
+        `Failed to get user memberships for user ${userId}:`,
+        error,
+      );
+      handleError(error, this.logger);
+    }
   }
 
   /**
    * Get user's single team membership
    */
   async getUserMembership(userId: number) {
-    return this.teamMemberRepository.findByUserId(userId);
+    try {
+      return await this.teamMemberRepository.findByUserId(userId);
+    } catch (error) {
+      this.logger.error(
+        `Failed to get user membership for user ${userId}:`,
+        error,
+      );
+      handleError(error, this.logger);
+    }
   }
 
   /**

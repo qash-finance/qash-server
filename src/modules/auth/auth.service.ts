@@ -4,9 +4,11 @@ import { OtpService } from './services/otp.service';
 import { JwtAuthService, SessionInfo } from './services/jwt.service';
 import { UserRepository } from './repositories/user.repository';
 import { UserSessionRepository } from './repositories/user-session.repository';
-import { AuthResponseDto } from './dto/auth.dto';
+import { AuthResponseDto, MessageResponseDto } from './dto/auth.dto';
 import { OtpTypeEnum } from '../../database/generated/enums';
 import { handleError } from 'src/common/utils/errors';
+import { ErrorUser } from 'src/common/constants/errors';
+import { PrismaService } from 'src/database/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +20,7 @@ export class AuthService {
     private readonly jwtAuthService: JwtAuthService,
     private readonly userRepository: UserRepository,
     private readonly userSessionRepository: UserSessionRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
@@ -26,9 +29,10 @@ export class AuthService {
   async sendOtp(
     email: string,
     type: OtpTypeEnum = OtpTypeEnum.LOGIN,
-  ): Promise<void> {
+  ): Promise<MessageResponseDto> {
     try {
       await this.otpService.sendOtp(email, type);
+      return { message: 'OTP sent successfully to your email' };
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -42,35 +46,41 @@ export class AuthService {
     otp: string,
     sessionInfo?: SessionInfo,
   ): Promise<AuthResponseDto> {
-    this.logger.log(`Verifying OTP for: ${email}`);
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const { userId, isNewUser } = await this.otpService.verifyOtpInternal(
+          email,
+          otp,
+          OtpTypeEnum.LOGIN,
+          tx,
+        );
 
-    // Verify OTP
-    const { userId, isNewUser } = await this.otpService.verifyOtp(email, otp);
+        const tokens = await this.jwtAuthService.createTokenPair(
+          userId,
+          sessionInfo,
+          tx,
+        );
 
-    // Generate tokens
-    const tokens = await this.jwtAuthService.generateTokens(
-      userId,
-      sessionInfo,
-    );
+        const user = await this.getUserProfile(userId);
 
-    // Get user profile
-    const user = await this.getUserProfile(userId);
-
-    this.logger.log(
-      `User authenticated successfully: ${email} (${isNewUser ? 'new' : 'existing'} user)`,
-    );
-
-    return {
-      ...tokens,
-      user,
-    };
+        return {
+          ...tokens,
+          user,
+        };
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to verify OTP and authenticate: ${email}`,
+        error,
+      );
+      handleError(error, this.logger);
+    }
   }
 
   /**
    * Refresh authentication tokens
    */
   async refreshTokens(refreshToken: string, sessionInfo?: SessionInfo) {
-    this.logger.log('Refreshing tokens');
     return await this.jwtAuthService.refreshTokens(refreshToken, sessionInfo);
   }
 
@@ -81,7 +91,7 @@ export class AuthService {
     const user = await this.userRepository.getProfile(userId);
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(ErrorUser.NotFound);
     }
 
     return user;
@@ -91,7 +101,6 @@ export class AuthService {
    * Get user's active sessions
    */
   async getUserSessions(userId: number) {
-    this.logger.log(`Getting sessions for user: ${userId}`);
     return await this.jwtAuthService.getUserSessions(userId);
   }
 
@@ -99,7 +108,6 @@ export class AuthService {
    * Logout user (revoke refresh token)
    */
   async logout(refreshToken: string): Promise<void> {
-    this.logger.log('Logging out user');
     await this.jwtAuthService.revokeRefreshToken(refreshToken);
   }
 
@@ -107,7 +115,6 @@ export class AuthService {
    * Logout user from all devices
    */
   async logoutAll(userId: number): Promise<void> {
-    this.logger.log(`Logging out user from all devices: ${userId}`);
     await this.jwtAuthService.revokeAllUserTokens(userId);
   }
 
@@ -115,8 +122,6 @@ export class AuthService {
    * Deactivate user account
    */
   async deactivateUser(userId: number): Promise<void> {
-    this.logger.log(`Deactivating user: ${userId}`);
-
     // Deactivate user and revoke all sessions
     await Promise.all([
       this.userRepository.deactivate(userId),
@@ -128,7 +133,6 @@ export class AuthService {
    * Reactivate user account
    */
   async reactivateUser(userId: number): Promise<void> {
-    this.logger.log(`Reactivating user: ${userId}`);
     await this.userRepository.activate(userId);
   }
 
@@ -136,27 +140,30 @@ export class AuthService {
    * Get current user with company details
    */
   async getCurrentUserWithCompany(userId: number) {
-    this.logger.log(`Getting user details with company for: ${userId}`);
-    const user = await this.userRepository.findByIdWithCompany(userId);
+    try {
+      const user = await this.userRepository.findByIdWithCompany(userId);
 
-    if (!user) {
-      throw new NotFoundException('User not found');
+      if (!user) {
+        throw new NotFoundException(ErrorUser.NotFound);
+      }
+
+      return user;
+    } catch (error) {
+      this.logger.error(
+        `Failed to get current user with company details: ${userId}`,
+        error,
+      );
+      handleError(error, this.logger);
     }
-
-    return user;
   }
 
   /**
    * Clean up expired data (for cron jobs)
    */
   async cleanupExpiredData(): Promise<void> {
-    this.logger.log('Starting cleanup of expired data');
-
     await Promise.all([
       this.otpService.cleanupExpiredOtps(),
       this.jwtAuthService.cleanupExpiredSessions(),
     ]);
-
-    this.logger.log('Cleanup completed');
   }
 }

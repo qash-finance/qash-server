@@ -5,6 +5,7 @@ import {
   ContractTermEnum,
   PayrollStatusEnum,
   Prisma,
+  PrismaClient,
 } from '../../database/generated/client';
 import {
   BaseRepository,
@@ -75,7 +76,7 @@ export class PayrollRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel(tx?: PrismaTransactionClient) {
+  protected getModel(tx?: PrismaTransactionClient): PrismaClient['payroll'] {
     return tx ? tx.payroll : this.prisma.payroll;
   }
 
@@ -176,12 +177,12 @@ export class PayrollRepository extends BaseRepository<
     date: Date,
     tx?: PrismaTransactionClient,
   ): Promise<PayrollModel[]> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
 
-    return client.payroll.findMany({
+    return model.findMany({
       where: {
         status: PayrollStatusEnum.ACTIVE,
-        payDate: {
+        payStartDate: {
           lte: date,
         },
       },
@@ -201,9 +202,9 @@ export class PayrollRepository extends BaseRepository<
     companyId: number,
     tx?: PrismaTransactionClient,
   ): Promise<PayrollModel[]> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
 
-    return client.payroll.findMany({
+    return model.findMany({
       where: {
         employeeId,
         companyId,

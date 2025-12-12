@@ -8,6 +8,7 @@ import { PrismaClient } from './generated/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { AppConfigService } from '../modules/shared/config/config.service';
 import { handleError } from 'src/common/utils/errors';
+import { PrismaTransactionClient } from './base.repository';
 
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
@@ -91,7 +92,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   get $transaction() {
-    return this.client.$transaction.bind(this.client);
+    return this.client.$transaction;
   }
 
   get $connect() {
@@ -118,7 +119,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   public async executeInTransaction<T>(
-    operation: (tx: any) => Promise<T>,
+    operation: (tx: PrismaTransactionClient) => Promise<T>,
     operationName: string,
     context?: Record<string, any>,
   ): Promise<T> {

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { InvoiceController } from './invoice.controller';
 import { InvoiceService } from './services/invoice.service';
-import { InvoiceRepository } from './invoice.repository';
+import { InvoiceRepository } from './repositories/invoice.repository';
 import { InvoiceItemRepository } from './repositories/invoice-item.repository';
 import { InvoiceItemService } from './services/invoice-item.service';
 import { InvoiceScheduleRepository } from './repositories/invoice-schedule.repository';

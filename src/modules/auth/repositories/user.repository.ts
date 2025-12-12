@@ -5,7 +5,7 @@ import {
   BaseRepository,
   PrismaTransactionClient,
 } from 'src/database/base.repository';
-import { Prisma } from 'src/database/generated/client';
+import { Prisma, PrismaClient } from 'src/database/generated/client';
 
 export interface CreateUserData {
   email: string;
@@ -33,7 +33,7 @@ export class UserRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel(tx?: PrismaTransactionClient): any {
+  protected getModel(tx?: PrismaTransactionClient): PrismaClient['user'] {
     return tx ? tx.user : this.prisma.user;
   }
 
@@ -67,7 +67,9 @@ export class UserRepository extends BaseRepository<
   async findByEmailWithOtpCodes(
     email: string,
     otpType?: string,
+    tx?: PrismaTransactionClient,
   ): Promise<UserWithRelations | null> {
+    const model = this.getModel(tx);
     const whereClause: any = {
       type: otpType,
       isUsed: false,
@@ -80,7 +82,7 @@ export class UserRepository extends BaseRepository<
       delete whereClause.type;
     }
 
-    return this.prisma.user.findUnique({
+    return model.findUnique({
       where: { email },
       include: {
         otpCodes: {
@@ -97,8 +99,12 @@ export class UserRepository extends BaseRepository<
   /**
    * Create new user
    */
-  async create(data: CreateUserData): Promise<UserModel> {
-    return this.prisma.user.create({
+  async create(
+    data: CreateUserData,
+    tx?: PrismaTransactionClient,
+  ): Promise<UserModel> {
+    const model = this.getModel(tx);
+    return model.create({
       data: {
         email: data.email,
         isActive: data.isActive ?? true,
@@ -109,8 +115,13 @@ export class UserRepository extends BaseRepository<
   /**
    * Update user by ID
    */
-  async updateById(id: number, data: UpdateUserData): Promise<UserModel> {
-    return this.prisma.user.update({
+  async updateById(
+    id: number,
+    data: UpdateUserData,
+    tx?: PrismaTransactionClient,
+  ): Promise<UserModel> {
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data,
     });
@@ -119,8 +130,9 @@ export class UserRepository extends BaseRepository<
   /**
    * Get user profile (safe fields only)
    */
-  async getProfile(id: number) {
-    return this.prisma.user.findUnique({
+  async getProfile(id: number, tx?: PrismaTransactionClient) {
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: { id },
       select: {
         id: true,
@@ -135,8 +147,12 @@ export class UserRepository extends BaseRepository<
   /**
    * Check if user exists and is active
    */
-  async isActiveUser(id: number): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({
+  async isActiveUser(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<boolean> {
+    const model = this.getModel(tx);
+    const user = await model.findUnique({
       where: { id },
       select: { isActive: true },
     });
@@ -146,8 +162,12 @@ export class UserRepository extends BaseRepository<
   /**
    * Deactivate user
    */
-  async deactivate(id: number): Promise<UserModel> {
-    return this.prisma.user.update({
+  async deactivate(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<UserModel> {
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data: { isActive: false },
     });
@@ -156,8 +176,9 @@ export class UserRepository extends BaseRepository<
   /**
    * Activate user
    */
-  async activate(id: number): Promise<UserModel> {
-    return this.prisma.user.update({
+  async activate(id: number, tx?: PrismaTransactionClient): Promise<UserModel> {
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data: { isActive: true },
     });
@@ -166,8 +187,12 @@ export class UserRepository extends BaseRepository<
   /**
    * Update last login timestamp
    */
-  async updateLastLogin(id: number): Promise<UserModel> {
-    return this.prisma.user.update({
+  async updateLastLogin(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<UserModel> {
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data: { lastLogin: new Date() },
     });
@@ -176,8 +201,9 @@ export class UserRepository extends BaseRepository<
   /**
    * Get user with team member and company details
    */
-  async findByIdWithCompany(id: number) {
-    return this.prisma.user.findUnique({
+  async findByIdWithCompany(id: number, tx?: PrismaTransactionClient) {
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: { id },
       include: {
         teamMembership: {

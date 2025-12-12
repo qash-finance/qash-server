@@ -288,12 +288,11 @@ export class EmployeeController {
     @Query('name') name: string,
     @Query('groupId', ParseIntPipe) groupId: number,
   ) {
-    const isDuplicate = await this.employeeService.isEmployeeNameDuplicate(
+    return this.employeeService.isEmployeeNameDuplicate(
       user.company.id,
       name,
       groupId,
     );
-    return { isDuplicate };
   }
 
   @Get('validate/address-duplicate')
@@ -359,11 +358,10 @@ export class EmployeeController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Query('groupName') groupName: string,
   ) {
-    const exists = await this.employeeService.isEmployeeGroupExists(
+    return this.employeeService.isEmployeeGroupExists(
       user.company.id,
       groupName,
     );
-    return { exists };
   }
   //#endregion GET METHODS
 
@@ -478,14 +476,10 @@ export class EmployeeController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Body() orderUpdates: AddressBookOrderDto[],
   ): Promise<{ message: string; updatedCount: number }> {
-    const updatedCount = await this.employeeService.updateEmployeesOrder(
+    return this.employeeService.updateEmployeesOrder(
       user.company.id,
       orderUpdates,
     );
-    return {
-      message: 'Employee order updated successfully',
-      updatedCount,
-    };
   }
   //#endregion PUT METHODS
 
@@ -520,8 +514,7 @@ export class EmployeeController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    await this.employeeService.deleteEmployee(user.company.id, id);
-    return { message: 'Employee deleted successfully' };
+    return this.employeeService.deleteEmployee(user.company.id, id);
   }
 
   @Delete('bulk')
@@ -546,14 +539,7 @@ export class EmployeeController {
     @CurrentUser('withCompany') user: UserWithCompany,
     @Body('ids') ids: number[],
   ) {
-    const deletedCount = await this.employeeService.bulkDeleteEmployees(
-      user.company.id,
-      ids,
-    );
-    return {
-      message: `${deletedCount} employees deleted successfully`,
-      deletedCount,
-    };
+    return this.employeeService.bulkDeleteEmployees(user.company.id, ids);
   }
   //#endregion DELETE METHODS
 }

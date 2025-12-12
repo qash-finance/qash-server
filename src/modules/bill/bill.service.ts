@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { BillRepository, BillWithInvoice } from './bill.repository';
-import { InvoiceRepository } from '../invoice/invoice.repository';
+import { InvoiceRepository } from '../invoice/repositories/invoice.repository';
 import {
   BillQueryDto,
   BillStatsDto,

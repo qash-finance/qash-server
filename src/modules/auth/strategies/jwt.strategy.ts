@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AppConfigService } from '../../shared/config/config.service';
 import { JwtAuthService } from '../services/jwt.service';
 import { JwtPayload } from '../../../common/interfaces/jwt-payload';
+import { ErrorAuth } from 'src/common/constants/errors';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -21,16 +22,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload): Promise<JwtPayload> {
     try {
       // Additional validation can be performed here
-      // For example, checking if user is still active
-      await this.jwtAuthService.validateToken(
-        // We don't have the raw token here, but validateToken will be called separately
-        // This validate method is called after JWT verification
-        '',
-      );
+      // ...
+      await this.jwtAuthService.validateToken('');
 
       return payload;
     } catch (error) {
-      throw new UnauthorizedException('Token validation failed');
+      throw new UnauthorizedException(ErrorAuth.InvalidToken);
     }
   }
 }

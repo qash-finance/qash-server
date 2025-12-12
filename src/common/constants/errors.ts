@@ -1,3 +1,8 @@
+export enum ErrorAdmin {
+  NotFound = 'Admin not found',
+  NotAuthorized = 'Not authorized',
+}
+
 export enum ErrorQuery {
   BadIdString = 'Bad id string',
   InvalidSearchTerm = 'Search term must be at least 2 characters',
@@ -14,6 +19,20 @@ export enum ErrorMail {
   EmailNotSent = 'Email was not sent1',
 }
 
+export enum ErrorAuth {
+  NotAuthenticated = 'Not authenticated',
+  NotAuthorized = 'Not authorized',
+  AccessTokenRequired = 'Access token is required',
+  InvalidToken = 'Invalid or expired token',
+  FailedToGenerateTokens = 'Failed to generate tokens',
+  InvalidRefreshToken = 'Invalid or expired refresh token',
+  AccountDeactivated = 'Account is deactivated',
+  InvalidEmailOrOtp = 'Invalid email or OTP',
+  TooManyFailedAttempts = 'Too many failed attempts. Please request a new OTP.',
+  InvalidOtp = 'Invalid OTP',
+  RateLimitExceeded = 'Rate limit exceeded. Please wait a minute before requesting another OTP.',
+}
+
 export enum ErrorUser {
   NotFound = 'User not found',
   RoleSelfAssign = 'Cannot assign role to self',
@@ -28,13 +47,21 @@ export enum ErrorUser {
 }
 
 export enum ErrorCompany {
+  CompanyNotFound = 'Company not found',
   RegistrationNumberAlreadyExists = 'Company with this registration number already exists',
   UserAlreadyTeamMember = 'User is already a team member of another company',
-  CompanyNotFound = 'Company not found',
+  UserNotAssociatedWithCompany = 'User is not associated with any company',
+  FailedToFetchCompany = 'Failed to fetch company',
+  InsufficientPermissions = 'Insufficient permissions to update company',
+  OnlyCompanyOwnerCanDeactivate = 'Only company owner can deactivate company',
+  OnlyCompanyOwnerCanActivate = 'Only company owner can activate company',
+  CompanyDeactivated = 'Company is deactivated',
+  AccessDeniedToCompany = 'Access denied to this company',
 }
 
 export enum ErrorEmployeeGroup {
   NotFound = 'Group not found or access denied',
+  GroupAlreadyExists = 'Group already exists',
 }
 
 export enum ErrorEmployee {
@@ -55,6 +82,7 @@ export enum ErrorPayroll {
   PayStartDateInThePast = 'Pay start date cannot be in the past',
   PayrollNotFound = 'Payroll not found',
   PayEndDateBeforePayStartDate = 'Pay end date must be after pay start date',
+  CannotDeletePayrollWithExistingInvoices = 'Cannot delete payroll with existing invoices. Please cancel instead.',
 }
 
 export enum ErrorInvoice {
@@ -73,6 +101,11 @@ export enum ErrorInvoiceSchedule {
   InvoiceScheduleAlreadyExists = 'Invoice schedule already exists for this payroll',
 }
 
+export enum ErrorInvoiceItem {
+  InvoiceItemNotFound = 'Invoice item not found',
+  InvoiceItemAlreadyExists = 'Invoice item already exists',
+}
+
 export enum ErrorPaymentLink {
   NotFound = 'Payment link not found',
   InvalidCode = 'Invalid payment link code',
@@ -88,4 +121,16 @@ export enum ErrorPaymentLink {
   InvalidTokens = 'Invalid accepted tokens',
   InvalidChains = 'Invalid accepted chains',
   PaymentRecordNotFound = 'Payment record not found',
+}
+
+export enum ErrorTeamMember {
+  NotFound = 'Team member not found',
+  EmailAlreadyExists = 'Email already exists in this company',
+  InsufficientPermissions = 'Insufficient permissions to add team members',
+  InsufficientPermissionsToInvite = 'Insufficient permissions to invite team members',
+  UserAlreadyJoined = 'User already joined this company',
+  InvitationNotActive = 'Invitation is no longer active',
+  EmailAlreadyInvited = 'Email already invited to this company',
+  AccessDenied = 'Access denied to this company',
+  CannotRemoveLastOwner = 'Cannot remove the last owner of the company',
 }

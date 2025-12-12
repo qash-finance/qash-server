@@ -8,10 +8,11 @@ import { Reflector } from '@nestjs/core';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { JwtAuthService } from '../services/jwt.service';
 import { CompanyService } from '../../company/company.service';
+import { ErrorAuth, ErrorCompany } from 'src/common/constants/errors';
 
 @Injectable()
 export class CompanyAuthGuard extends JwtAuthGuard {
-  private readonly companyLogger = new Logger(CompanyAuthGuard.name);
+  private readonly companyAuthLogger = new Logger(CompanyAuthGuard.name);
 
   constructor(
     reflector: Reflector,
@@ -32,7 +33,7 @@ export class CompanyAuthGuard extends JwtAuthGuard {
     const user = request.user;
 
     if (!user || !user.sub) {
-      throw new UnauthorizedException('User not authenticated');
+      throw new UnauthorizedException(ErrorAuth.NotAuthenticated);
     }
 
     try {
@@ -40,7 +41,7 @@ export class CompanyAuthGuard extends JwtAuthGuard {
 
       if (!company) {
         throw new UnauthorizedException(
-          'User is not associated with any company',
+          ErrorCompany.UserNotAssociatedWithCompany,
         );
       }
 
@@ -51,13 +52,11 @@ export class CompanyAuthGuard extends JwtAuthGuard {
 
       return true;
     } catch (error) {
-      this.companyLogger.error(
+      this.companyAuthLogger.error(
         `Failed to fetch company for user ${user.sub}:`,
         error,
       );
-      throw new UnauthorizedException(
-        `Failed to fetch company: ${error.message}`,
-      );
+      throw new UnauthorizedException(ErrorCompany.FailedToFetchCompany);
     }
   }
 }

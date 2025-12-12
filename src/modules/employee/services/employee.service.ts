@@ -52,21 +52,22 @@ export class EmployeeService {
    */
   async getAllEmployees(
     company: CompanyModel,
-    pagination?: PaginationOptions,
+    pagination: PaginationOptions,
   ): Promise<PaginatedResult<Employee>> {
-    return this.prisma.executeWithErrorHandling(async () => {
-      if (pagination) {
-        return this.employeeRepository.findManyPaginated(
-          { companyId: company.id },
-          pagination,
-          {
-            include: {
-              group: true,
-            },
+    try {
+      return this.employeeRepository.findManyPaginated(
+        { companyId: company.id },
+        pagination,
+        {
+          include: {
+            group: true,
           },
-        );
-      }
-    }, 'getAllEmployees');
+        },
+      );
+    } catch (error) {
+      this.logger.error('Failed to get all employees:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
@@ -81,7 +82,7 @@ export class EmployeeService {
       limit?: number;
     } = {},
   ) {
-    return this.prisma.executeWithErrorHandling(async () => {
+    try {
       const { groupId, page = 1, limit = 20 } = options;
 
       if (!searchTerm || searchTerm.length < 2) {
@@ -110,7 +111,10 @@ export class EmployeeService {
           },
         },
       );
-    }, 'searchEmployees');
+    } catch (error) {
+      this.logger.error('Failed to search employees:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
@@ -124,7 +128,7 @@ export class EmployeeService {
       limit?: number;
     } = {},
   ) {
-    return this.prisma.executeWithErrorHandling(async () => {
+    try {
       const { page = 1, limit = 20 } = options;
 
       const group = await this.employeeGroupRepository.findOne({
@@ -149,14 +153,17 @@ export class EmployeeService {
           },
         },
       );
-    }, 'getEmployeesByEmployeeGroup');
+    } catch (error) {
+      this.logger.error('Failed to get employees by group:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
    * Get contact by ID
    */
   async getEmployeeById(companyId: number, contactId: number) {
-    return this.prisma.executeWithErrorHandling(async () => {
+    try {
       const contact = await this.employeeRepository.findOne({
         id: contactId,
         companyId,
@@ -174,14 +181,17 @@ export class EmployeeService {
         ...contact,
         group,
       };
-    }, 'getEmployeeById');
+    } catch (error) {
+      this.logger.error('Failed to get employee by ID:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
    * Get company contact statistics
    */
   async getEmployeeStatistics(companyId: number) {
-    return this.prisma.executeWithErrorHandling(async () => {
+    try {
       const [totalContacts, groups] = await Promise.all([
         this.employeeRepository.count({ companyId }),
         this.employeeGroupRepository.findMany({ companyId }),
@@ -201,7 +211,10 @@ export class EmployeeService {
         totalGroups: groups.length,
         contactsByGroup,
       };
-    }, 'getEmployeeStatistics');
+    } catch (error) {
+      this.logger.error('Failed to get employee statistics:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
@@ -211,16 +224,24 @@ export class EmployeeService {
     companyId: number,
     name: string,
     groupId: number,
-  ): Promise<boolean> {
-    return this.prisma.executeWithErrorHandling(async () => {
+  ): Promise<{ isDuplicate: boolean }> {
+    try {
       const existing = await this.employeeRepository.findOne({
         companyId,
         groupId,
         name,
       });
 
-      return !!existing;
-    }, 'isEmployeeNameDuplicate');
+      return {
+        isDuplicate: !!existing,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Failed to check if employee name is duplicate:',
+        error,
+      );
+      handleError(error, this.logger);
+    }
   }
 
   /**
@@ -230,16 +251,24 @@ export class EmployeeService {
     companyId: number,
     address: string,
     groupId: number,
-  ): Promise<boolean> {
-    return this.prisma.executeWithErrorHandling(async () => {
+  ): Promise<{ isDuplicate: boolean }> {
+    try {
       const existing = await this.employeeRepository.findOne({
         companyId,
         groupId,
         walletAddress: address,
       });
 
-      return !!existing;
-    }, 'isEmployeeAddressDuplicate');
+      return {
+        isDuplicate: !!existing,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Failed to check if employee address is duplicate:',
+        error,
+      );
+      handleError(error, this.logger);
+    }
   }
 
   /**
@@ -248,15 +277,20 @@ export class EmployeeService {
   async isEmployeeGroupExists(
     companyId: number,
     groupName: string,
-  ): Promise<boolean> {
-    return this.prisma.executeWithErrorHandling(async () => {
+  ): Promise<{ exists: boolean }> {
+    try {
       const existing = await this.employeeGroupRepository.findOne({
         companyId,
         name: groupName,
       });
 
-      return !!existing;
-    }, 'checkIfEmployeeGroupExists');
+      return {
+        exists: !!existing,
+      };
+    } catch (error) {
+      this.logger.error('Failed to check if employee group exists:', error);
+      handleError(error, this.logger);
+    }
   }
   //# endregion GET METHODS service
 
@@ -268,53 +302,60 @@ export class EmployeeService {
     dto: CreateContactDto,
     company: CompanyModel,
   ): Promise<Employee> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      dto = sanitizeInput(dto);
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        dto = sanitizeInput(dto);
 
-      // Find if the group exists for this company
-      let group = await this.employeeGroupRepository.findOne(
-        {
-          id: dto.groupId,
-          companyId: company.id,
-        },
-        tx,
-      );
-      if (!group) {
-        throw new BadRequestException(ErrorQuery.NotExists);
-      }
+        // Find if the group exists for this company
+        let group = await this.employeeGroupRepository.findOne(
+          {
+            id: dto.groupId,
+            companyId: company.id,
+          },
+          tx,
+        );
+        if (!group) {
+          throw new BadRequestException(ErrorQuery.NotExists);
+        }
 
-      const isNameDuplicate = await this.employeeRepository.findOne({
-        name: dto.name,
-      });
-
-      if (isNameDuplicate) {
-        throw new BadRequestException(ErrorEmployee.NameAlreadyExists);
-      }
-
-      const order = await this.employeeRepository.getNextOrderForGroup(
-        company.id,
-        group.id,
-        tx,
-      );
-
-      const newEntry = await this.employeeRepository.create(
-        {
-          company: { connect: { id: company.id } },
-          group: { connect: { id: group.id } },
+        const isNameDuplicate = await this.employeeRepository.findOne({
           name: dto.name,
-          walletAddress: dto.walletAddress,
-          email: dto.email || null,
-          token: dto.token ? JSON.parse(JSON.stringify(dto.token)) : null,
-          network: dto.network ? JSON.parse(JSON.stringify(dto.network)) : null,
-          order,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        tx,
-      );
+        });
 
-      return newEntry;
-    }, 'createNewEmployee');
+        if (isNameDuplicate) {
+          throw new BadRequestException(ErrorEmployee.NameAlreadyExists);
+        }
+
+        const order = await this.employeeRepository.getNextOrderForGroup(
+          company.id,
+          group.id,
+          tx,
+        );
+
+        const newEntry = await this.employeeRepository.create(
+          {
+            company: { connect: { id: company.id } },
+            group: { connect: { id: group.id } },
+            name: dto.name,
+            walletAddress: dto.walletAddress,
+            email: dto.email || null,
+            token: dto.token ? JSON.parse(JSON.stringify(dto.token)) : null,
+            network: dto.network
+              ? JSON.parse(JSON.stringify(dto.network))
+              : null,
+            order,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          tx,
+        );
+
+        return newEntry;
+      });
+    } catch (error) {
+      this.logger.error('Failed to create new employee:', error);
+      handleError(error, this.logger);
+    }
   }
   //#endregion POST METHODS service
 
@@ -327,88 +368,97 @@ export class EmployeeService {
     contactId: number,
     dto: UpdateAddressBookDto,
   ): Promise<Employee> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      const existingContact = await this.employeeRepository.findOne(
-        {
-          id: contactId,
-          companyId,
-        },
-        tx,
-      );
-
-      if (!existingContact) {
-        throw new NotFoundException(ErrorEmployee.ContactNotFound);
-      }
-
-      const updateData: any = {};
-
-      if (dto.name !== undefined) {
-        validateName(dto.name, 'name');
-        updateData.name = sanitizeString(dto.name);
-
-        // Check name duplicate if name is being changed
-        if (updateData.name !== existingContact.name) {
-          const isDuplicate = await this.isEmployeeNameDuplicate(
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const existingContact = await this.employeeRepository.findOne(
+          {
+            id: contactId,
             companyId,
-            updateData.name,
-            existingContact.groupId,
-          );
+          },
+          tx,
+        );
 
-          if (isDuplicate) {
-            throw new BadRequestException(ErrorEmployee.NameAlreadyExists);
+        if (!existingContact) {
+          throw new NotFoundException(ErrorEmployee.ContactNotFound);
+        }
+
+        const updateData: any = {};
+
+        if (dto.name !== undefined) {
+          validateName(dto.name, 'name');
+          updateData.name = sanitizeString(dto.name);
+
+          // Check name duplicate if name is being changed
+          if (updateData.name !== existingContact.name) {
+            const isDuplicate = await this.isEmployeeNameDuplicate(
+              companyId,
+              updateData.name,
+              existingContact.groupId,
+            );
+
+            if (isDuplicate) {
+              throw new BadRequestException(ErrorEmployee.NameAlreadyExists);
+            }
           }
         }
-      }
 
-      if (dto.address !== undefined) {
-        validateAddress(dto.address, 'address');
-        const normalizedAddress = normalizeAddress(dto.address);
-        updateData.walletAddress = normalizedAddress;
+        if (dto.address !== undefined) {
+          validateAddress(dto.address, 'address');
+          const normalizedAddress = normalizeAddress(dto.address);
+          updateData.walletAddress = normalizedAddress;
 
-        // Check address duplicate if address is being changed
-        if (updateData.walletAddress !== existingContact.walletAddress) {
-          const isDuplicate = await this.isEmployeeAddressDuplicate(
-            companyId,
-            updateData.walletAddress,
-            existingContact.groupId,
-          );
+          // Check address duplicate if address is being changed
+          if (updateData.walletAddress !== existingContact.walletAddress) {
+            const isDuplicate = await this.isEmployeeAddressDuplicate(
+              companyId,
+              updateData.walletAddress,
+              existingContact.groupId,
+            );
 
-          if (isDuplicate) {
-            throw new BadRequestException(ErrorEmployee.AddressAlreadyExists);
+            if (isDuplicate) {
+              throw new BadRequestException(ErrorEmployee.AddressAlreadyExists);
+            }
           }
         }
-      }
 
-      if (dto.email !== undefined) {
-        updateData.email = dto.email;
-      }
-
-      if (dto.token !== undefined) {
-        updateData.token = JSON.parse(JSON.stringify(dto.token));
-      }
-
-      if (dto.categoryId !== undefined) {
-        // Verify the group exists and belongs to the company
-        const group = await this.employeeGroupRepository.findOne({
-          id: dto.categoryId,
-          companyId,
-        });
-
-        if (!group) {
-          throw new BadRequestException(ErrorEmployeeGroup.NotFound);
+        if (dto.email !== undefined) {
+          updateData.email = dto.email;
         }
 
-        updateData.groupId = dto.categoryId;
-      }
+        if (dto.token !== undefined) {
+          updateData.token = JSON.parse(JSON.stringify(dto.token));
+        }
 
-      // Update the contact
-      const updatedContact = await this.employeeRepository.update(
-        { id: contactId, companyId },
-        updateData,
-      );
+        if (dto.categoryId !== undefined) {
+          // Verify the group exists and belongs to the company
+          const group = await this.employeeGroupRepository.findOne(
+            {
+              id: dto.categoryId,
+              companyId,
+            },
+            tx,
+          );
 
-      return updatedContact;
-    }, 'updateEmployee');
+          if (!group) {
+            throw new BadRequestException(ErrorEmployeeGroup.NotFound);
+          }
+
+          updateData.groupId = dto.categoryId;
+        }
+
+        // Update the contact
+        const updatedContact = await this.employeeRepository.update(
+          { id: contactId, companyId },
+          updateData,
+          tx,
+        );
+
+        return updatedContact;
+      });
+    } catch (error) {
+      this.logger.error('Failed to update employee:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
@@ -417,39 +467,50 @@ export class EmployeeService {
   async updateEmployeesOrder(
     companyId: number,
     orderUpdates: AddressBookOrderDto[],
-  ): Promise<number> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      if (orderUpdates.length === 0) {
-        return 0;
-      }
+  ): Promise<{ message: string; updatedCount: number }> {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        if (orderUpdates.length === 0) {
+          return {
+            message: 'No employees to update',
+            updatedCount: 0,
+          };
+        }
 
-      let updatedCount = 0;
+        let updatedCount = 0;
 
-      for (const update of orderUpdates) {
-        const contact = await this.employeeRepository.findOne(
-          {
-            id: update.id,
-            companyId,
-          },
-          tx,
-        );
-
-        if (contact) {
-          await this.employeeRepository.update(
-            { id: update.id, companyId },
-            { order: update.order },
+        for (const update of orderUpdates) {
+          const contact = await this.employeeRepository.findOne(
+            {
+              id: update.id,
+              companyId,
+            },
             tx,
           );
-          updatedCount++;
-        } else {
-          this.logger.warn(
-            `Contact ${update.id} not found or access denied for company ${companyId}`,
-          );
-        }
-      }
 
-      return updatedCount;
-    }, 'updateEmployeesOrder');
+          if (contact) {
+            await this.employeeRepository.update(
+              { id: update.id, companyId },
+              { order: update.order },
+              tx,
+            );
+            updatedCount++;
+          } else {
+            this.logger.warn(
+              `Contact ${update.id} not found or access denied for company ${companyId}`,
+            );
+          }
+        }
+
+        return {
+          message: 'Employee order updated successfully',
+          updatedCount,
+        };
+      });
+    } catch (error) {
+      this.logger.error('Failed to update employee order:', error);
+      handleError(error, this.logger);
+    }
   }
   //#endregion PUT METHODS service
 
@@ -458,35 +519,8 @@ export class EmployeeService {
    * Delete contact by ID
    */
   async deleteEmployee(companyId: number, contactId: number) {
-    await this.prisma.executeInTransaction(async (tx) => {
-      const contact = await this.employeeRepository.findOne(
-        {
-          id: contactId,
-          companyId,
-        },
-        tx,
-      );
-
-      if (!contact) {
-        throw new NotFoundException(ErrorEmployee.ContactNotFound);
-      }
-
-      await this.employeeRepository.delete({ id: contactId, companyId }, tx);
-    }, 'deleteEmployee');
-  }
-
-  /**
-   * Bulk delete contacts
-   */
-  async bulkDeleteEmployees(companyId: number, contactIds: number[]) {
-    if (!contactIds || contactIds.length === 0) {
-      throw new BadRequestException(ErrorEmployee.NoContactIdsProvided);
-    }
-
-    let deletedCount = 0;
-    await this.prisma.executeInTransaction(async (tx) => {
-      // Delete contacts one by one to ensure they belong to the company
-      for (const contactId of contactIds) {
+    try {
+      return this.prisma.$transaction(async (tx) => {
         const contact = await this.employeeRepository.findOne(
           {
             id: contactId,
@@ -494,20 +528,61 @@ export class EmployeeService {
           },
           tx,
         );
-        if (contact) {
-          await this.employeeRepository.delete(
+
+        if (!contact) {
+          throw new NotFoundException(ErrorEmployee.ContactNotFound);
+        }
+
+        await this.employeeRepository.delete({ id: contactId, companyId }, tx);
+        return {
+          message: 'Employee deleted successfully',
+        };
+      });
+    } catch (error) {
+      this.logger.error('Failed to delete employee:', error);
+      handleError(error, this.logger);
+    }
+  }
+
+  /**
+   * Bulk delete contacts
+   */
+  async bulkDeleteEmployees(companyId: number, contactIds: number[]) {
+    try {
+      if (!contactIds || contactIds.length === 0) {
+        throw new BadRequestException(ErrorEmployee.NoContactIdsProvided);
+      }
+
+      let deletedCount = 0;
+
+      await this.prisma.$transaction(async (tx) => {
+        // Delete contacts one by one to ensure they belong to the company
+        for (const contactId of contactIds) {
+          const contact = await this.employeeRepository.findOne(
             {
               id: contactId,
               companyId,
             },
             tx,
           );
-          deletedCount++;
+          if (contact) {
+            await this.employeeRepository.delete(
+              {
+                id: contactId,
+                companyId,
+              },
+              tx,
+            );
+            deletedCount++;
+          }
         }
-      }
-    }, 'bulkDeleteEmployees');
+      });
 
-    return deletedCount;
+      return deletedCount;
+    } catch (error) {
+      this.logger.error('Failed to bulk delete employees:', error);
+      handleError(error, this.logger);
+    }
   }
   //#endregion DELETE METHODS service
 }

@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import { Prisma } from '../../../database/generated/client';
-import { PrismaTransactionClient } from 'src/database/base.repository';
-import { InvoiceScheduleDelegate } from 'src/database/generated/models';
+import { Prisma, PrismaClient } from '../../../database/generated/client';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from 'src/database/base.repository';
 
 export interface CreateInvoiceScheduleData {
   payrollId: number;
@@ -28,15 +30,32 @@ export interface UpdateInvoiceScheduleData {
 }
 
 @Injectable()
-export class InvoiceScheduleRepository {
-  constructor(private readonly prisma: PrismaService) {}
+export class InvoiceScheduleRepository extends BaseRepository<
+  any,
+  Prisma.InvoiceScheduleWhereInput,
+  Prisma.InvoiceScheduleCreateInput,
+  Prisma.InvoiceScheduleUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
+  }
 
-  async create(
+  protected getModel(
+    tx?: PrismaTransactionClient,
+  ): PrismaClient['invoiceSchedule'] {
+    return tx ? tx.invoiceSchedule : this.prisma.invoiceSchedule;
+  }
+
+  protected getModelName(): string {
+    return 'InvoiceSchedule';
+  }
+
+  async createSchedule(
     data: CreateInvoiceScheduleData,
     tx?: PrismaTransactionClient,
   ): Promise<any> {
-    const client = tx || this.prisma;
-    return (client.invoiceSchedule as InvoiceScheduleDelegate).create({
+    const model = this.getModel(tx);
+    return model.create({
       data,
     });
   }
@@ -45,8 +64,8 @@ export class InvoiceScheduleRepository {
     id: number,
     tx?: PrismaTransactionClient,
   ): Promise<any | null> {
-    const client = tx || this.prisma;
-    return (client.invoiceSchedule as InvoiceScheduleDelegate).findUnique({
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: { id },
       include: {
         payroll: {
@@ -63,8 +82,8 @@ export class InvoiceScheduleRepository {
     payrollId: number,
     tx?: PrismaTransactionClient,
   ): Promise<any | null> {
-    const client = tx || this.prisma;
-    return (client.invoiceSchedule as InvoiceScheduleDelegate).findFirst({
+    const model = this.getModel(tx);
+    return model.findFirst({
       where: { payrollId, isActive: true },
       include: {
         payroll: {
@@ -81,8 +100,8 @@ export class InvoiceScheduleRepository {
     date: Date,
     tx?: PrismaTransactionClient,
   ) {
-    const client = tx || this.prisma;
-    return (client.invoiceSchedule as InvoiceScheduleDelegate).findMany({
+    const model = this.getModel(tx);
+    return model.findMany({
       where: {
         isActive: true,
         nextGenerateDate: {
@@ -100,21 +119,24 @@ export class InvoiceScheduleRepository {
     });
   }
 
-  async update(
+  async updateSchedule(
     id: number,
     data: UpdateInvoiceScheduleData,
     tx?: PrismaTransactionClient,
   ): Promise<any> {
-    const client = tx || this.prisma;
-    return (client.invoiceSchedule as InvoiceScheduleDelegate).update({
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data,
     });
   }
 
-  async delete(id: number, tx?: PrismaTransactionClient): Promise<void> {
-    const client = tx || this.prisma;
-    await (client.invoiceSchedule as InvoiceScheduleDelegate).delete({
+  async deleteSchedule(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<void> {
+    const model = this.getModel(tx);
+    await model.delete({
       where: { id },
     });
   }
@@ -125,8 +147,8 @@ export class InvoiceScheduleRepository {
     nextGenerateDate: Date,
     tx?: PrismaTransactionClient,
   ): Promise<any> {
-    const client = tx || this.prisma;
-    return (client.invoiceSchedule as InvoiceScheduleDelegate).update({
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data: {
         lastGeneratedAt: lastGeneratedAt,

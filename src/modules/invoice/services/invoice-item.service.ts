@@ -1,10 +1,11 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InvoiceItemRepository } from '../repositories/invoice-item.repository';
-import { InvoiceRepository } from '../invoice.repository';
+import { InvoiceRepository } from '../repositories/invoice.repository';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateInvoiceItemDto, UpdateInvoiceItemDto } from '../invoice.dto';
-import { ErrorInvoice } from 'src/common/constants/errors';
+import { ErrorInvoice, ErrorInvoiceItem } from 'src/common/constants/errors';
 import { InvoiceTypeEnum } from 'src/database/generated/enums';
+import { PrismaTransactionClient } from 'src/database/base.repository';
 
 @Injectable()
 export class InvoiceItemService {
@@ -15,125 +16,6 @@ export class InvoiceItemService {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly prisma: PrismaService,
   ) {}
-
-  /**
-   * Create invoice item
-   */
-  async createItem(
-    invoiceUUID: string,
-    companyId: number,
-    dto: CreateInvoiceItemDto,
-    tx?: any,
-  ): Promise<any> {
-    const run = tx
-      ? async (cb: any) => cb(tx)
-      : (cb: any) => this.prisma.executeInTransaction(cb, 'createInvoiceItem');
-
-    return run(async (trx: any) => {
-      const invoice = await this.getAccessibleInvoice(
-        invoiceUUID,
-        companyId,
-        trx,
-      );
-
-      // Calculate item total if not provided
-      const quantity = parseFloat(dto.quantity);
-      const unitPrice = parseFloat(dto.unitPrice);
-      const discount = parseFloat(dto.discount || '0');
-      const taxRate = parseFloat(dto.taxRate || '0');
-
-      const subtotal = quantity * unitPrice;
-      const afterDiscount = subtotal - discount;
-      const tax = (afterDiscount * taxRate) / 100;
-      const total = afterDiscount + tax;
-
-      // Get current max order
-      const existingItems = await this.itemRepository.findByInvoiceUuid(
-        invoiceUUID,
-        trx,
-      );
-      const maxOrder =
-        existingItems.length > 0
-          ? Math.max(...existingItems.map((item) => item.order))
-          : -1;
-
-      const item = await this.itemRepository.create(
-        {
-          invoiceUuid: invoiceUUID,
-          description: dto.description,
-          quantity: dto.quantity,
-          unitPrice: dto.unitPrice,
-          unit: dto.unit,
-          taxRate: dto.taxRate || '0.00',
-          discount: dto.discount || '0.00',
-          total: total.toFixed(2),
-          order: dto.order ?? maxOrder + 1,
-          metadata: dto.metadata,
-        },
-        trx,
-      );
-
-      // Recalculate invoice totals
-      await this.recalculateInvoiceTotals(invoiceUUID, trx);
-
-      return item;
-    });
-  }
-
-  /**
-   * Create multiple invoice items
-   */
-  async createItems(
-    invoiceUUID: string,
-    companyId: number,
-    items: CreateInvoiceItemDto[],
-    tx?: any,
-  ): Promise<any[]> {
-    const run = tx
-      ? async (cb: any) => cb(tx)
-      : (cb: any) => this.prisma.executeInTransaction(cb, 'createInvoiceItems');
-
-    return run(async (trx: any) => {
-      const invoice = await this.getAccessibleInvoice(
-        invoiceUUID,
-        companyId,
-        trx,
-      );
-
-      // Calculate totals for each item
-      const itemsToCreate = items.map((dto, index) => {
-        const quantity = parseFloat(dto.quantity);
-        const unitPrice = parseFloat(dto.unitPrice);
-        const discount = parseFloat(dto.discount || '0');
-        const taxRate = parseFloat(dto.taxRate || '0');
-
-        const subtotal = quantity * unitPrice;
-        const afterDiscount = subtotal - discount;
-        const tax = (afterDiscount * taxRate) / 100;
-        const total = afterDiscount + tax;
-
-        return {
-          invoiceUuid: invoiceUUID,
-          description: dto.description,
-          quantity: dto.quantity,
-          unitPrice: dto.unitPrice,
-          unit: dto.unit,
-          taxRate: dto.taxRate || '0.00',
-          discount: dto.discount || '0.00',
-          total: total.toFixed(2),
-          order: dto.order ?? index,
-          metadata: dto.metadata,
-        };
-      });
-
-      await this.itemRepository.createMany(itemsToCreate, trx);
-
-      // Recalculate invoice totals
-      await this.recalculateInvoiceTotals(invoiceUUID, trx);
-
-      return this.itemRepository.findByInvoiceUuid(invoiceUUID, trx);
-    });
-  }
 
   /**
    * Get all items for an invoice
@@ -148,64 +30,90 @@ export class InvoiceItemService {
   }
 
   /**
+   * Create multiple invoice items
+   */
+  async createItems(
+    invoiceUUID: string,
+    items: CreateInvoiceItemDto[],
+    tx: PrismaTransactionClient,
+  ): Promise<any[]> {
+    // Calculate totals for each item
+    const itemsToCreate = items.map((dto, index) => {
+      const quantity = parseFloat(dto.quantity);
+      const unitPrice = parseFloat(dto.unitPrice);
+      const discount = parseFloat(dto.discount || '0');
+      const taxRate = parseFloat(dto.taxRate || '0');
+
+      const subtotal = quantity * unitPrice;
+      const afterDiscount = subtotal - discount;
+      const tax = (afterDiscount * taxRate) / 100;
+      const total = afterDiscount + tax;
+
+      return {
+        invoiceUuid: invoiceUUID,
+        description: dto.description,
+        quantity: dto.quantity,
+        unitPrice: dto.unitPrice,
+        unit: dto.unit,
+        taxRate: dto.taxRate || '0.00',
+        discount: dto.discount || '0.00',
+        total: total.toFixed(2),
+        order: dto.order ?? index,
+        metadata: dto.metadata,
+      };
+    });
+
+    await this.itemRepository.createItems(itemsToCreate, tx);
+
+    // Recalculate invoice totals
+    await this.recalculateInvoiceTotals(invoiceUUID, tx);
+
+    return this.itemRepository.findByInvoiceUuid(invoiceUUID, tx);
+  }
+
+  /**
    * Update invoice item
    */
   async updateItem(
     id: number,
     invoiceUUID: string,
-    companyId: number,
     dto: UpdateInvoiceItemDto,
-    tx?: any,
+    tx: PrismaTransactionClient,
   ): Promise<any> {
-    const run = tx
-      ? async (cb: any) => cb(tx)
-      : (cb: any) => this.prisma.executeInTransaction(cb, 'updateInvoiceItem');
+    // Verify item exists and belongs to invoice
+    const item = await this.itemRepository.findById(id, tx);
 
-    return run(async (trx: any) => {
-      const invoice = await this.getAccessibleInvoice(
-        invoiceUUID,
-        companyId,
-        trx,
-      );
+    if (!item || item.invoice.uuid !== invoiceUUID) {
+      throw new NotFoundException(ErrorInvoiceItem.InvoiceItemNotFound);
+    }
 
-      // Verify item exists and belongs to invoice
-      const item = await this.itemRepository.findById(id, trx);
+    const updateData: any = { ...dto };
 
-      if (!item || item.invoice.uuid !== invoiceUUID) {
-        throw new NotFoundException('Invoice item not found');
-      }
+    if (
+      dto.quantity ||
+      dto.unitPrice ||
+      dto.discount !== undefined ||
+      dto.taxRate !== undefined
+    ) {
+      const quantity = parseFloat(dto.quantity || item.quantity);
+      const unitPrice = parseFloat(dto.unitPrice || item.unitPrice);
+      const discount = parseFloat(dto.discount ?? item.discount);
+      const taxRate = parseFloat(dto.taxRate ?? item.taxRate);
 
-      // Recalculate total if quantity, price, discount, or tax changed
-      const updateData: any = { ...dto };
+      const subtotal = quantity * unitPrice;
+      const afterDiscount = subtotal - discount;
+      const tax = (afterDiscount * taxRate) / 100;
+      const total = afterDiscount + tax;
 
-      if (
-        dto.quantity ||
-        dto.unitPrice ||
-        dto.discount !== undefined ||
-        dto.taxRate !== undefined
-      ) {
-        const quantity = parseFloat(dto.quantity || item.quantity);
-        const unitPrice = parseFloat(dto.unitPrice || item.unitPrice);
-        const discount = parseFloat(dto.discount ?? item.discount);
-        const taxRate = parseFloat(dto.taxRate ?? item.taxRate);
+      updateData.total = total.toFixed(2);
+    }
 
-        const subtotal = quantity * unitPrice;
-        const afterDiscount = subtotal - discount;
-        const tax = (afterDiscount * taxRate) / 100;
-        const total = afterDiscount + tax;
+    const updated = await this.itemRepository.updateItem(id, updateData, tx);
 
-        updateData.total = total.toFixed(2);
-      }
+    // Recalculate invoice totals
+    await this.recalculateInvoiceTotals(invoiceUUID, tx);
 
-      const updated = await this.itemRepository.update(id, updateData, trx);
-
-      // Recalculate invoice totals
-      await this.recalculateInvoiceTotals(invoiceUUID, trx);
-
-      this.logger.log(`Updated invoice item ${id}`);
-
-      return updated;
-    });
+    return updated;
   }
 
   /**
@@ -214,34 +122,19 @@ export class InvoiceItemService {
   async deleteItem(
     id: number,
     invoiceUUID: string,
-    companyId: number,
-    tx?: any,
+    tx: PrismaTransactionClient,
   ): Promise<void> {
-    const run = tx
-      ? async (cb: any) => cb(tx)
-      : (cb: any) => this.prisma.executeInTransaction(cb, 'deleteInvoiceItem');
+    // Verify item exists and belongs to invoice
+    const item = await this.itemRepository.findById(id, tx);
 
-    return run(async (trx: any) => {
-      const invoice = await this.getAccessibleInvoice(
-        invoiceUUID,
-        companyId,
-        trx,
-      );
+    if (!item || item.invoice.uuid !== invoiceUUID) {
+      throw new NotFoundException(ErrorInvoiceItem.InvoiceItemNotFound);
+    }
 
-      // Verify item exists and belongs to invoice
-      const item = await this.itemRepository.findById(id, trx);
+    await this.itemRepository.deleteItem(id, tx);
 
-      if (!item || item.invoice.uuid !== invoiceUUID) {
-        throw new NotFoundException('Invoice item not found');
-      }
-
-      await this.itemRepository.delete(id, trx);
-
-      // Recalculate invoice totals
-      await this.recalculateInvoiceTotals(invoiceUUID, trx);
-
-      this.logger.log(`Deleted invoice item ${id}`);
-    });
+    // Recalculate invoice totals
+    await this.recalculateInvoiceTotals(invoiceUUID, tx);
   }
 
   /**
@@ -249,7 +142,7 @@ export class InvoiceItemService {
    */
   async recalculateInvoiceTotals(
     invoiceUUID: string,
-    tx?: any,
+    tx: PrismaTransactionClient,
   ): Promise<{
     subtotal: string;
     taxAmount: string;

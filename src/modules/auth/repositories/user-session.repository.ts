@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { UserSessionModel } from '../../../database/generated/models/UserSession';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from 'src/database/base.repository';
+import { Prisma, PrismaClient } from 'src/database/generated/client';
 
 export interface CreateSessionData {
   id: string;
@@ -27,25 +32,34 @@ export interface SessionWithUser extends UserSessionModel {
 }
 
 @Injectable()
-export class UserSessionRepository {
-  constructor(private readonly prisma: PrismaService) {}
+export class UserSessionRepository extends BaseRepository<
+  UserSessionModel,
+  Prisma.UserSessionWhereInput,
+  Prisma.UserSessionCreateInput,
+  Prisma.UserSessionUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
+  }
 
-  /**
-   * Create new session
-   */
-  async create(data: CreateSessionData): Promise<UserSessionModel> {
-    return this.prisma.userSession.create({
-      data,
-    });
+  protected getModel(
+    tx?: PrismaTransactionClient,
+  ): PrismaClient['userSession'] {
+    return tx ? tx.userSession : this.prisma.userSession;
+  }
+
+  protected getModelName(): string {
+    return 'UserSession';
   }
 
   /**
    * Find session by ID
    */
-  async findById(id: string): Promise<UserSessionModel | null> {
-    return this.prisma.userSession.findUnique({
-      where: { id },
-    });
+  async findById(
+    id: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<UserSessionModel | null> {
+    return this.findOne({ id }, tx);
   }
 
   /**
@@ -53,8 +67,10 @@ export class UserSessionRepository {
    */
   async findByRefreshToken(
     refreshToken: string,
+    tx?: PrismaTransactionClient,
   ): Promise<UserSessionModel | null> {
-    return this.prisma.userSession.findUnique({
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: { refreshToken },
     });
   }
@@ -65,8 +81,10 @@ export class UserSessionRepository {
   async findActiveSessionWithUser(
     id: string,
     refreshToken: string,
+    tx?: PrismaTransactionClient,
   ): Promise<SessionWithUser | null> {
-    return this.prisma.userSession.findUnique({
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: {
         id,
         refreshToken,
@@ -90,8 +108,10 @@ export class UserSessionRepository {
   async updateById(
     id: string,
     data: UpdateSessionData,
+    tx?: PrismaTransactionClient,
   ): Promise<UserSessionModel> {
-    return this.prisma.userSession.update({
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data,
     });
@@ -100,8 +120,12 @@ export class UserSessionRepository {
   /**
    * Deactivate session
    */
-  async deactivate(id: string): Promise<UserSessionModel> {
-    return this.prisma.userSession.update({
+  async deactivate(
+    id: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<UserSessionModel> {
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data: { isActive: false },
     });
@@ -110,8 +134,12 @@ export class UserSessionRepository {
   /**
    * Deactivate all sessions for user
    */
-  async deactivateAllForUser(userId: number): Promise<void> {
-    await this.prisma.userSession.updateMany({
+  async deactivateAllForUser(
+    userId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<void> {
+    const model = this.getModel(tx);
+    await model.updateMany({
       where: {
         userId,
         isActive: true,
@@ -125,8 +153,9 @@ export class UserSessionRepository {
   /**
    * Get active sessions for user
    */
-  async getActiveSessionsForUser(userId: number) {
-    return this.prisma.userSession.findMany({
+  async getActiveSessionsForUser(userId: number, tx?: PrismaTransactionClient) {
+    const model = this.getModel(tx);
+    return model.findMany({
       where: {
         userId,
         isActive: true,
@@ -150,8 +179,13 @@ export class UserSessionRepository {
   /**
    * Check if session is valid
    */
-  async isValidSession(id: string, refreshToken: string): Promise<boolean> {
-    const session = await this.prisma.userSession.findUnique({
+  async isValidSession(
+    id: string,
+    refreshToken: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<boolean> {
+    const model = this.getModel(tx);
+    const session = await model.findUnique({
       where: {
         id,
         refreshToken,
@@ -168,8 +202,9 @@ export class UserSessionRepository {
   /**
    * Clean up expired and inactive sessions
    */
-  async cleanupExpired(): Promise<number> {
-    const result = await this.prisma.userSession.deleteMany({
+  async cleanupExpired(tx?: PrismaTransactionClient): Promise<number> {
+    const model = this.getModel(tx);
+    const result = await model.deleteMany({
       where: {
         OR: [{ expiresAt: { lt: new Date() } }, { isActive: false }],
       },
@@ -181,22 +216,23 @@ export class UserSessionRepository {
   /**
    * Get session statistics for monitoring
    */
-  async getStats() {
+  async getStats(tx?: PrismaTransactionClient) {
+    const model = this.getModel(tx);
     const [total, active, expired, inactive] = await Promise.all([
-      this.prisma.userSession.count(),
-      this.prisma.userSession.count({
+      model.count(),
+      model.count({
         where: {
           isActive: true,
           expiresAt: { gt: new Date() },
         },
       }),
-      this.prisma.userSession.count({
+      model.count({
         where: {
           isActive: true,
           expiresAt: { lt: new Date() },
         },
       }),
-      this.prisma.userSession.count({
+      model.count({
         where: { isActive: false },
       }),
     ]);
@@ -219,7 +255,9 @@ export class UserSessionRepository {
       take?: number;
       includeInactive?: boolean;
     } = {},
+    tx?: PrismaTransactionClient,
   ) {
+    const model = this.getModel(tx);
     const { skip = 0, take = 10, includeInactive = false } = options;
 
     const whereClause: any = { userId };
@@ -228,7 +266,7 @@ export class UserSessionRepository {
       whereClause.expiresAt = { gt: new Date() };
     }
 
-    return this.prisma.userSession.findMany({
+    return model.findMany({
       where: whereClause,
       select: {
         id: true,

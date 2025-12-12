@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import { Prisma } from '../../../database/generated/client';
-import { PrismaTransactionClient } from 'src/database/base.repository';
+import { Prisma, PrismaClient } from '../../../database/generated/client';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from 'src/database/base.repository';
 
 export interface CreateInvoiceItemData {
   invoiceUuid: string;
@@ -29,15 +32,32 @@ export interface UpdateInvoiceItemData {
 }
 
 @Injectable()
-export class InvoiceItemRepository {
-  constructor(private readonly prisma: PrismaService) {}
+export class InvoiceItemRepository extends BaseRepository<
+  any,
+  Prisma.InvoiceItemWhereInput,
+  Prisma.InvoiceItemCreateInput,
+  Prisma.InvoiceItemUpdateInput
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma);
+  }
+
+  protected getModel(
+    tx?: PrismaTransactionClient,
+  ): PrismaClient['invoiceItem'] {
+    return tx ? tx.invoiceItem : this.prisma.invoiceItem;
+  }
+
+  protected getModelName(): string {
+    return 'InvoiceItem';
+  }
 
   private async resolveInvoiceId(
     invoiceUuid: string,
     tx?: PrismaTransactionClient,
   ): Promise<number> {
-    const client = tx || this.prisma;
-    const invoice = await client.invoice.findUnique({
+    const model = this.getModel(tx);
+    const invoice = await model.findUnique({
       where: { uuid: invoiceUuid },
       select: { id: true },
     });
@@ -50,13 +70,13 @@ export class InvoiceItemRepository {
   /**
    * Create a single invoice item
    */
-  async create(
+  async createItem(
     data: CreateInvoiceItemData,
     tx?: PrismaTransactionClient,
   ): Promise<any> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
     const invoiceId = await this.resolveInvoiceId(data.invoiceUuid, tx);
-    return client.invoiceItem.create({
+    return model.create({
       data: {
         invoiceId,
         description: data.description,
@@ -75,15 +95,15 @@ export class InvoiceItemRepository {
   /**
    * Create multiple invoice items in batch
    */
-  async createMany(
+  async createItems(
     items: CreateInvoiceItemData[],
     tx?: PrismaTransactionClient,
   ): Promise<void> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
     if (items.length === 0) return;
     // Assume all items share the same invoice uuid
     const invoiceId = await this.resolveInvoiceId(items[0].invoiceUuid, tx);
-    await client.invoiceItem.createMany({
+    await model.createMany({
       data: items.map((item, index) => ({
         invoiceId,
         description: item.description,
@@ -106,8 +126,8 @@ export class InvoiceItemRepository {
     id: number,
     tx?: PrismaTransactionClient,
   ): Promise<any | null> {
-    const client = tx || this.prisma;
-    return client.invoiceItem.findUnique({
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: { id },
       include: {
         invoice: true,
@@ -122,8 +142,8 @@ export class InvoiceItemRepository {
     invoiceUUID: string,
     tx?: PrismaTransactionClient,
   ): Promise<any[]> {
-    const client = tx || this.prisma;
-    return client.invoiceItem.findMany({
+    const model = this.getModel(tx);
+    return model.findMany({
       where: { invoice: { uuid: invoiceUUID } },
       orderBy: { order: 'asc' },
     });
@@ -132,13 +152,13 @@ export class InvoiceItemRepository {
   /**
    * Update invoice item
    */
-  async update(
+  async updateItem(
     id: number,
     data: UpdateInvoiceItemData,
     tx?: PrismaTransactionClient,
   ): Promise<any> {
-    const client = tx || this.prisma;
-    return client.invoiceItem.update({
+    const model = this.getModel(tx);
+    return model.update({
       where: { id },
       data,
     });
@@ -147,14 +167,14 @@ export class InvoiceItemRepository {
   /**
    * Update multiple invoice items
    */
-  async updateMany(
+  async updateItems(
     updates: Array<{ id: number; data: UpdateInvoiceItemData }>,
     tx?: PrismaTransactionClient,
   ): Promise<void> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
     await Promise.all(
       updates.map(({ id, data }) =>
-        client.invoiceItem.update({
+        model.update({
           where: { id },
           data,
         }),
@@ -165,9 +185,9 @@ export class InvoiceItemRepository {
   /**
    * Delete invoice item
    */
-  async delete(id: number, tx?: PrismaTransactionClient): Promise<void> {
-    const client = tx || this.prisma;
-    await client.invoiceItem.delete({
+  async deleteItem(id: number, tx?: PrismaTransactionClient): Promise<void> {
+    const model = this.getModel(tx);
+    await model.delete({
       where: { id },
     });
   }
@@ -179,9 +199,9 @@ export class InvoiceItemRepository {
     invoiceUuid: string,
     tx?: PrismaTransactionClient,
   ): Promise<void> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
     const invoiceId = await this.resolveInvoiceId(invoiceUuid, tx);
-    await client.invoiceItem.deleteMany({
+    await model.deleteMany({
       where: { invoiceId },
     });
   }
@@ -194,11 +214,11 @@ export class InvoiceItemRepository {
     itemOrders: Array<{ id: number; order: number }>,
     tx?: PrismaTransactionClient,
   ): Promise<void> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
     await this.resolveInvoiceId(invoiceUuid, tx); // ensure invoice exists
     await Promise.all(
       itemOrders.map(({ id, order }) =>
-        client.invoiceItem.update({
+        model.update({
           where: { id },
           data: { order },
         }),
@@ -218,7 +238,6 @@ export class InvoiceItemRepository {
     totalDiscount: string;
     total: string;
   }> {
-    const client = tx || this.prisma;
     const items = await this.findByInvoiceUuid(invoiceUuid, tx);
 
     let subtotal = 0;

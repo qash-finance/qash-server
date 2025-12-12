@@ -3,6 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import {
   Notifications,
   Prisma,
+  PrismaClient,
   NotificationsStatusEnum,
   NotificationsTypeEnum,
 } from 'src/database/generated/client';
@@ -22,7 +23,9 @@ export class NotificationRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel(tx?: PrismaTransactionClient) {
+  protected getModel(
+    tx?: PrismaTransactionClient,
+  ): PrismaClient['notifications'] {
     return tx ? tx.notifications : this.prisma.notifications;
   }
 
@@ -186,15 +189,19 @@ export class NotificationRepository extends BaseRepository<
   /**
    * Get notification statistics for a wallet
    */
-  async getWalletStats(walletAddress: string): Promise<{
+  async getWalletStats(
+    walletAddress: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<{
     total: number;
     unread: number;
     byType: Record<string, number>;
   }> {
+    const model = this.getModel(tx);
     const [total, unread, byTypeResults] = await Promise.all([
-      this.count({ walletAddress }),
-      this.count({ walletAddress, status: NotificationsStatusEnum.UNREAD }),
-      this.prisma.notifications.groupBy({
+      this.count({ walletAddress }, tx),
+      this.count({ walletAddress, status: NotificationsStatusEnum.UNREAD }, tx),
+      model.groupBy({
         by: ['type'],
         where: { walletAddress },
         _count: { type: true },

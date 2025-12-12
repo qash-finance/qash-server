@@ -1,16 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
+import { PrismaService } from '../../../database/prisma.service';
 import {
   InvoiceDelegate,
   InvoiceModel,
-} from '../../database/generated/models/Invoice';
-import { InvoiceStatusEnum, Prisma } from '../../database/generated/client';
+} from '../../../database/generated/models/Invoice';
+import {
+  InvoiceStatusEnum,
+  Prisma,
+  PrismaClient,
+} from '../../../database/generated/client';
 import {
   BaseRepository,
   PrismaTransactionClient,
 } from 'src/database/base.repository';
 
-// Type for Invoice with all relations included (supports both EMPLOYEE and B2B invoices)
 export type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
   include: {
     // Employee-Employer relations (for EMPLOYEE invoices)
@@ -89,7 +92,7 @@ export class InvoiceRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel(tx?: PrismaTransactionClient) {
+  protected getModel(tx?: PrismaTransactionClient): PrismaClient['invoice'] {
     return tx ? tx.invoice : this.prisma.invoice;
   }
 
@@ -101,8 +104,8 @@ export class InvoiceRepository extends BaseRepository<
     uuid: string,
     tx?: PrismaTransactionClient,
   ): Promise<InvoiceWithRelations | null> {
-    const client = tx || this.prisma;
-    return client.invoice.findUnique({
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: { uuid },
       include: {
         // Employee-Employer relations (for EMPLOYEE invoices)
@@ -125,6 +128,7 @@ export class InvoiceRepository extends BaseRepository<
         fromCompany: true,
         toCompany: true,
         // Common relations
+        items: true,
         bill: true,
       },
     });
@@ -141,8 +145,7 @@ export class InvoiceRepository extends BaseRepository<
     totalAmount: string;
     dueThisMonth: number;
   }> {
-    const client = tx || this.prisma;
-    const invoice = client.invoice as InvoiceDelegate;
+    const model = this.getModel(tx);
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -162,19 +165,19 @@ export class InvoiceRepository extends BaseRepository<
       dueThisMonth,
       allInvoices,
     ] = await Promise.all([
-      invoice.count({
+      model.count({
         where: { ...baseWhere, status: InvoiceStatusEnum.DRAFT },
       }),
-      invoice.count({
+      model.count({
         where: { ...baseWhere, status: InvoiceStatusEnum.SENT },
       }),
-      invoice.count({
+      model.count({
         where: { ...baseWhere, status: InvoiceStatusEnum.REVIEWED },
       }),
-      invoice.count({
+      model.count({
         where: { ...baseWhere, status: InvoiceStatusEnum.CONFIRMED },
       }),
-      invoice.count({
+      model.count({
         where: {
           ...baseWhere,
           dueDate: {
@@ -183,7 +186,7 @@ export class InvoiceRepository extends BaseRepository<
           },
         },
       }),
-      client.invoice.findMany({
+      model.findMany({
         where: baseWhere,
         select: { total: true },
       }),
@@ -208,9 +211,9 @@ export class InvoiceRepository extends BaseRepository<
     date: Date,
     tx?: PrismaTransactionClient,
   ): Promise<InvoiceModel[]> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
 
-    return client.invoice.findMany({
+    return model.findMany({
       where: {
         status: {
           in: [InvoiceStatusEnum.SENT, InvoiceStatusEnum.REVIEWED],
@@ -243,9 +246,9 @@ export class InvoiceRepository extends BaseRepository<
     email: string,
     tx?: PrismaTransactionClient,
   ): Promise<InvoiceModel[]> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
 
-    return client.invoice.findMany({
+    return model.findMany({
       where: {
         employee: {
           email,
@@ -285,9 +288,8 @@ export class InvoiceRepository extends BaseRepository<
     employeeId: number,
     tx?: PrismaTransactionClient,
   ): Promise<string> {
-    const client = tx || this.prisma;
-
-    const count = await (client.invoice as InvoiceDelegate).count({
+    const model = this.getModel(tx);
+    const count = await model.count({
       where: { payrollId, employeeId },
     });
     const sequence = String(count + 1).padStart(4, '0');
@@ -301,8 +303,8 @@ export class InvoiceRepository extends BaseRepository<
     payrollId: number,
     tx?: PrismaTransactionClient,
   ): Promise<InvoiceModel | null> {
-    const client = tx || this.prisma;
-    return (client.invoice as InvoiceDelegate).findFirst({
+    const model = this.getModel(tx);
+    return model.findFirst({
       where: { payrollId },
       orderBy: { issueDate: 'desc' },
     });

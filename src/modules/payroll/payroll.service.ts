@@ -109,7 +109,7 @@ export class PayrollService {
       const payroll = await this.payrollRepository.findById(id, companyId);
 
       if (!payroll) {
-        throw new NotFoundException('Payroll not found');
+        throw new NotFoundException(ErrorPayroll.PayrollNotFound);
       }
 
       return payroll;
@@ -124,7 +124,7 @@ export class PayrollService {
    */
   async getPayrollStats(companyId: number): Promise<PayrollStatsDto> {
     try {
-      return await this.payrollRepository.getStats(companyId);
+      return this.payrollRepository.getStats(companyId);
     } catch (error) {
       this.logger.error('Error fetching payroll stats:', error);
       handleError(error, this.logger);
@@ -158,102 +158,105 @@ export class PayrollService {
     dto: CreatePayrollDto,
     options?: { scheduleFrequency?: string },
   ): Promise<PayrollModel> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      const scheduleFrequency = options?.scheduleFrequency ?? 'MONTHLY';
-      // Make sure employee exists and belongs to company
-      const employee = await this.employeeRepository.findOne(
-        { id: dto.employeeId, companyId },
-        tx,
-      );
-
-      if (!employee) {
-        throw new NotFoundException(ErrorEmployee.ContactNotFound);
-      }
-
-      // Check if employee already has an active payroll
-      const existingPayrolls = await this.payrollRepository.findByEmployeeId(
-        dto.employeeId,
-        companyId,
-        tx,
-      );
-
-      console.log(existingPayrolls);
-
-      const activePayroll = existingPayrolls.find(
-        (p) => p.status === PayrollStatusEnum.ACTIVE,
-      );
-
-      if (activePayroll) {
-        throw new ConflictException(ErrorPayroll.HaveActivePayroll);
-      }
-
-      // Calculate contract dates
-      const payStartDate = new Date(dto.payStartDate);
-      const payEndDate = new Date(dto.payEndDate);
-      const joiningDate = new Date(dto.joiningDate);
-      payEndDate.setMonth(payEndDate.getMonth() + dto.payrollCycle);
-
-      // Pay start date must be after joining date
-      if (payStartDate < joiningDate) {
-        throw new BadRequestException(
-          ErrorPayroll.PayStartDateBeforeJoiningDate,
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const scheduleFrequency = options?.scheduleFrequency ?? 'MONTHLY';
+        // Make sure employee exists and belongs to company
+        const employee = await this.employeeRepository.findOne(
+          { id: dto.employeeId, companyId },
+          tx,
         );
-      }
 
-      // Pay start date should not be in the past
-      if (payStartDate < new Date()) {
-        throw new BadRequestException(ErrorPayroll.PayStartDateInThePast);
-      }
+        if (!employee) {
+          throw new NotFoundException(ErrorEmployee.ContactNotFound);
+        }
 
-      // Pay end date should > pay start date
-      if (payEndDate <= payStartDate) {
-        throw new BadRequestException(
-          ErrorPayroll.PayEndDateBeforePayStartDate,
+        // Check if employee already has an active payroll
+        const existingPayrolls = await this.payrollRepository.findByEmployeeId(
+          dto.employeeId,
+          companyId,
+          tx,
         );
-      }
 
-      const payrollData: PayrollCreateInput = {
-        company: {
-          connect: {
-            id: companyId,
+        const activePayroll = existingPayrolls.find(
+          (p) => p.status === PayrollStatusEnum.ACTIVE,
+        );
+
+        if (activePayroll) {
+          throw new ConflictException(ErrorPayroll.HaveActivePayroll);
+        }
+
+        // Calculate contract dates
+        const payStartDate = new Date(dto.payStartDate);
+        const payEndDate = new Date(dto.payEndDate);
+        const joiningDate = new Date(dto.joiningDate);
+        payEndDate.setMonth(payEndDate.getMonth() + dto.payrollCycle);
+
+        // Pay start date must be after joining date
+        if (payStartDate < joiningDate) {
+          throw new BadRequestException(
+            ErrorPayroll.PayStartDateBeforeJoiningDate,
+          );
+        }
+
+        // Pay start date should not be in the past
+        if (payStartDate < new Date()) {
+          throw new BadRequestException(ErrorPayroll.PayStartDateInThePast);
+        }
+
+        // Pay end date should > pay start date
+        if (payEndDate <= payStartDate) {
+          throw new BadRequestException(
+            ErrorPayroll.PayEndDateBeforePayStartDate,
+          );
+        }
+
+        const payrollData: PayrollCreateInput = {
+          company: {
+            connect: {
+              id: companyId,
+            },
           },
-        },
-        employee: {
-          connect: {
-            id: dto.employeeId,
+          employee: {
+            connect: {
+              id: dto.employeeId,
+            },
           },
-        },
-        network: dto.network as unknown as JsonValue,
-        token: dto.token as unknown as JsonValue,
-        amount: dto.amount,
-        contractTerm: dto.contractTerm,
-        payrollCycle: dto.payrollCycle,
-        joiningDate: joiningDate,
-        payStartDate: payStartDate,
-        payEndDate: payEndDate,
-        description: dto.description,
-        note: dto.note,
-        metadata: dto.metadata,
-      };
+          network: dto.network as unknown as JsonValue,
+          token: dto.token as unknown as JsonValue,
+          amount: dto.amount,
+          contractTerm: dto.contractTerm,
+          payrollCycle: dto.payrollCycle,
+          joiningDate: joiningDate,
+          payStartDate: payStartDate,
+          payEndDate: payEndDate,
+          description: dto.description,
+          note: dto.note,
+          metadata: dto.metadata,
+        };
 
-      const payroll = await this.payrollRepository.create(payrollData, tx);
+        const payroll = await this.payrollRepository.create(payrollData, tx);
 
-      // Create an invoice schedule record so the scheduler can generate invoices
-      const nextGenerateDate =
-        this.calculateNextGenerateDateFromPayStart(payStartDate);
-      await tx.invoiceSchedule.create({
-        data: {
-          payroll: { connect: { id: payroll.id } },
-          isActive: true,
-          frequency: scheduleFrequency,
-          dayOfMonth: payStartDate.getDate(),
-          generateDaysBefore: 0,
-          nextGenerateDate,
-        },
+        // Create an invoice schedule record so the scheduler can generate invoices
+        const nextGenerateDate =
+          this.calculateNextGenerateDateFromPayStart(payStartDate);
+        await tx.invoiceSchedule.create({
+          data: {
+            payroll: { connect: { id: payroll.id } },
+            isActive: true,
+            frequency: scheduleFrequency,
+            dayOfMonth: payStartDate.getDate(),
+            generateDaysBefore: 0,
+            nextGenerateDate,
+          },
+        });
+
+        return payroll;
       });
-
-      return payroll;
-    }, 'createPayroll');
+    } catch (error) {
+      this.logger.error('Error creating payroll:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
@@ -314,38 +317,43 @@ export class PayrollService {
     companyId: number,
     dto: UpdatePayrollDto,
   ): Promise<PayrollModel> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      const existingPayroll = await this.payrollRepository.findOne(
-        { id, companyId },
-        tx,
-      );
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const existingPayroll = await this.payrollRepository.findOne(
+          { id, companyId },
+          tx,
+        );
 
-      if (!existingPayroll) {
-        throw new NotFoundException(ErrorPayroll.PayrollNotFound);
-      }
+        if (!existingPayroll) {
+          throw new NotFoundException(ErrorPayroll.PayrollNotFound);
+        }
 
-      let payEndDate = existingPayroll.payEndDate;
-      if (dto.payrollCycle) {
-        payEndDate = new Date(existingPayroll.payStartDate);
-        payEndDate.setMonth(payEndDate.getMonth() + dto.payrollCycle);
-      }
+        let payEndDate = existingPayroll.payEndDate;
+        if (dto.payrollCycle) {
+          payEndDate = new Date(existingPayroll.payStartDate);
+          payEndDate.setMonth(payEndDate.getMonth() + dto.payrollCycle);
+        }
 
-      const updateData: PayrollUpdateInput = {
-        ...dto,
-        network: dto.network as unknown as JsonValue,
-        token: dto.token as unknown as JsonValue,
-        ...(dto.payrollCycle && { payEndDate }),
-        ...(dto.payStartDate && { payStartDate: new Date(dto.payStartDate) }),
-      };
+        const updateData: PayrollUpdateInput = {
+          ...dto,
+          network: dto.network as unknown as JsonValue,
+          token: dto.token as unknown as JsonValue,
+          ...(dto.payrollCycle && { payEndDate }),
+          ...(dto.payStartDate && { payStartDate: new Date(dto.payStartDate) }),
+        };
 
-      const updatedPayroll = await this.payrollRepository.update(
-        { id, companyId },
-        updateData,
-        tx,
-      );
+        const updatedPayroll = await this.payrollRepository.update(
+          { id, companyId },
+          updateData,
+          tx,
+        );
 
-      return updatedPayroll;
-    }, 'updatePayroll');
+        return updatedPayroll;
+      });
+    } catch (error) {
+      this.logger.error('Error updating payroll:', error);
+      handleError(error, this.logger);
+    }
   }
   //#endregion PUT METHODS
 
@@ -353,15 +361,28 @@ export class PayrollService {
   // *************************************************
   // **************** PATCH METHODS ******************
   // *************************************************
+  /**
+   * Pause payroll
+   */
   async pausePayroll(id: number, companyId: number): Promise<PayrollModel> {
-    return this.updatePayrollStatus(id, companyId, PayrollStatusEnum.PAUSED);
+    try {
+      return this.updatePayrollStatus(id, companyId, PayrollStatusEnum.PAUSED);
+    } catch (error) {
+      this.logger.error('Error pausing payroll:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
    * Resume payroll
    */
   async resumePayroll(id: number, companyId: number): Promise<PayrollModel> {
-    return this.updatePayrollStatus(id, companyId, PayrollStatusEnum.ACTIVE);
+    try {
+      return this.updatePayrollStatus(id, companyId, PayrollStatusEnum.ACTIVE);
+    } catch (error) {
+      this.logger.error('Error resuming payroll:', error);
+      handleError(error, this.logger);
+    }
   }
 
   /**
@@ -369,37 +390,34 @@ export class PayrollService {
    */
   async deletePayroll(id: number, companyId: number): Promise<void> {
     try {
-      const payroll: PayrollWithInvoices =
-        await this.payrollRepository.findById(id, companyId);
+      this.prisma.$transaction(async (tx) => {
+        const payroll: PayrollWithInvoices =
+          await this.payrollRepository.findById(id, companyId, tx);
 
-      if (!payroll) {
-        throw new NotFoundException('Payroll not found');
-      }
+        if (!payroll) {
+          throw new NotFoundException(ErrorPayroll.PayrollNotFound);
+        }
 
-      // Only allow deletion if no invoices have been generated
-      if (payroll.invoices && payroll.invoices.length > 0) {
-        throw new ConflictException(
-          'Cannot delete payroll with existing invoices. Please cancel instead.',
-        );
-      }
+        // Only allow deletion if no invoices have been generated
+        if (payroll.invoices && payroll.invoices.length > 0) {
+          throw new ConflictException(
+            ErrorPayroll.CannotDeletePayrollWithExistingInvoices,
+          );
+        }
 
-      await this.payrollRepository.delete({ id, companyId });
+        await this.payrollRepository.delete({ id, companyId }, tx);
 
-      // Remove invoice schedules for this payroll
-      await this.prisma.invoiceSchedule.deleteMany({
-        where: { payrollId: id },
+        // Remove invoice schedules for this payroll
+        await tx.invoiceSchedule.deleteMany({
+          where: { payrollId: id },
+        });
       });
-
-      this.logger.log(`Deleted payroll ${id} from company ${companyId}`);
     } catch (error) {
       this.logger.error(`Error deleting payroll ${id}:`, error);
       handleError(error, this.logger);
     }
   }
   //#endregion PATCH METHODS
-  /**
-   * Pause payroll
-   */
 
   /**
    * Private helper to update payroll status
@@ -409,11 +427,11 @@ export class PayrollService {
     companyId: number,
     status: PayrollStatusEnum,
   ): Promise<PayrollModel> {
-    return this.prisma.executeInTransaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const payroll = await this.payrollRepository.findById(id, companyId, tx);
 
       if (!payroll) {
-        throw new NotFoundException('Payroll not found');
+        throw new NotFoundException(ErrorPayroll.PayrollNotFound);
       }
 
       const updatedPayroll = await this.payrollRepository.update(
@@ -429,7 +447,7 @@ export class PayrollService {
       });
 
       return updatedPayroll;
-    }, 'updatePayrollStatus');
+    });
   }
 
   /**

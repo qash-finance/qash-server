@@ -5,6 +5,7 @@ import {
   CompanyTypeEnum,
   CompanyVerificationStatusEnum,
   Prisma,
+  PrismaClient,
   TeamMemberRoleEnum,
 } from '../../database/generated/client';
 import {
@@ -61,7 +62,7 @@ export class CompanyRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel(tx?: PrismaTransactionClient) {
+  protected getModel(tx?: PrismaTransactionClient): PrismaClient['company'] {
     return tx ? tx.company : this.prisma.company;
   }
 
@@ -72,19 +73,24 @@ export class CompanyRepository extends BaseRepository<
   /**
    * Create new company
    */
-  async create(data: CreateCompanyData): Promise<CompanyModel> {
-    return this.prisma.company.create({
-      data,
+  async create(
+    data: CreateCompanyData,
+    tx?: PrismaTransactionClient,
+  ): Promise<CompanyModel> {
+    const client = tx || this.prisma;
+    return client.company.create({
+      data: data as Prisma.CompanyCreateInput,
     });
   }
 
   /**
    * Find company by ID
    */
-  async findById(id: number): Promise<CompanyModel | null> {
-    return this.prisma.company.findUnique({
-      where: { id },
-    });
+  async findById(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<CompanyModel | null> {
+    return this.findOne({ id }, tx);
   }
 
   /**
@@ -102,8 +108,10 @@ export class CompanyRepository extends BaseRepository<
    */
   async findByIdWithTeamMembers(
     id: number,
+    tx?: PrismaTransactionClient,
   ): Promise<CompanyWithRelations | null> {
-    return this.prisma.company.findUnique({
+    const model = this.getModel(tx);
+    return model.findUnique({
       where: { id },
       include: {
         teamMembers: {
@@ -131,6 +139,7 @@ export class CompanyRepository extends BaseRepository<
   async findByOwner(
     userId: number,
     filters?: CompanyFilters,
+    tx?: PrismaTransactionClient,
   ): Promise<CompanyModel[]> {
     const whereClause: any = {
       teamMembers: {
@@ -168,31 +177,34 @@ export class CompanyRepository extends BaseRepository<
       }
     }
 
-    return this.prisma.company.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-    });
+    return this.findMany(whereClause, { orderBy: { createdAt: 'desc' } }, tx);
   }
 
   /**
    * Update company by ID
    */
-  async updateById(id: number, data: UpdateCompanyData): Promise<CompanyModel> {
-    return this.prisma.company.update({
-      where: { id },
-      data,
-    });
+  async updateById(
+    id: number,
+    data: UpdateCompanyData,
+    tx?: PrismaTransactionClient,
+  ): Promise<CompanyModel> {
+    return this.update({ id }, data as Prisma.CompanyUpdateInput, tx);
   }
 
   /**
    * Check if user owns company (through TeamMember OWNER role)
    */
-  async isCompanyOwner(companyId: number, userId: number): Promise<boolean> {
-    const teamMember = await this.prisma.teamMember.findFirst({
+  async isCompanyOwner(
+    companyId: number,
+    userId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<boolean> {
+    const client = tx || this.prisma;
+    const teamMember = await client.teamMember.findFirst({
       where: {
         companyId,
         userId,
-        role: 'OWNER',
+        role: TeamMemberRoleEnum.OWNER,
         isActive: true,
       },
     });
@@ -202,7 +214,8 @@ export class CompanyRepository extends BaseRepository<
   /**
    * Get company statistics
    */
-  async getStats(userId?: number) {
+  async getStats(userId?: number, tx?: PrismaTransactionClient) {
+    const model = this.getModel(tx);
     // If userId is provided, filter by companies where user is OWNER
     const whereClause = userId
       ? {
@@ -218,17 +231,17 @@ export class CompanyRepository extends BaseRepository<
 
     const [total, verified, pending, underReview, rejected] = await Promise.all(
       [
-        this.prisma.company.count({ where: whereClause }),
-        this.prisma.company.count({
+        model.count({ where: whereClause }),
+        model.count({
           where: { ...whereClause, verificationStatus: 'VERIFIED' },
         }),
-        this.prisma.company.count({
+        model.count({
           where: { ...whereClause, verificationStatus: 'PENDING' },
         }),
-        this.prisma.company.count({
+        model.count({
           where: { ...whereClause, verificationStatus: 'UNDER_REVIEW' },
         }),
-        this.prisma.company.count({
+        model.count({
           where: { ...whereClause, verificationStatus: 'REJECTED' },
         }),
       ],
@@ -248,7 +261,9 @@ export class CompanyRepository extends BaseRepository<
    */
   async searchCompanies(
     filters: CompanyFilters & { skip?: number; take?: number },
+    tx?: PrismaTransactionClient,
   ) {
+    const model = this.getModel(tx);
     const { skip = 0, take = 20, ...searchFilters } = filters;
     const whereClause: any = {};
 
@@ -279,7 +294,7 @@ export class CompanyRepository extends BaseRepository<
     }
 
     const [companies, total] = await Promise.all([
-      this.prisma.company.findMany({
+      model.findMany({
         where: whereClause,
         include: {
           _count: {
@@ -290,7 +305,7 @@ export class CompanyRepository extends BaseRepository<
         skip,
         take,
       }),
-      this.prisma.company.count({ where: whereClause }),
+      model.count({ where: whereClause }),
     ]);
 
     return {
@@ -303,20 +318,20 @@ export class CompanyRepository extends BaseRepository<
   /**
    * Delete company (soft delete by deactivating)
    */
-  async deactivate(id: number): Promise<CompanyModel> {
-    return this.prisma.company.update({
-      where: { id },
-      data: { isActive: false },
-    });
+  async deactivate(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<CompanyModel> {
+    return this.update({ id }, { isActive: false }, tx);
   }
 
   /**
    * Activate company
    */
-  async activate(id: number): Promise<CompanyModel> {
-    return this.prisma.company.update({
-      where: { id },
-      data: { isActive: true },
-    });
+  async activate(
+    id: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<CompanyModel> {
+    return this.update({ id }, { isActive: true }, tx);
   }
 }

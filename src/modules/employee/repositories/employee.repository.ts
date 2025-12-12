@@ -1,12 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import { Prisma } from 'src/database/generated/client';
-import { Employee } from 'src/database/generated/client';
+import { Employee, Prisma, PrismaClient } from 'src/database/generated/client';
 import {
   BaseRepository,
   PrismaTransactionClient,
 } from '../../../database/base.repository';
-import { EmployeeDelegate } from 'src/database/generated/models';
 
 @Injectable()
 export class EmployeeRepository extends BaseRepository<
@@ -19,7 +17,7 @@ export class EmployeeRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel(tx?: PrismaTransactionClient): EmployeeDelegate {
+  protected getModel(tx?: PrismaTransactionClient): PrismaClient['employee'] {
     return tx ? tx.employee : this.prisma.employee;
   }
 

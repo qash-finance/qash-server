@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Put,
-  Param,
-  Body,
-  ParseIntPipe,
-  Logger,
-} from '@nestjs/common';
+import { Controller, Put, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { AdminAuth } from '../shared/decorators/admin-auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -17,8 +10,6 @@ import { UpdateVerificationStatusDto } from './admin.dto';
 @AdminAuth()
 @Controller('admin')
 export class AdminController {
-  private readonly logger = new Logger(AdminController.name);
-
   constructor(private readonly adminCompanyService: AdminCompanyService) {}
 
   @Put('companies/:id/verification-status')
@@ -45,11 +36,8 @@ export class AdminController {
     @Param('id', ParseIntPipe) companyId: number,
     @Body() dto: UpdateVerificationStatusDto,
   ) {
-    this.logger.log(
-      `Admin ${user.email} updating verification status for company ${companyId} to ${dto.status}`,
-    );
-
     return this.adminCompanyService.updateVerificationStatus(
+      user.sub,
       companyId,
       dto.status,
       dto.adminNotes,

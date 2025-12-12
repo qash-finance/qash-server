@@ -1,10 +1,12 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
-import { AppConfigService } from '../../shared/config/config.service';
 import { JwtPayload } from '../../../common/interfaces/jwt-payload';
 import { UserRepository } from '../repositories/user.repository';
 import { UserSessionRepository } from '../repositories/user-session.repository';
 import { nanoid } from 'nanoid';
+import { ErrorAuth, ErrorUser } from 'src/common/constants/errors';
+import { PrismaService } from 'src/database/prisma.service';
+import { PrismaTransactionClient } from 'src/database/base.repository';
 
 export interface TokenPair {
   accessToken: string;
@@ -23,10 +25,10 @@ export class JwtAuthService {
   private readonly REFRESH_TOKEN_EXPIRY = '7d';
 
   constructor(
+    private readonly prisma: PrismaService,
     private readonly jwtService: NestJwtService,
     private readonly userRepository: UserRepository,
     private readonly userSessionRepository: UserSessionRepository,
-    private readonly appConfigService: AppConfigService,
   ) {}
 
   /**
@@ -37,51 +39,15 @@ export class JwtAuthService {
     sessionInfo?: SessionInfo,
   ): Promise<TokenPair> {
     try {
-      const user = await this.userRepository.findById(userId);
-
-      if (!user || !user.isActive) {
-        throw new UnauthorizedException('User not found or inactive');
-      }
-
-      const payload: JwtPayload = {
-        sub: userId,
-        email: user.email,
-        iat: Math.floor(Date.now() / 1000),
-      };
-
-      // Generate tokens
-      const accessToken = this.jwtService.sign(payload, {
-        expiresIn: this.ACCESS_TOKEN_EXPIRY,
+      return this.prisma.$transaction(async (tx) => {
+        return this.createTokenPair(userId, sessionInfo, tx);
       });
-
-      const refreshTokenId = nanoid(32);
-      const refreshToken = this.jwtService.sign(
-        { ...payload, tokenId: refreshTokenId },
-        { expiresIn: this.REFRESH_TOKEN_EXPIRY },
-      );
-
-      // Calculate expiry date
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-      // Store refresh token in database
-      await this.userSessionRepository.create({
-        id: refreshTokenId,
-        userId,
-        refreshToken,
-        userAgent: sessionInfo?.userAgent,
-        ipAddress: sessionInfo?.ipAddress,
-        expiresAt,
-      });
-
-      this.logger.log(`Tokens generated for user: ${user.email}`);
-      return { accessToken, refreshToken };
     } catch (error) {
       this.logger.error(`Failed to generate tokens for user ${userId}:`, error);
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new UnauthorizedException('Failed to generate tokens');
+      throw new UnauthorizedException(ErrorAuth.FailedToGenerateTokens);
     }
   }
 
@@ -93,39 +59,41 @@ export class JwtAuthService {
     sessionInfo?: SessionInfo,
   ): Promise<TokenPair> {
     try {
-      // Verify refresh token
-      const decoded = this.jwtService.verify(refreshToken);
-      const { sub: userId, tokenId } = decoded;
+      return this.prisma.$transaction(async (tx) => {
+        // Verify refresh token
+        const decoded = this.jwtService.verify(refreshToken);
+        const { sub: userId, tokenId } = decoded;
 
-      // Find session in database
-      const session =
-        await this.userSessionRepository.findActiveSessionWithUser(
-          tokenId,
-          refreshToken,
-        );
+        // Find session in database
+        const session =
+          await this.userSessionRepository.findActiveSessionWithUser(
+            tokenId,
+            refreshToken,
+            tx,
+          );
 
-      if (!session || session.expiresAt < new Date()) {
-        throw new UnauthorizedException('Invalid or expired refresh token');
-      }
+        if (!session || session.expiresAt < new Date()) {
+          throw new UnauthorizedException(ErrorAuth.InvalidRefreshToken);
+        }
 
-      if (!session.user.isActive) {
-        throw new UnauthorizedException('User account is inactive');
-      }
+        if (!session.user.isActive) {
+          throw new UnauthorizedException(ErrorUser.UserNotActive);
+        }
 
-      // Deactivate old session
-      await this.userSessionRepository.deactivate(tokenId);
+        // Deactivate old session
+        await this.userSessionRepository.deactivate(tokenId, tx);
 
-      // Generate new token pair
-      const newTokens = await this.generateTokens(userId, sessionInfo);
+        // Generate new token pair within the same transaction
+        const newTokens = await this.createTokenPair(userId, sessionInfo, tx);
 
-      this.logger.log(`Tokens refreshed for user: ${session.user.email}`);
-      return newTokens;
+        return newTokens;
+      });
     } catch (error) {
       this.logger.error('Failed to refresh tokens:', error);
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException(ErrorAuth.InvalidRefreshToken);
     }
   }
 
@@ -140,13 +108,13 @@ export class JwtAuthService {
       const isActive = await this.userRepository.isActiveUser(payload.sub);
 
       if (!isActive) {
-        throw new UnauthorizedException('User not found or inactive');
+        throw new UnauthorizedException(ErrorUser.NotFound);
       }
 
       return payload;
     } catch (error) {
       this.logger.error('Token validation failed:', error);
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException(ErrorAuth.InvalidToken);
     }
   }
 
@@ -155,15 +123,14 @@ export class JwtAuthService {
    */
   async revokeRefreshToken(refreshToken: string): Promise<void> {
     try {
-      const decoded = this.jwtService.verify(refreshToken);
-      const { tokenId } = decoded;
+      this.prisma.$transaction(async (tx) => {
+        const decoded = this.jwtService.verify(refreshToken);
+        const { tokenId } = decoded;
 
-      await this.userSessionRepository.deactivate(tokenId);
-
-      this.logger.log(`Refresh token revoked: ${tokenId}`);
+        await this.userSessionRepository.deactivate(tokenId, tx);
+      });
     } catch (error) {
       this.logger.error('Failed to revoke refresh token:', error);
-      // Don't throw error for logout - just log it
     }
   }
 
@@ -172,9 +139,9 @@ export class JwtAuthService {
    */
   async revokeAllUserTokens(userId: number): Promise<void> {
     try {
-      await this.userSessionRepository.deactivateAllForUser(userId);
-
-      this.logger.log(`All tokens revoked for user: ${userId}`);
+      this.prisma.$transaction(async (tx) => {
+        await this.userSessionRepository.deactivateAllForUser(userId, tx);
+      });
     } catch (error) {
       this.logger.error(
         `Failed to revoke all tokens for user ${userId}:`,
@@ -198,12 +165,67 @@ export class JwtAuthService {
   /**
    * Clean up expired sessions (can be called by a cron job)
    */
-  async cleanupExpiredSessions(): Promise<void> {
+  async cleanupExpiredSessions(): Promise<number> {
     try {
-      const count = await this.userSessionRepository.cleanupExpired();
-      this.logger.log(`Cleaned up ${count} expired/inactive sessions`);
+      return this.prisma.$transaction(async (tx) => {
+        const count = await this.userSessionRepository.cleanupExpired(tx);
+        return count;
+      });
     } catch (error) {
       this.logger.error('Failed to cleanup expired sessions:', error);
     }
+  }
+
+  /**
+   * Create token pair within an existing transaction
+   */
+  async createTokenPair(
+    userId: number,
+    sessionInfo: SessionInfo | undefined,
+    tx: PrismaTransactionClient,
+  ): Promise<TokenPair> {
+    const user = await this.userRepository.findById(userId, tx);
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException(ErrorUser.NotFound);
+    }
+
+    const payload: JwtPayload = {
+      sub: userId,
+      email: user.email,
+      iat: Math.floor(Date.now() / 1000),
+    };
+
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.ACCESS_TOKEN_EXPIRY,
+    });
+
+    const refreshTokenId = nanoid(32);
+    const refreshToken = this.jwtService.sign(
+      { ...payload, tokenId: refreshTokenId },
+      { expiresIn: this.REFRESH_TOKEN_EXPIRY },
+    );
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+
+    await this.userSessionRepository.create(
+      {
+        id: refreshTokenId,
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+        refreshToken,
+        userAgent: sessionInfo?.userAgent,
+        ipAddress: sessionInfo?.ipAddress,
+        expiresAt,
+        isActive: true,
+      },
+      tx,
+    );
+
+    return { accessToken, refreshToken };
   }
 }

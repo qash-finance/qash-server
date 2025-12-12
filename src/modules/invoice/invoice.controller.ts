@@ -34,7 +34,6 @@ import {
   UserWithCompany,
 } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from 'src/common/interfaces/jwt-payload';
-import { Auth } from '../auth/decorators/auth.decorator';
 
 @ApiTags('Invoice')
 @ApiBearerAuth()

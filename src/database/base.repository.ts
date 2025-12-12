@@ -1,11 +1,37 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
+import { PrismaClient } from './generated/client';
 
 // Transaction client type for Prisma
+// This is the type of the client passed to $transaction callbacks
 export type PrismaTransactionClient = Omit<
-  any,
+  PrismaClient,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >;
+
+// Helper type to extract model delegate type from PrismaClient or PrismaTransactionClient
+export type PrismaModelDelegate<
+  TClient extends PrismaClient | PrismaTransactionClient,
+  TModelName extends keyof TClient,
+> = TClient[TModelName];
+
+// Common interface for Prisma model delegates
+// This represents the methods available on all Prisma model delegates
+export interface PrismaDelegateBase {
+  findFirst: (args?: any) => Promise<any>;
+  findMany: (args?: any) => Promise<any[]>;
+  findUnique: (args: any) => Promise<any>;
+  create: (args: any) => Promise<any>;
+  createMany: (args: any) => Promise<{ count: number }>;
+  update: (args: any) => Promise<any>;
+  updateMany: (args: any) => Promise<{ count: number }>;
+  upsert: (args: any) => Promise<any>;
+  delete: (args: any) => Promise<any>;
+  deleteMany: (args: any) => Promise<{ count: number }>;
+  count: (args?: any) => Promise<number>;
+  aggregate: (args?: any) => Promise<any>;
+  groupBy: (args?: any) => Promise<any>;
+}
 
 // Pagination options interface
 export interface PaginationOptions {
@@ -33,6 +59,7 @@ export abstract class BaseRepository<
   TWhereInput,
   TCreateInput,
   TUpdateInput,
+  TDelegate extends PrismaDelegateBase = any,
 > {
   protected readonly logger = new Logger(this.constructor.name);
 
@@ -41,7 +68,7 @@ export abstract class BaseRepository<
   /**
    * Get the Prisma model - must be implemented by child classes
    */
-  protected abstract getModel(tx?: PrismaTransactionClient): any;
+  protected abstract getModel(tx?: PrismaTransactionClient): TDelegate;
 
   /**
    * Get the model name for logging and error messages
