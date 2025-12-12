@@ -327,12 +327,11 @@ export class EmployeeController {
     @Query('address') address: string,
     @Query('groupId', ParseIntPipe) groupId: number,
   ) {
-    const isDuplicate = await this.employeeService.isEmployeeAddressDuplicate(
+    return this.employeeService.isEmployeeAddressDuplicate(
       user.company.id,
       address,
       groupId,
     );
-    return { isDuplicate };
   }
 
   @Get('validate/group-exists')
