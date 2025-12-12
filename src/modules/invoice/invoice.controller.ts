@@ -232,23 +232,23 @@ export class InvoiceController {
     return this.invoiceService.sendInvoice(invoiceUUID, user.company.id);
   }
 
-  @Patch(':invoiceUUID/review')
-  @ApiOperation({ summary: 'Employee reviews invoice' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Invoice reviewed successfully',
-  })
-  @ApiParam({
-    name: 'invoiceUUID',
-    type: 'string',
-    description: 'Invoice UUID',
-  })
-  async reviewInvoice(
-    @CurrentUser() user: JwtPayload,
-    @Param('invoiceUUID') invoiceUUID: string,
-  ): Promise<InvoiceModel> {
-    return this.invoiceService.reviewInvoice(invoiceUUID, user.email);
-  }
+  // @Patch(':invoiceUUID/review')
+  // @ApiOperation({ summary: 'Employee reviews invoice' })
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Invoice reviewed successfully',
+  // })
+  // @ApiParam({
+  //   name: 'invoiceUUID',
+  //   type: 'string',
+  //   description: 'Invoice UUID',
+  // })
+  // async reviewInvoice(
+  //   @CurrentUser() user: JwtPayload,
+  //   @Param('invoiceUUID') invoiceUUID: string,
+  // ): Promise<InvoiceModel> {
+  //   return this.invoiceService.reviewInvoice(invoiceUUID, user.email);
+  // }
 
   @Patch(':invoiceUUID/confirm')
   @ApiOperation({ summary: 'Employee confirms invoice' })
