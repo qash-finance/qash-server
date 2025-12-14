@@ -311,58 +311,64 @@ export class InvoiceService {
     employeeEmail?: string,
   ): Promise<void> {
     try {
-      return this.prisma.$transaction(async (tx) => {
-        const invoice = await this.invoiceRepository.findByUUID(
-          invoiceUUID,
-          tx,
-        );
-
-        if (!invoice) {
-          throw new NotFoundException(ErrorInvoice.InvoiceNotFound);
-        }
-
-        // Verify they own this invoice
-        if (employeeEmail && invoice.employee.email !== employeeEmail) {
-          throw new ForbiddenException(ErrorInvoice.NotOwner);
-        }
-
-        // Only allow updates if invoice is in SENT or REVIEWED status
-        const updatableStatuses: InvoiceStatusEnum[] = [
-          InvoiceStatusEnum.SENT,
-          InvoiceStatusEnum.REVIEWED,
-        ];
-        if (!updatableStatuses.includes(invoice.status)) {
-          throw new BadRequestException(ErrorInvoice.InvoiceNotUpdatable);
-        }
-
-        // transform dto to InvoiceUpdateInput
-        const { address, network, token, walletAddress } = dto;
-        const updateData: InvoiceUpdateInput = {
-          fromDetails: {
-            ...(invoice.fromDetails as object),
-            address,
-          },
-          paymentWalletAddress: walletAddress,
-          paymentNetwork: network as unknown as JsonValue,
-          paymentToken: token as unknown as JsonValue,
-        };
-
-        if (address) {
-          // Means the employee is updating their address
-          // We update employee table with the new address
-          await this.employeeRepository.update(
-            { id: invoice.employeeId },
-            { address },
+      return await this.prisma.$transaction(
+        async (tx) => {
+          const invoice = await this.invoiceRepository.findByUUID(
+            invoiceUUID,
             tx,
           );
-        }
 
-        await this.invoiceRepository.update(
-          { uuid: invoiceUUID },
-          updateData,
-          tx,
-        );
-      });
+          if (!invoice) {
+            throw new NotFoundException(ErrorInvoice.InvoiceNotFound);
+          }
+
+          // Verify they own this invoice
+          if (employeeEmail && invoice.employee.email !== employeeEmail) {
+            throw new ForbiddenException(ErrorInvoice.NotOwner);
+          }
+
+          // Only allow updates if invoice is in SENT or REVIEWED status
+          const updatableStatuses: InvoiceStatusEnum[] = [
+            InvoiceStatusEnum.SENT,
+            InvoiceStatusEnum.REVIEWED,
+          ];
+          if (!updatableStatuses.includes(invoice.status)) {
+            throw new BadRequestException(ErrorInvoice.InvoiceNotUpdatable);
+          }
+
+          // transform dto to InvoiceUpdateInput
+          const { address, network, token, walletAddress } = dto;
+          const updateData: InvoiceUpdateInput = {
+            fromDetails: {
+              ...(invoice.fromDetails as object),
+              address,
+            },
+            paymentWalletAddress: walletAddress,
+            paymentNetwork: network as unknown as JsonValue,
+            paymentToken: token as unknown as JsonValue,
+          };
+
+          if (address) {
+            // Means the employee is updating their address
+            // We update employee table with the new address
+            await this.employeeRepository.update(
+              { id: invoice.employeeId },
+              { address },
+              tx,
+            );
+          }
+
+          await this.invoiceRepository.update(
+            { uuid: invoiceUUID },
+            updateData,
+            tx,
+          );
+        },
+        {
+          maxWait: 10000, // 10 seconds max wait for transaction to start
+          timeout: 30000, // 30 seconds max execution time
+        },
+      );
     } catch (error) {
       this.logger.error('Error updating invoice:', error);
       handleError(error, this.logger);

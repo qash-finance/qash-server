@@ -390,7 +390,7 @@ export class PayrollService {
    */
   async deletePayroll(id: number, companyId: number): Promise<void> {
     try {
-      this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx) => {
         const payroll: PayrollWithInvoices =
           await this.payrollRepository.findById(id, companyId, tx);
 
