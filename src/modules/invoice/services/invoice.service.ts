@@ -191,7 +191,7 @@ export class InvoiceService {
     companyId: number,
   ): Promise<InvoiceModel> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         // Verify payroll exists
         const payroll = await this.payrollRepository.findById(
           dto.payrollId,
@@ -289,7 +289,7 @@ export class InvoiceService {
     },
   ): Promise<InvoiceModel> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         return this.generateInvoice(payrollId, companyId, tx, options);
       });
     } catch (error) {
@@ -383,7 +383,7 @@ export class InvoiceService {
     companyId: number,
   ): Promise<InvoiceModel> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const invoice = await this.invoiceRepository.findByUUID(
           invoiceUUID,
           tx,
@@ -448,7 +448,7 @@ export class InvoiceService {
     employeeEmail: string,
   ): Promise<InvoiceModel> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const invoice = await this.invoiceRepository.findByUUID(
           invoiceUUID,
           tx,
@@ -491,7 +491,7 @@ export class InvoiceService {
     employeeEmail: string,
   ): Promise<InvoiceModel> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const invoice = await this.invoiceRepository.findByUUID(
           invoiceUUID,
           tx,
@@ -571,7 +571,7 @@ export class InvoiceService {
     companyId: number,
   ): Promise<InvoiceModel> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const invoice = await this.invoiceRepository.findByUUID(
           invoiceUUID,
           tx,

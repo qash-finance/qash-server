@@ -66,7 +66,7 @@ export class InvoiceSchedulerService {
       };
     },
   ): Promise<void> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const { payroll } = schedule;
 
       // Check if payroll is still active

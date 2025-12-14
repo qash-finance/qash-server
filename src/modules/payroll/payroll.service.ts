@@ -159,7 +159,7 @@ export class PayrollService {
     options?: { scheduleFrequency?: string },
   ): Promise<PayrollModel> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const scheduleFrequency = options?.scheduleFrequency ?? 'MONTHLY';
         // Make sure employee exists and belongs to company
         const employee = await this.employeeRepository.findOne(
@@ -318,7 +318,7 @@ export class PayrollService {
     dto: UpdatePayrollDto,
   ): Promise<PayrollModel> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const existingPayroll = await this.payrollRepository.findOne(
           { id, companyId },
           tx,
@@ -427,7 +427,7 @@ export class PayrollService {
     companyId: number,
     status: PayrollStatusEnum,
   ): Promise<PayrollModel> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const payroll = await this.payrollRepository.findById(id, companyId, tx);
 
       if (!payroll) {

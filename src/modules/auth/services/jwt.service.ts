@@ -39,7 +39,7 @@ export class JwtAuthService {
     sessionInfo?: SessionInfo,
   ): Promise<TokenPair> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         return this.createTokenPair(userId, sessionInfo, tx);
       });
     } catch (error) {
@@ -59,7 +59,7 @@ export class JwtAuthService {
     sessionInfo?: SessionInfo,
   ): Promise<TokenPair> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         // Verify refresh token
         const decoded = this.jwtService.verify(refreshToken);
         const { sub: userId, tokenId } = decoded;
@@ -123,7 +123,7 @@ export class JwtAuthService {
    */
   async revokeRefreshToken(refreshToken: string): Promise<void> {
     try {
-      this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx) => {
         const decoded = this.jwtService.verify(refreshToken);
         const { tokenId } = decoded;
 
@@ -139,7 +139,7 @@ export class JwtAuthService {
    */
   async revokeAllUserTokens(userId: number): Promise<void> {
     try {
-      this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx) => {
         await this.userSessionRepository.deactivateAllForUser(userId, tx);
       });
     } catch (error) {
@@ -167,7 +167,7 @@ export class JwtAuthService {
    */
   async cleanupExpiredSessions(): Promise<number> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const count = await this.userSessionRepository.cleanupExpired(tx);
         return count;
       });

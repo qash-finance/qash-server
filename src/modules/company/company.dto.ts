@@ -366,3 +366,11 @@ export class CompanySearchQueryDto {
   @Length(1, 100)
   search?: string;
 }
+
+export class IsEmployeeResponseDto {
+  @ApiProperty({
+    description: 'Whether the user is an employee',
+    example: true,
+  })
+  isEmployee: boolean;
+}

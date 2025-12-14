@@ -251,7 +251,7 @@ export class BillService {
     companyId: number,
     dto: PayBillsDto,
   ): Promise<BatchPaymentResultDto> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       // Fetch all bills to validate with invoice included
       const bills = (await this.billRepository.findMany(
         {
@@ -338,7 +338,7 @@ export class BillService {
     companyId: number,
     status: BillStatusEnum,
   ): Promise<BillModel> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const bill = await this.billRepository.findOne({ id, companyId }, tx);
 
       if (!bill) {
@@ -373,7 +373,7 @@ export class BillService {
    */
   async deleteBill(uuid: string, companyId: number): Promise<void> {
     try {
-      this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx) => {
         const bill = await this.billRepository.findOne({ uuid, companyId });
 
         if (!bill) {

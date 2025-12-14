@@ -303,7 +303,7 @@ export class EmployeeService {
     company: CompanyModel,
   ): Promise<Employee> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         dto = sanitizeInput(dto);
 
         // Find if the group exists for this company
@@ -369,7 +369,7 @@ export class EmployeeService {
     dto: UpdateAddressBookDto,
   ): Promise<Employee> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const existingContact = await this.employeeRepository.findOne(
           {
             id: contactId,
@@ -469,7 +469,7 @@ export class EmployeeService {
     orderUpdates: AddressBookOrderDto[],
   ): Promise<{ message: string; updatedCount: number }> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         if (orderUpdates.length === 0) {
           return {
             message: 'No employees to update',
@@ -520,7 +520,7 @@ export class EmployeeService {
    */
   async deleteEmployee(companyId: number, contactId: number) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const contact = await this.employeeRepository.findOne(
           {
             id: contactId,

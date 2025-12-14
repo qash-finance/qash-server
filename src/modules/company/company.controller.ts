@@ -26,6 +26,7 @@ import {
   CreateCompanyDto,
   UpdateCompanyDto,
   CompanyResponseDto,
+  IsEmployeeResponseDto,
 } from './company.dto';
 import { CompanyModel } from 'src/database/generated/models';
 import { CompanyAuth } from '../auth/decorators/company-auth.decorator';
@@ -56,6 +57,25 @@ export class CompanyController {
     @CurrentUser('withCompany') user: UserWithCompany,
   ): Promise<CompanyModel> {
     return this.companyService.getMyCompany(user.company.id);
+  }
+
+  @Get('check-employee')
+  @Auth()
+  @ApiOperation({
+    summary: 'Check if user is an employee',
+    description:
+      'Check if the logged-in user is an employee (has invoices to review)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Employee status retrieved successfully',
+    type: IsEmployeeResponseDto,
+  })
+  async checkIfEmployee(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<IsEmployeeResponseDto> {
+    const isEmployee = await this.companyService.isUserEmployee(user.email);
+    return { isEmployee };
   }
   //#endregion GET METHODS
 

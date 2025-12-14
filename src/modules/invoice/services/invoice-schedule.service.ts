@@ -35,7 +35,7 @@ export class InvoiceScheduleService {
     companyId: number,
     dto: CreateInvoiceScheduleDto,
   ): Promise<any> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const payroll = await this.payrollRepository.findById(
         payrollId,
         companyId,
@@ -93,7 +93,7 @@ export class InvoiceScheduleService {
     companyId: number,
     dto: UpdateInvoiceScheduleDto,
   ): Promise<any> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const schedule = await this.scheduleRepository.findById(id, tx);
 
       if (!schedule) {
@@ -141,7 +141,7 @@ export class InvoiceScheduleService {
    * Delete invoice schedule
    */
   async deleteSchedule(id: number, companyId: number): Promise<void> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const schedule = await this.scheduleRepository.findById(id, tx);
 
       if (!schedule) {

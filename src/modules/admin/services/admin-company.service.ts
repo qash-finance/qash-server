@@ -38,7 +38,7 @@ export class AdminCompanyService {
     adminNotes?: string,
   ) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         // First need to check if user is an admin
         const user = await this.userRepository.findById(userId, tx);
         if (!user) {

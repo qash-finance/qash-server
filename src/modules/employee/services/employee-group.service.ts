@@ -39,7 +39,7 @@ export class EmployeeGroupService {
     company: CompanyModel,
   ) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         dto = sanitizeInput(dto);
         // Check if group already exists
         const existingCompanyGroup = await this.employeeGroupRepository.findOne(

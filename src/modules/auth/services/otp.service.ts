@@ -43,7 +43,7 @@ export class OtpService {
     type: OtpTypeEnum = OtpTypeEnum.LOGIN,
   ): Promise<void> {
     try {
-      this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx) => {
         let user = await this.userRepository.findByEmail(email, tx);
 
         if (!user) {
@@ -98,7 +98,7 @@ export class OtpService {
     type: OtpTypeEnum = OtpTypeEnum.LOGIN,
   ): Promise<{ userId: number; isNewUser: boolean }> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         return this.verifyOtpInternal(email, code, type, tx);
       });
     } catch (error) {
@@ -183,7 +183,7 @@ export class OtpService {
    */
   async cleanupExpiredOtps(): Promise<void> {
     try {
-      this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx) => {
         await this.otpRepository.cleanupExpired(tx);
       });
     } catch (error) {

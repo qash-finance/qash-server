@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { CompanyRepository } from './company.repository';
 import { TeamMemberRepository } from '../team-member/team-member.repository';
+import { EmployeeRepository } from '../employee/repositories/employee.repository';
 import {
   CreateCompanyDto,
   UpdateCompanyDto,
@@ -26,6 +27,7 @@ export class CompanyService {
   constructor(
     private readonly companyRepository: CompanyRepository,
     private readonly teamMemberRepository: TeamMemberRepository,
+    private readonly employeeRepository: EmployeeRepository,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -73,6 +75,22 @@ export class CompanyService {
     const teamMember = await this.teamMemberRepository.findByUserId(userId);
     return teamMember ? [teamMember] : []; // Return as array for backward compatibility
   }
+
+  /**
+   * Check if logged-in user is an employee
+   * An employee is someone whose email exists in the Employee table
+   */
+  async isUserEmployee(userEmail: string): Promise<boolean> {
+    try {
+      const employee = await this.employeeRepository.findOne({
+        email: userEmail,
+      });
+      return !!employee;
+    } catch (error) {
+      this.logger.error('Error checking if user is employee:', error);
+      handleError(error, this.logger);
+    }
+  }
   //#endregion GET METHODS
 
   //#region POST METHODS
@@ -87,7 +105,7 @@ export class CompanyService {
     dto: CreateCompanyDto,
   ): Promise<CompanyModel> {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const existingCompany =
           await this.companyRepository.findByRegistrationNumber(
             dto.registrationNumber,
@@ -159,7 +177,7 @@ export class CompanyService {
     updateCompanyDto: UpdateCompanyDto,
   ) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         // Check if user is owner or admin
         const hasPermission = await this.teamMemberRepository.hasPermission(
           companyId,
@@ -190,7 +208,7 @@ export class CompanyService {
    */
   async deactivateCompany(companyId: number, userId: number) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         // Only company owner can deactivate
         const isOwner = await this.companyRepository.isCompanyOwner(
           companyId,
@@ -216,7 +234,7 @@ export class CompanyService {
    */
   async activateCompany(companyId: number, userId: number) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         // Only company owner can activate
         const isOwner = await this.companyRepository.isCompanyOwner(
           companyId,

@@ -43,7 +43,7 @@ export class TeamMemberService {
     createTeamMemberDto: CreateTeamMemberDto,
   ) {
     try {
-      this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx) => {
         const { companyId } = createTeamMemberDto;
 
         // Check if user can manage team
@@ -114,7 +114,7 @@ export class TeamMemberService {
     inviteDto: InviteTeamMemberDto,
   ) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         // Check if user can manage team
         const canManage = await this.teamMemberRepository.hasPermission(
           companyId,
@@ -325,7 +325,7 @@ export class TeamMemberService {
     updateDto: UpdateTeamMemberDto,
   ) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const teamMember =
           await this.teamMemberRepository.findByIdWithRelations(
             teamMemberId,
@@ -384,7 +384,7 @@ export class TeamMemberService {
     newRole: TeamMemberRoleEnum,
   ) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const teamMember = await this.teamMemberRepository.findById(
           teamMemberId,
           tx,
@@ -455,7 +455,7 @@ export class TeamMemberService {
    */
   async removeTeamMember(teamMemberId: number, userId: number) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const teamMember = await this.teamMemberRepository.findById(
           teamMemberId,
           tx,
@@ -508,7 +508,7 @@ export class TeamMemberService {
     acceptDto?: AcceptInvitationDto,
   ) {
     try {
-      return this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const teamMember = await this.teamMemberRepository.findById(
           teamMemberId,
           tx,
