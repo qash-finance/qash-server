@@ -36,6 +36,8 @@ import { Currency } from 'src/common/constants/currency';
 import { handleError } from 'src/common/utils/errors';
 import { PrismaTransactionClient } from 'src/database/base.repository';
 import { EmployeeRepository } from 'src/modules/employee/repositories/employee.repository';
+import { BillService } from 'src/modules/bill/bill.service';
+import { TeamMemberRepository } from 'src/modules/team-member/team-member.repository';
 
 @Injectable()
 export class InvoiceService {
@@ -44,10 +46,12 @@ export class InvoiceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
-    private readonly employeeRepository: EmployeeRepository,
     private readonly invoiceItemService: InvoiceItemService,
+    private readonly billService: BillService,
+    private readonly employeeRepository: EmployeeRepository,
     private readonly invoiceRepository: InvoiceRepository,
     private readonly payrollRepository: PayrollRepository,
+    private readonly teamMemberRepository: TeamMemberRepository,
   ) {}
 
   //#region GET METHODS
@@ -400,12 +404,23 @@ export class InvoiceService {
           tx,
         );
 
+        // Calculate month string from invoice issue date
+        const month = new Date(invoice.issueDate).toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric',
+        });
+
         // Send email to employee
         try {
           await this.mailService.sendInvoiceNotification(
             invoice.employee.email,
             invoice.invoiceNumber,
+            invoice.uuid,
             invoice.dueDate,
+            invoice.payroll.company.companyName,
+            invoice.employee.name,
+            invoice.total,
+            month,
           );
         } catch (emailError) {
           // TODO: Handle email error, should try again a few times
@@ -484,7 +499,7 @@ export class InvoiceService {
           throw new ForbiddenException(ErrorInvoice.NotOwner);
         }
 
-        if (invoice.status !== InvoiceStatusEnum.REVIEWED) {
+        if (invoice.status !== InvoiceStatusEnum.SENT) {
           throw new BadRequestException(ErrorInvoice.InvoiceNotConfirmable);
         }
 
@@ -498,10 +513,37 @@ export class InvoiceService {
         );
 
         try {
+          // Format dates as "Month Year" (e.g., "January 2024")
+          const formatMonthYear = (date: Date): string => {
+            return new Date(date).toLocaleDateString('en-US', {
+              month: 'long',
+              year: 'numeric',
+            });
+          };
+
+          const fromMonthYear = formatMonthYear(invoice.payroll.payStartDate);
+          const toMonthYear = formatMonthYear(invoice.payroll.payEndDate);
+
+          // Find the only team member of the company
+          const teamMember = await this.teamMemberRepository.findOnlyTeamMember(
+            invoice.payroll.companyId,
+          );
+
           await this.mailService.sendInvoiceConfirmationNotification(
-            invoice.payroll.company.notificationEmail,
+            teamMember?.user?.email,
             invoice.invoiceNumber,
+            invoice.payroll.company.companyName,
             invoice.employee.name,
+            invoice.employee.email,
+            fromMonthYear,
+            toMonthYear,
+          );
+
+          // Create bill to company
+          await this.billService.createBillFromInvoice(
+            invoice.uuid,
+            invoice.payroll.companyId,
+            tx,
           );
         } catch (emailError) {
           this.logger.error('Failed to send confirmation email:', emailError);

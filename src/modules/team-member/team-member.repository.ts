@@ -10,6 +10,7 @@ import {
   BaseRepository,
   PrismaTransactionClient,
 } from 'src/database/base.repository';
+import { UserModel } from 'src/database/generated/models/User';
 
 export interface CreateTeamMemberData {
   firstName: string;
@@ -77,6 +78,20 @@ export class TeamMemberRepository extends BaseRepository<
     tx?: PrismaTransactionClient,
   ): Promise<TeamMemberModel | null> {
     return this.findOne({ id }, tx);
+  }
+
+  /**
+   * Find only team member by company ID
+   */
+  async findOnlyTeamMember(
+    companyId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<(TeamMemberModel & { user: UserModel }) | null> {
+    const model = this.getModel(tx);
+    return model.findFirst({
+      where: { companyId },
+      include: { user: true },
+    });
   }
 
   /**

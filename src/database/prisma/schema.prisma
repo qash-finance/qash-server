@@ -162,7 +162,7 @@ model Employee {
   nationality   String?     @map("nationality") @db.VarChar(100)
   taxId         String?     @map("tax_id")
 
-  address   String? @map("address") @db.VarChar(255)
+  address    String? @map("address") @db.VarChar(255)
   city       String? @db.VarChar(100)
   country    String? @db.VarChar(100)
   postalCode String? @map("postal_code") @db.VarChar(20)
@@ -304,8 +304,8 @@ model Invoice {
   total     String @db.VarChar(50)
   currency  String @default("USD") @db.VarChar(10) // Currency code
 
-  paymentNetwork Json @map("payment_network") @db.Json
-  paymentToken Json @map("payment_token") @db.Json
+  paymentNetwork       Json   @map("payment_network") @db.Json
+  paymentToken         Json   @map("payment_token") @db.Json
   paymentWalletAddress String @map("payment_wallet_address") @db.VarChar(255)
 
   // Status and Workflow
@@ -406,7 +406,9 @@ model InvoiceSchedule {
 }
 
 model Bill {
-  id        Int      @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
@@ -507,6 +509,7 @@ enum InvoiceStatusEnum {
   REVIEWED
   CONFIRMED
   CANCELLED
+  PAID
 }
 
 enum BillStatusEnum {

@@ -23,7 +23,6 @@ import {
   BillQueryDto,
   BillStatsDto,
   PayBillsDto,
-  BillDetailsDto,
   BatchPaymentResultDto,
 } from './bill.dto';
 import { BillModel } from 'src/database/generated/models';
@@ -41,28 +40,10 @@ import {
 export class BillController {
   constructor(private readonly billService: BillService) {}
 
-  @Post('create/:invoiceUUID')
-  @ApiOperation({ summary: 'Create bill from confirmed invoice' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Bill created successfully',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Invoice not confirmed or bill already exists',
-  })
-  @ApiParam({
-    name: 'invoiceUUID',
-    type: 'string',
-    description: 'Invoice UUID',
-  })
-  async createBill(
-    @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('invoiceUUID') invoiceUUID: string,
-  ): Promise<BillModel> {
-    return this.billService.createBillFromInvoice(invoiceUUID, user.company.id);
-  }
-
+  //#region GET METHODS
+  // *************************************************
+  // **************** GET METHODS ********************
+  // *************************************************
   @Get()
   @ApiOperation({ summary: 'Get all bills with pagination and filters' })
   @ApiResponse({
@@ -102,25 +83,25 @@ export class BillController {
     return this.billService.getBillStats(user.company.id);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get bill details with timeline' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Bill details retrieved successfully',
-    type: BillDetailsDto,
-  })
+  @Get(':uuid')
+  @ApiOperation({ summary: 'Get bill details' })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'Bill not found',
   })
-  @ApiParam({ name: 'id', type: 'number', description: 'Bill ID' })
+  @ApiParam({ name: 'uuid', type: 'string', description: 'Bill UUID' })
   async getBillDetails(
     @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<BillDetailsDto> {
-    return this.billService.getBillDetails(id, user.company.id);
+    @Param('uuid') uuid: string,
+  ): Promise<any> {
+    return this.billService.getBillDetails(uuid, user.company.id);
   }
+  //#endregion GET METHODS
 
+  //#region POST METHODS
+  // *************************************************
+  // **************** POST METHODS *******************
+  // *************************************************
   @Post('pay')
   @ApiOperation({ summary: 'Pay multiple bills in batch' })
   @ApiResponse({
@@ -162,8 +143,13 @@ export class BillController {
   ): Promise<BillModel> {
     return this.billService.updateBillStatus(id, user.company.id, status);
   }
+  //#endregion POST METHODS
 
-  @Delete(':id')
+  //#region DELETE METHODS
+  // *************************************************
+  // **************** DELETE METHODS ****************
+  // *************************************************
+  @Delete(':uuid')
   @ApiOperation({ summary: 'Delete bill' })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
@@ -177,11 +163,12 @@ export class BillController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Cannot delete paid bills',
   })
-  @ApiParam({ name: 'id', type: 'number', description: 'Bill ID' })
+  @ApiParam({ name: 'uuid', type: 'string', description: 'Bill UUID' })
   async deleteBill(
     @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid') uuid: string,
   ): Promise<void> {
-    return this.billService.deleteBill(id, user.company.id);
+    return this.billService.deleteBill(uuid, user.company.id);
   }
+  //#endregion DELETE METHODS
 }

@@ -5,6 +5,7 @@ import { InvoiceService } from './invoice.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { InvoiceScheduleModel } from 'src/database/generated/models/InvoiceSchedule';
 import { PayrollStatusEnum } from 'src/database/generated/enums';
+import { MailService } from 'src/modules/mail/mail.service';
 
 @Injectable()
 export class InvoiceSchedulerService {
@@ -14,6 +15,7 @@ export class InvoiceSchedulerService {
     private readonly scheduleService: InvoiceScheduleService,
     private readonly invoiceService: InvoiceService,
     private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -52,7 +54,16 @@ export class InvoiceSchedulerService {
    */
   private async generateInvoiceFromSchedule(
     schedule: InvoiceScheduleModel & {
-      payroll: { id: number; companyId: number; status: string };
+      payroll: {
+        id: number;
+        companyId: number;
+        status: string;
+        amount: string;
+        payStartDate: Date;
+        payEndDate: Date;
+        employee: { email: string; name: string };
+        company: { companyName: string };
+      };
     },
   ): Promise<void> {
     return this.prisma.$transaction(async (tx) => {
@@ -104,7 +115,23 @@ export class InvoiceSchedulerService {
         },
       );
 
-      // TODO:Send email to employee
+      // Calculate month string from payroll dates
+      const month = new Date(payroll.payStartDate).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      });
+
+      // Send email to employee
+      await this.mailService.sendInvoiceNotification(
+        payroll.employee.email,
+        invoice.invoiceNumber,
+        invoice.uuid,
+        invoice.dueDate,
+        payroll.company.companyName,
+        payroll.employee.name,
+        payroll.amount,
+        month,
+      );
 
       // Calculate next generate date
       const nextGenerateDate = this.calculateNextGenerateDate(

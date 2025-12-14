@@ -8,7 +8,7 @@ CREATE TYPE "PayrollStatusEnum" AS ENUM ('ACTIVE', 'PAUSED', 'COMPLETED', 'CANCE
 CREATE TYPE "InvoiceTypeEnum" AS ENUM ('EMPLOYEE', 'B2B');
 
 -- CreateEnum
-CREATE TYPE "InvoiceStatusEnum" AS ENUM ('DRAFT', 'SENT', 'REVIEWED', 'CONFIRMED', 'CANCELLED');
+CREATE TYPE "InvoiceStatusEnum" AS ENUM ('DRAFT', 'SENT', 'REVIEWED', 'CONFIRMED', 'CANCELLED', 'PAID');
 
 -- CreateEnum
 CREATE TYPE "BillStatusEnum" AS ENUM ('PENDING', 'PAID', 'OVERDUE', 'CANCELLED');
@@ -294,6 +294,7 @@ CREATE TABLE "invoice_schedules" (
 -- CreateTable
 CREATE TABLE "bills" (
     "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6) NOT NULL,
     "company_id" INTEGER NOT NULL,
@@ -522,6 +523,9 @@ CREATE INDEX "invoice_schedules_is_active_idx" ON "invoice_schedules"("is_active
 
 -- CreateIndex
 CREATE INDEX "invoice_schedules_next_generate_date_idx" ON "invoice_schedules"("next_generate_date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "bills_uuid_key" ON "bills"("uuid");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "bills_invoice_id_key" ON "bills"("invoice_id");

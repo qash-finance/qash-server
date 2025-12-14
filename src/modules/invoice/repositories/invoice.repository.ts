@@ -264,6 +264,27 @@ export class InvoiceRepository extends BaseRepository<
     });
   }
 
+  async updateMultiple(
+    uuids: string[],
+    status: InvoiceStatusEnum,
+    paidAt: Date,
+    tx?: PrismaTransactionClient,
+  ): Promise<number> {
+    const model = this.getModel(tx);
+
+    const result = await model.updateMany({
+      where: {
+        uuid: { in: uuids },
+      },
+      data: {
+        status,
+        paidAt,
+      },
+    });
+
+    return result.count;
+  }
+
   /**
    * Generate an invoice number.
    * If payrollId is provided, sequence is per payroll (employee-centric).

@@ -106,6 +106,9 @@ export class PayrollRepository extends BaseRepository<
           orderBy: {
             createdAt: 'desc',
           },
+          include: {
+            bill: true,
+          },
         },
       },
     });

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BillController } from './bill.controller';
 import { BillService } from './bill.service';
 import { BillRepository } from './bill.repository';
@@ -8,7 +8,12 @@ import { AuthModule } from '../auth/auth.module';
 import { CompanyModule } from '../company/company.module';
 
 @Module({
-  imports: [PrismaModule, InvoiceModule, AuthModule, CompanyModule],
+  imports: [
+    PrismaModule,
+    forwardRef(() => InvoiceModule),
+    AuthModule,
+    CompanyModule,
+  ],
   controllers: [BillController],
   providers: [BillService, BillRepository],
   exports: [BillService, BillRepository],

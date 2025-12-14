@@ -11,7 +11,6 @@ import {
   BillQueryDto,
   BillStatsDto,
   PayBillsDto,
-  BillDetailsDto,
   BillTimelineDto,
   BatchPaymentResultDto,
 } from './bill.dto';
@@ -22,70 +21,23 @@ import {
 } from 'src/database/generated/client';
 import { handleError } from 'src/common/utils/errors';
 import { PrismaService } from 'src/database/prisma.service';
+import { PrismaTransactionClient } from 'src/database/base.repository';
+import { ErrorBill, ErrorInvoice } from 'src/common/constants/errors';
 
 @Injectable()
 export class BillService {
   private readonly logger = new Logger(BillService.name);
 
   constructor(
+    private readonly prisma: PrismaService,
     private readonly billRepository: BillRepository,
     private readonly invoiceRepository: InvoiceRepository,
-    private readonly prisma: PrismaService,
   ) {}
 
-  /**
-   * Create bill from confirmed invoice
-   */
-  async createBillFromInvoice(
-    invoiceUUID: string,
-    companyId: number,
-  ): Promise<BillModel> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      // Verify invoice exists and is confirmed
-      const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, tx);
-
-      if (!invoice) {
-        throw new NotFoundException('Invoice not found');
-      }
-
-      if (invoice.payroll.companyId !== companyId) {
-        throw new BadRequestException(
-          'Invoice does not belong to this company',
-        );
-      }
-
-      if (invoice.status !== InvoiceStatusEnum.CONFIRMED) {
-        throw new BadRequestException(
-          'Only confirmed invoices can be converted to bills',
-        );
-      }
-
-      // Check if bill already exists for this invoice
-      if (invoice.bill) {
-        throw new ConflictException('Bill already exists for this invoice');
-      }
-
-      const billData: BillCreateInput = {
-        company: {
-          connect: {
-            id: companyId,
-          },
-        },
-        invoice: {
-          connect: {
-            uuid: invoiceUUID,
-          },
-        },
-        status: BillStatusEnum.PENDING,
-        metadata: {},
-      };
-
-      const bill = await this.billRepository.create(billData, tx);
-
-      return bill;
-    }, 'createBill');
-  }
-
+  //#region GET METHODS
+  // *************************************************
+  // **************** GET METHODS ********************
+  // *************************************************
   /**
    * Get all bills with pagination and filters
    */
@@ -119,6 +71,7 @@ export class BillService {
         {
           include: {
             invoice: true,
+            company: true,
           },
         },
       );
@@ -141,12 +94,21 @@ export class BillService {
   /**
    * Get bill details with timeline
    */
-  async getBillDetails(id: number, companyId: number): Promise<BillDetailsDto> {
+  async getBillDetails(
+    uuid: string,
+    companyId: number,
+  ): Promise<{
+    bill: BillWithInvoice;
+    timeline: BillTimelineDto[];
+  }> {
     try {
-      const bill = await this.billRepository.findByIdWithInvoice(id, companyId);
+      const bill = await this.billRepository.findByUUIDWithInvoice(
+        uuid,
+        companyId,
+      );
 
       if (!bill) {
-        throw new NotFoundException('Bill not found');
+        throw new NotFoundException(ErrorBill.BillNotFound);
       }
 
       // Build timeline
@@ -156,7 +118,6 @@ export class BillService {
       timeline.push({
         event: 'invoice_created',
         timestamp: bill.invoice.createdAt,
-        description: 'Invoice was created',
       });
 
       // Invoice sent
@@ -164,16 +125,6 @@ export class BillService {
         timeline.push({
           event: 'invoice_sent',
           timestamp: bill.invoice.sentAt,
-          description: 'Invoice was sent to employee',
-        });
-      }
-
-      // Invoice reviewed
-      if (bill.invoice.reviewedAt) {
-        timeline.push({
-          event: 'invoice_reviewed',
-          timestamp: bill.invoice.reviewedAt,
-          description: 'Invoice was reviewed by employee',
         });
       }
 
@@ -182,7 +133,6 @@ export class BillService {
         timeline.push({
           event: 'invoice_confirmed',
           timestamp: bill.invoice.confirmedAt,
-          description: 'Invoice was confirmed by employee',
         });
       }
 
@@ -191,7 +141,6 @@ export class BillService {
         timeline.push({
           event: 'bill_created',
           timestamp: bill.createdAt,
-          description: 'Bill was added to company bills',
         });
       }
 
@@ -200,200 +149,18 @@ export class BillService {
         timeline.push({
           event: 'bill_paid',
           timestamp: bill.paidAt,
-          description: 'Bill was paid',
-          metadata: {
-            transactionHash: bill.transactionHash,
-          },
         });
       }
 
       // Sort timeline by timestamp
       timeline.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
-      const billDetails: BillDetailsDto = {
-        id: bill.id,
-        createdAt: bill.createdAt,
-        invoiceNumber: bill.invoice.invoiceNumber,
-        employeeName: bill.invoice.employee.name,
-        employeeEmail: bill.invoice.employee.email,
-        groupName: bill.invoice.employee.group.name,
-        amount: bill.invoice.total,
-        dueDate: bill.invoice.dueDate,
-        status: bill.status,
-        timeline,
-        paidAt: bill.paidAt,
-        transactionHash: bill.transactionHash,
-        invoice: bill.invoice,
+      return {
+        bill: bill,
+        timeline: timeline,
       };
-
-      return billDetails;
     } catch (error) {
-      this.logger.error(`Error fetching bill details ${id}:`, error);
-      handleError(error, this.logger);
-    }
-  }
-
-  /**
-   * Delete bill
-   */
-  async deleteBill(id: number, companyId: number): Promise<void> {
-    try {
-      const bill = await this.billRepository.findOne({ id, companyId });
-
-      if (!bill) {
-        throw new NotFoundException('Bill not found');
-      }
-
-      if (bill.status === BillStatusEnum.PAID) {
-        throw new BadRequestException('Cannot delete paid bills');
-      }
-
-      await this.billRepository.delete({ id, companyId });
-
-      this.logger.log(`Deleted bill ${id} from company ${companyId}`);
-    } catch (error) {
-      this.logger.error(`Error deleting bill ${id}:`, error);
-      handleError(error, this.logger);
-    }
-  }
-
-  /**
-   * Pay multiple bills in batch
-   */
-  async payBills(
-    companyId: number,
-    dto: PayBillsDto,
-  ): Promise<BatchPaymentResultDto> {
-    return this.prisma.executeInTransaction(async (tx) => {
-      // Fetch all bills to validate
-      const bills = await this.billRepository.findMany(
-        {
-          id: { in: dto.billIds },
-          companyId,
-        },
-        {
-          include: {
-            invoice: true,
-          },
-        },
-      );
-
-      const foundBillIds = bills.map((bill) => bill.id);
-      const notFoundBillIds = dto.billIds.filter(
-        (id) => !foundBillIds.includes(id),
-      );
-
-      if (notFoundBillIds.length > 0) {
-        throw new NotFoundException(
-          `Bills not found or not payable: ${notFoundBillIds.join(', ')}`,
-        );
-      }
-
-      // Calculate total amount
-      const totalAmount = bills
-        .reduce(
-          (sum, bill: BillWithInvoice) => sum + parseFloat(bill.invoice.total),
-          0,
-        )
-        .toFixed(2);
-
-      const paidAt = new Date();
-      const successfulBills: number[] = [];
-      const failedBills: Array<{ billId: number; error: string }> = [];
-
-      // Update all bills to paid status
-      try {
-        const updateCount = await this.billRepository.updateMultiple(
-          dto.billIds,
-          companyId,
-          {
-            status: BillStatusEnum.PAID,
-            paidAt,
-            transactionHash: dto.transactionHash,
-            metadata: dto.metadata,
-          },
-          tx,
-        );
-
-        if (updateCount === dto.billIds.length) {
-          successfulBills.push(...dto.billIds);
-        } else {
-          // Some bills failed to update
-          const updatedBills = await this.billRepository.findMany(
-            {
-              id: { in: dto.billIds },
-              companyId,
-            },
-            {
-              include: {
-                invoice: true,
-              },
-            },
-            tx,
-          );
-          const updatedBillIds = updatedBills
-            .filter((bill) => bill.status === BillStatusEnum.PAID)
-            .map((bill) => bill.id);
-
-          successfulBills.push(...updatedBillIds);
-
-          const failedBillIds = dto.billIds.filter(
-            (id) => !updatedBillIds.includes(id),
-          );
-          failedBills.push(
-            ...failedBillIds.map((id) => ({
-              billId: id,
-              error: 'Failed to update bill status',
-            })),
-          );
-        }
-      } catch (error) {
-        this.logger.error('Error updating bills:', error);
-        throw new BadRequestException('Failed to process payment');
-      }
-
-      const result: BatchPaymentResultDto = {
-        successCount: successfulBills.length,
-        failureCount: failedBills.length,
-        successfulBills,
-        failedBills,
-        transactionHash: dto.transactionHash,
-        totalAmount,
-      };
-
-      this.logger.log(
-        `Batch payment completed: ${result.successCount} successful, ${result.failureCount} failed. Transaction: ${dto.transactionHash}`,
-      );
-
-      return result;
-    }, 'payBills');
-  }
-
-  /**
-   * Get bill statistics
-   */
-  async getBillStats(companyId: number): Promise<BillStatsDto> {
-    try {
-      return await this.billRepository.getStats(companyId);
-    } catch (error) {
-      this.logger.error('Error fetching bill stats:', error);
-      handleError(error, this.logger);
-    }
-  }
-
-  /**
-   * Mark overdue bills (scheduled job)
-   */
-  async markOverdueBills(date?: Date): Promise<number> {
-    try {
-      const overdueDate = date || new Date();
-      const count = await this.billRepository.markOverdueBills(overdueDate);
-
-      this.logger.log(`Marked ${count} bills as overdue`);
-
-      return count;
-    } catch (error) {
-      this.logger.error('Error marking overdue bills:', error);
+      this.logger.error(`Error fetching bill details ${uuid}:`, error);
       handleError(error, this.logger);
     }
   }
@@ -412,6 +179,158 @@ export class BillService {
   }
 
   /**
+   * Get bill statistics
+   */
+  async getBillStats(companyId: number): Promise<BillStatsDto> {
+    try {
+      return await this.billRepository.getStats(companyId);
+    } catch (error) {
+      this.logger.error('Error fetching bill stats:', error);
+      handleError(error, this.logger);
+    }
+  }
+  //#endregion GET METHODS
+
+  //#region POST METHODS
+  // *************************************************
+  // **************** POST METHODS *******************
+  // *************************************************
+
+  /**
+   * Create bill from confirmed invoice
+   */
+  async createBillFromInvoice(
+    invoiceUUID: string,
+    companyId: number,
+    tx: PrismaTransactionClient,
+  ): Promise<BillModel> {
+    // Verify invoice exists and is confirmed
+    const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, tx);
+
+    if (!invoice) {
+      throw new NotFoundException(ErrorInvoice.InvoiceNotFound);
+    }
+
+    if (invoice.payroll.companyId !== companyId) {
+      throw new BadRequestException(ErrorInvoice.InvoiceNotBelongsToCompany);
+    }
+
+    if (invoice.status !== InvoiceStatusEnum.CONFIRMED) {
+      throw new BadRequestException(ErrorInvoice.InvoiceNotConfirmed);
+    }
+
+    // Check if bill already exists for this invoice
+    if (invoice.bill) {
+      throw new ConflictException(ErrorBill.BillAlreadyExists);
+    }
+
+    const billData: BillCreateInput = {
+      company: {
+        connect: {
+          id: companyId,
+        },
+      },
+      invoice: {
+        connect: {
+          uuid: invoiceUUID,
+        },
+      },
+      status: BillStatusEnum.PENDING,
+      metadata: {},
+    };
+
+    const bill = await this.billRepository.create(billData, tx);
+
+    return bill;
+  }
+
+  /**
+   * Pay multiple bills in batch
+   */
+  async payBills(
+    companyId: number,
+    dto: PayBillsDto,
+  ): Promise<BatchPaymentResultDto> {
+    return this.prisma.$transaction(async (tx) => {
+      // Fetch all bills to validate with invoice included
+      const bills = (await this.billRepository.findMany(
+        {
+          uuid: { in: dto.billUUIDs.map((uuid) => uuid.toString()) },
+          companyId,
+        },
+        {
+          include: {
+            invoice: true,
+          },
+        },
+        tx,
+      )) as BillWithInvoice[];
+
+      const foundBillIds = bills.map((bill) => bill.uuid);
+      const notFoundBillIds = dto.billUUIDs.filter(
+        (uuid) => !foundBillIds.includes(uuid.toString()),
+      );
+
+      if (notFoundBillIds.length > 0) {
+        throw new NotFoundException(ErrorBill.BillsNotFoundOrNotPayable);
+      }
+
+      // Calculate total amount
+      const totalAmount = bills
+        .reduce((sum, bill) => sum + parseFloat(bill.invoice.total), 0)
+        .toFixed(2);
+
+      const paidAt = new Date();
+
+      // Update all bills to paid status
+      await this.billRepository.updateMultiple(
+        dto.billUUIDs.map((uuid) => uuid.toString()),
+        companyId,
+        {
+          status: BillStatusEnum.PAID,
+          paidAt,
+          transactionHash: dto.transactionHash,
+        },
+        tx,
+      );
+
+      // Update invoice status to paid
+      await this.invoiceRepository.updateMultiple(
+        bills.map((bill) => bill.invoice.uuid.toString()),
+        InvoiceStatusEnum.PAID,
+        paidAt,
+        tx,
+      );
+
+      return {
+        totalAmount,
+      };
+    });
+  }
+
+  /**
+   * Mark overdue bills (scheduled job)
+   */
+  async markOverdueBills(date?: Date): Promise<number> {
+    try {
+      const overdueDate = date || new Date();
+      const count = await this.billRepository.markOverdueBills(overdueDate);
+
+      return count;
+    } catch (error) {
+      this.logger.error('Error marking overdue bills:', error);
+      handleError(error, this.logger);
+    }
+  }
+
+  //#endregion POST METHODS
+
+  //#region PUT METHODS
+  // *************************************************
+  // **************** PUT METHODS *******************
+  // *************************************************
+
+  /**
    * Update bill status manually
    */
   async updateBillStatus(
@@ -419,11 +338,11 @@ export class BillService {
     companyId: number,
     status: BillStatusEnum,
   ): Promise<BillModel> {
-    return this.prisma.executeInTransaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const bill = await this.billRepository.findOne({ id, companyId }, tx);
 
       if (!bill) {
-        throw new NotFoundException('Bill not found');
+        throw new NotFoundException(ErrorBill.BillNotFound);
       }
 
       const updateData: any = { status };
@@ -439,9 +358,38 @@ export class BillService {
         tx,
       );
 
-      this.logger.log(`Updated bill ${id} status to ${status}`);
-
       return updatedBill;
-    }, 'updateBillStatus');
+    });
   }
+
+  //#endregion PUT METHODS
+
+  //#region DELETE METHODS
+  // *************************************************
+  // **************** DELETE METHODS ****************
+  // *************************************************
+  /**
+   * Delete bill
+   */
+  async deleteBill(uuid: string, companyId: number): Promise<void> {
+    try {
+      this.prisma.$transaction(async (tx) => {
+        const bill = await this.billRepository.findOne({ uuid, companyId });
+
+        if (!bill) {
+          throw new NotFoundException(ErrorBill.BillNotFound);
+        }
+
+        if (bill.status === BillStatusEnum.PAID) {
+          throw new BadRequestException(ErrorBill.CannotDeletePaidBills);
+        }
+
+        await this.billRepository.delete({ uuid, companyId });
+      });
+    } catch (error) {
+      this.logger.error(`Error deleting bill ${uuid}:`, error);
+      handleError(error, this.logger);
+    }
+  }
+  //#endregion DELETE METHODS
 }

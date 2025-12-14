@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { BillModel } from '../../database/generated/models/Bill';
-import { BillStatusEnum, Prisma } from '../../database/generated/client';
+import {
+  BillStatusEnum,
+  Prisma,
+  PrismaClient,
+} from '../../database/generated/client';
 import {
   BaseRepository,
   PrismaTransactionClient,
@@ -53,7 +57,7 @@ export class BillRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel(tx?: PrismaTransactionClient) {
+  protected getModel(tx?: PrismaTransactionClient): PrismaClient['bill'] {
     return tx ? tx.bill : this.prisma.bill;
   }
 
@@ -64,14 +68,14 @@ export class BillRepository extends BaseRepository<
   /**
    * Find a bill by id and company with invoice relation included
    */
-  async findByIdWithInvoice(
-    id: number,
+  async findByUUIDWithInvoice(
+    uuid: string,
     companyId: number,
     tx?: PrismaTransactionClient,
   ): Promise<BillWithInvoice | null> {
-    const client = tx || this.prisma;
-    return client.bill.findFirst({
-      where: { id, companyId },
+    const model = this.getModel(tx);
+    return model.findFirst({
+      where: { uuid, companyId },
       include: {
         invoice: {
           include: {
@@ -82,6 +86,7 @@ export class BillRepository extends BaseRepository<
             },
           },
         },
+        company: true,
       },
     });
   }
@@ -99,9 +104,7 @@ export class BillRepository extends BaseRepository<
     paidAmount: string;
     overdueAmount: string;
   }> {
-    const client = tx || this.prisma;
-
-    const now = new Date();
+    const model = this.getModel(tx);
     const baseWhere = { companyId };
 
     const [
@@ -114,20 +117,20 @@ export class BillRepository extends BaseRepository<
       paidBillsWithAmount,
       overdueBillsWithAmount,
     ] = await Promise.all([
-      client.bill.count({ where: baseWhere }),
-      client.bill.count({
+      model.count({ where: baseWhere }),
+      model.count({
         where: { ...baseWhere, status: BillStatusEnum.PENDING },
       }),
-      client.bill.count({
+      model.count({
         where: { ...baseWhere, status: BillStatusEnum.PAID },
       }),
-      client.bill.count({
+      model.count({
         where: {
           ...baseWhere,
           status: BillStatusEnum.OVERDUE,
         },
       }),
-      client.bill.findMany({
+      model.findMany({
         where: baseWhere,
         include: {
           invoice: {
@@ -135,7 +138,7 @@ export class BillRepository extends BaseRepository<
           },
         },
       }),
-      client.bill.findMany({
+      model.findMany({
         where: { ...baseWhere, status: BillStatusEnum.PENDING },
         include: {
           invoice: {
@@ -143,7 +146,7 @@ export class BillRepository extends BaseRepository<
           },
         },
       }),
-      client.bill.findMany({
+      model.findMany({
         where: { ...baseWhere, status: BillStatusEnum.PAID },
         include: {
           invoice: {
@@ -151,7 +154,7 @@ export class BillRepository extends BaseRepository<
           },
         },
       }),
-      client.bill.findMany({
+      model.findMany({
         where: { ...baseWhere, status: BillStatusEnum.OVERDUE },
         include: {
           invoice: {
@@ -191,16 +194,16 @@ export class BillRepository extends BaseRepository<
   }
 
   async updateMultiple(
-    ids: number[],
+    uuids: string[],
     companyId: number,
     data: UpdateBillData,
     tx?: PrismaTransactionClient,
   ): Promise<number> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
 
-    const result = await client.bill.updateMany({
+    const result = await model.updateMany({
       where: {
-        id: { in: ids },
+        uuid: { in: uuids },
         companyId,
       },
       data,
@@ -213,10 +216,10 @@ export class BillRepository extends BaseRepository<
     date?: Date,
     tx?: PrismaTransactionClient,
   ): Promise<BillModel[]> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
     const overdueDate = date || new Date();
 
-    return client.bill.findMany({
+    return model.findMany({
       where: {
         status: BillStatusEnum.PENDING,
         invoice: {
@@ -253,10 +256,10 @@ export class BillRepository extends BaseRepository<
     date?: Date,
     tx?: PrismaTransactionClient,
   ): Promise<number> {
-    const client = tx || this.prisma;
+    const model = this.getModel(tx);
     const overdueDate = date || new Date();
 
-    const result = await client.bill.updateMany({
+    const result = await model.updateMany({
       where: {
         status: BillStatusEnum.PENDING,
         invoice: {

@@ -40,6 +40,7 @@ export type BillSumAggregateOutputType = {
 
 export type BillMinAggregateOutputType = {
   id: number | null
+  uuid: string | null
   createdAt: Date | null
   updatedAt: Date | null
   companyId: number | null
@@ -51,6 +52,7 @@ export type BillMinAggregateOutputType = {
 
 export type BillMaxAggregateOutputType = {
   id: number | null
+  uuid: string | null
   createdAt: Date | null
   updatedAt: Date | null
   companyId: number | null
@@ -62,6 +64,7 @@ export type BillMaxAggregateOutputType = {
 
 export type BillCountAggregateOutputType = {
   id: number
+  uuid: number
   createdAt: number
   updatedAt: number
   companyId: number
@@ -88,6 +91,7 @@ export type BillSumAggregateInputType = {
 
 export type BillMinAggregateInputType = {
   id?: true
+  uuid?: true
   createdAt?: true
   updatedAt?: true
   companyId?: true
@@ -99,6 +103,7 @@ export type BillMinAggregateInputType = {
 
 export type BillMaxAggregateInputType = {
   id?: true
+  uuid?: true
   createdAt?: true
   updatedAt?: true
   companyId?: true
@@ -110,6 +115,7 @@ export type BillMaxAggregateInputType = {
 
 export type BillCountAggregateInputType = {
   id?: true
+  uuid?: true
   createdAt?: true
   updatedAt?: true
   companyId?: true
@@ -209,6 +215,7 @@ export type BillGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
 
 export type BillGroupByOutputType = {
   id: number
+  uuid: string
   createdAt: Date
   updatedAt: Date
   companyId: number
@@ -244,6 +251,7 @@ export type BillWhereInput = {
   OR?: Prisma.BillWhereInput[]
   NOT?: Prisma.BillWhereInput | Prisma.BillWhereInput[]
   id?: Prisma.IntFilter<"Bill"> | number
+  uuid?: Prisma.StringFilter<"Bill"> | string
   createdAt?: Prisma.DateTimeFilter<"Bill"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Bill"> | Date | string
   companyId?: Prisma.IntFilter<"Bill"> | number
@@ -258,6 +266,7 @@ export type BillWhereInput = {
 
 export type BillOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   companyId?: Prisma.SortOrder
@@ -272,6 +281,7 @@ export type BillOrderByWithRelationInput = {
 
 export type BillWhereUniqueInput = Prisma.AtLeast<{
   id?: number
+  uuid?: string
   invoiceId?: number
   AND?: Prisma.BillWhereInput | Prisma.BillWhereInput[]
   OR?: Prisma.BillWhereInput[]
@@ -285,10 +295,11 @@ export type BillWhereUniqueInput = Prisma.AtLeast<{
   metadata?: Prisma.JsonNullableFilter<"Bill">
   company?: Prisma.XOR<Prisma.CompanyScalarRelationFilter, Prisma.CompanyWhereInput>
   invoice?: Prisma.XOR<Prisma.InvoiceScalarRelationFilter, Prisma.InvoiceWhereInput>
-}, "id" | "invoiceId">
+}, "id" | "uuid" | "invoiceId">
 
 export type BillOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   companyId?: Prisma.SortOrder
@@ -309,6 +320,7 @@ export type BillScalarWhereWithAggregatesInput = {
   OR?: Prisma.BillScalarWhereWithAggregatesInput[]
   NOT?: Prisma.BillScalarWhereWithAggregatesInput | Prisma.BillScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"Bill"> | number
+  uuid?: Prisma.StringWithAggregatesFilter<"Bill"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Bill"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Bill"> | Date | string
   companyId?: Prisma.IntWithAggregatesFilter<"Bill"> | number
@@ -320,6 +332,7 @@ export type BillScalarWhereWithAggregatesInput = {
 }
 
 export type BillCreateInput = {
+  uuid?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   status?: $Enums.BillStatusEnum
@@ -332,6 +345,7 @@ export type BillCreateInput = {
 
 export type BillUncheckedCreateInput = {
   id?: number
+  uuid?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   companyId: number
@@ -343,6 +357,7 @@ export type BillUncheckedCreateInput = {
 }
 
 export type BillUpdateInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumBillStatusEnumFieldUpdateOperationsInput | $Enums.BillStatusEnum
@@ -355,6 +370,7 @@ export type BillUpdateInput = {
 
 export type BillUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   companyId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -367,6 +383,7 @@ export type BillUncheckedUpdateInput = {
 
 export type BillCreateManyInput = {
   id?: number
+  uuid?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   companyId: number
@@ -378,6 +395,7 @@ export type BillCreateManyInput = {
 }
 
 export type BillUpdateManyMutationInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumBillStatusEnumFieldUpdateOperationsInput | $Enums.BillStatusEnum
@@ -388,6 +406,7 @@ export type BillUpdateManyMutationInput = {
 
 export type BillUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   companyId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -415,6 +434,7 @@ export type BillNullableScalarRelationFilter = {
 
 export type BillCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   companyId?: Prisma.SortOrder
@@ -433,6 +453,7 @@ export type BillAvgOrderByAggregateInput = {
 
 export type BillMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   companyId?: Prisma.SortOrder
@@ -444,6 +465,7 @@ export type BillMaxOrderByAggregateInput = {
 
 export type BillMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   companyId?: Prisma.SortOrder
@@ -538,6 +560,7 @@ export type EnumBillStatusEnumFieldUpdateOperationsInput = {
 }
 
 export type BillCreateWithoutCompanyInput = {
+  uuid?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   status?: $Enums.BillStatusEnum
@@ -549,6 +572,7 @@ export type BillCreateWithoutCompanyInput = {
 
 export type BillUncheckedCreateWithoutCompanyInput = {
   id?: number
+  uuid?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   invoiceId: number
@@ -589,6 +613,7 @@ export type BillScalarWhereInput = {
   OR?: Prisma.BillScalarWhereInput[]
   NOT?: Prisma.BillScalarWhereInput | Prisma.BillScalarWhereInput[]
   id?: Prisma.IntFilter<"Bill"> | number
+  uuid?: Prisma.StringFilter<"Bill"> | string
   createdAt?: Prisma.DateTimeFilter<"Bill"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Bill"> | Date | string
   companyId?: Prisma.IntFilter<"Bill"> | number
@@ -600,6 +625,7 @@ export type BillScalarWhereInput = {
 }
 
 export type BillCreateWithoutInvoiceInput = {
+  uuid?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   status?: $Enums.BillStatusEnum
@@ -611,6 +637,7 @@ export type BillCreateWithoutInvoiceInput = {
 
 export type BillUncheckedCreateWithoutInvoiceInput = {
   id?: number
+  uuid?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   companyId: number
@@ -637,6 +664,7 @@ export type BillUpdateToOneWithWhereWithoutInvoiceInput = {
 }
 
 export type BillUpdateWithoutInvoiceInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumBillStatusEnumFieldUpdateOperationsInput | $Enums.BillStatusEnum
@@ -648,6 +676,7 @@ export type BillUpdateWithoutInvoiceInput = {
 
 export type BillUncheckedUpdateWithoutInvoiceInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   companyId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -659,6 +688,7 @@ export type BillUncheckedUpdateWithoutInvoiceInput = {
 
 export type BillCreateManyCompanyInput = {
   id?: number
+  uuid?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   invoiceId: number
@@ -669,6 +699,7 @@ export type BillCreateManyCompanyInput = {
 }
 
 export type BillUpdateWithoutCompanyInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumBillStatusEnumFieldUpdateOperationsInput | $Enums.BillStatusEnum
@@ -680,6 +711,7 @@ export type BillUpdateWithoutCompanyInput = {
 
 export type BillUncheckedUpdateWithoutCompanyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   invoiceId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -691,6 +723,7 @@ export type BillUncheckedUpdateWithoutCompanyInput = {
 
 export type BillUncheckedUpdateManyWithoutCompanyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   invoiceId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -704,6 +737,7 @@ export type BillUncheckedUpdateManyWithoutCompanyInput = {
 
 export type BillSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  uuid?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   companyId?: boolean
@@ -718,6 +752,7 @@ export type BillSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
 
 export type BillSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  uuid?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   companyId?: boolean
@@ -732,6 +767,7 @@ export type BillSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
 
 export type BillSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  uuid?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   companyId?: boolean
@@ -746,6 +782,7 @@ export type BillSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
 
 export type BillSelectScalar = {
   id?: boolean
+  uuid?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   companyId?: boolean
@@ -756,7 +793,7 @@ export type BillSelectScalar = {
   metadata?: boolean
 }
 
-export type BillOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "companyId" | "invoiceId" | "status" | "paidAt" | "transactionHash" | "metadata", ExtArgs["result"]["bill"]>
+export type BillOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "createdAt" | "updatedAt" | "companyId" | "invoiceId" | "status" | "paidAt" | "transactionHash" | "metadata", ExtArgs["result"]["bill"]>
 export type BillInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>
   invoice?: boolean | Prisma.InvoiceDefaultArgs<ExtArgs>
@@ -778,6 +815,7 @@ export type $BillPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
+    uuid: string
     createdAt: Date
     updatedAt: Date
     companyId: number
@@ -1212,6 +1250,7 @@ export interface Prisma__BillClient<T, Null = never, ExtArgs extends runtime.Typ
  */
 export interface BillFieldRefs {
   readonly id: Prisma.FieldRef<"Bill", 'Int'>
+  readonly uuid: Prisma.FieldRef<"Bill", 'String'>
   readonly createdAt: Prisma.FieldRef<"Bill", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Bill", 'DateTime'>
   readonly companyId: Prisma.FieldRef<"Bill", 'Int'>

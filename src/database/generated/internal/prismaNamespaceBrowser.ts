@@ -334,6 +334,7 @@ export type InvoiceScheduleScalarFieldEnum = (typeof InvoiceScheduleScalarFieldE
 
 export const BillScalarFieldEnum = {
   id: 'id',
+  uuid: 'uuid',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   companyId: 'companyId',

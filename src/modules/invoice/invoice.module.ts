@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { InvoiceController } from './invoice.controller';
 import { InvoiceService } from './services/invoice.service';
 import { InvoiceRepository } from './repositories/invoice.repository';
@@ -14,6 +14,8 @@ import { MailModule } from '../mail/mail.module';
 import { AuthModule } from '../auth/auth.module';
 import { CompanyModule } from '../company/company.module';
 import { EmployeeModule } from '../employee/employee.module';
+import { BillModule } from '../bill/bill.module';
+import { TeamMemberModule } from '../team-member/team-member.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { EmployeeModule } from '../employee/employee.module';
     AuthModule,
     CompanyModule,
     EmployeeModule,
+    TeamMemberModule,
+    forwardRef(() => BillModule),
   ],
   controllers: [InvoiceController],
   providers: [

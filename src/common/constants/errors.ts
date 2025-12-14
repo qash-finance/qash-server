@@ -94,6 +94,15 @@ export enum ErrorInvoice {
   InvoiceNotReviewable = 'Only sent invoices can be reviewed',
   InvoiceNotConfirmable = 'Only reviewed invoices can be confirmed',
   InvoiceNotCancelable = 'Cannot cancel confirmed invoices',
+  InvoiceNotBelongsToCompany = 'Invoice does not belong to this company',
+  InvoiceNotConfirmed = 'Only confirmed invoices can be converted to bills',
+}
+
+export enum ErrorBill {
+  BillAlreadyExists = 'Bill already exists for this invoice',
+  BillsNotFoundOrNotPayable = 'Bills not found or not payable',
+  BillNotFound = 'Bill not found',
+  CannotDeletePaidBills = 'Cannot delete paid bills',
 }
 
 export enum ErrorInvoiceSchedule {
