@@ -129,7 +129,6 @@ export class InvoiceService {
    */
   async getInvoiceByUUID(invoiceUUID: string): Promise<InvoiceWithRelations> {
     try {
-      console.log(invoiceUUID);
       const invoice = await this.invoiceRepository.findByUUID(invoiceUUID);
 
       if (!invoice) {

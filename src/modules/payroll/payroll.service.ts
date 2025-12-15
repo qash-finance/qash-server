@@ -187,27 +187,25 @@ export class PayrollService {
         }
 
         // Calculate contract dates
-        const payStartDate = new Date(dto.payStartDate);
-        const payEndDate = new Date(dto.payEndDate);
+        const paydayDay = dto.payday; // the chosen day-of-month (1-31)
         const joiningDate = new Date(dto.joiningDate);
+
+        // First pay date starts next month on the chosen day-of-month
+        const today = new Date();
+        const payStartDate = new Date(
+          today.getFullYear(),
+          today.getMonth() + 1,
+          paydayDay,
+        );
+
+        // Contract end date after the payroll cycle
+        const payEndDate = new Date(payStartDate);
         payEndDate.setMonth(payEndDate.getMonth() + dto.payrollCycle);
 
         // Pay start date must be after joining date
         if (payStartDate < joiningDate) {
           throw new BadRequestException(
             ErrorPayroll.PayStartDateBeforeJoiningDate,
-          );
-        }
-
-        // Pay start date should not be in the past
-        if (payStartDate < new Date()) {
-          throw new BadRequestException(ErrorPayroll.PayStartDateInThePast);
-        }
-
-        // Pay end date should > pay start date
-        if (payEndDate <= payStartDate) {
-          throw new BadRequestException(
-            ErrorPayroll.PayEndDateBeforePayStartDate,
           );
         }
 
@@ -239,10 +237,19 @@ export class PayrollService {
 
         // Create an invoice schedule record so the scheduler can generate invoices
         const generateDaysBefore = dto.generateDaysBefore ?? 5; // Default 5 days before pay date
-        const nextGenerateDate = this.calculateNextGenerateDateFromPayStart(
-          payStartDate,
-          generateDaysBefore,
-        );
+
+        // For sandbox/testing, generate invoice very soon (30 seconds)
+        // Otherwise, calculate based on pay start date
+        let nextGenerateDate: Date;
+        if (scheduleFrequency === 'SANDBOX') {
+          nextGenerateDate = new Date(Date.now() + 30 * 1000); // 30 seconds from now
+        } else {
+          nextGenerateDate = this.calculateNextGenerateDateFromPayStart(
+            payStartDate,
+            generateDaysBefore,
+          );
+        }
+
         await tx.invoiceSchedule.create({
           data: {
             payroll: { connect: { id: payroll.id } },
@@ -280,19 +287,20 @@ export class PayrollService {
     const dto: CreatePayrollDto = {
       employeeId,
       network: {
-        name: 'sandbox-network',
+        name: 'Miden Testnet',
+        description: 'Miden Testnet',
         chainId: 1,
       },
       token: {
         address: '0x0000000000000000000000000000000000000000',
-        symbol: 'USD',
+        symbol: 'Qash',
         decimals: 2,
-        name: 'SandboxUSD',
+        name: 'Qash',
       },
       contractTerm: PayrollStatusEnum.ACTIVE as any, // will be overwritten below
       payrollCycle: 5,
       amount: amount.toString(),
-      payStartDate: payStartDate.toISOString(),
+      payday: payStartDate.getDate(),
       payEndDate: payEndDate.toISOString(),
       joiningDate: now.toISOString(),
       note: 'sandbox payroll for scheduler test',
@@ -331,9 +339,23 @@ export class PayrollService {
           throw new NotFoundException(ErrorPayroll.PayrollNotFound);
         }
 
+        let payStartDate = existingPayroll.payStartDate;
         let payEndDate = existingPayroll.payEndDate;
+
+        // If payday updated, recompute next pay start date starting next month
+        if (dto.payday) {
+          const paydayDay = dto.payday;
+          const now = new Date();
+          payStartDate = new Date(
+            now.getFullYear(),
+            now.getMonth() + 1,
+            paydayDay,
+          );
+        }
+
+        // If payroll cycle updated, recalc end date from (possibly new) start date
         if (dto.payrollCycle) {
-          payEndDate = new Date(existingPayroll.payStartDate);
+          payEndDate = new Date(payStartDate);
           payEndDate.setMonth(payEndDate.getMonth() + dto.payrollCycle);
         }
 
@@ -342,7 +364,7 @@ export class PayrollService {
           network: dto.network as unknown as JsonValue,
           token: dto.token as unknown as JsonValue,
           ...(dto.payrollCycle && { payEndDate }),
-          ...(dto.payStartDate && { payStartDate: new Date(dto.payStartDate) }),
+          ...(dto.payday && { payStartDate }),
         };
 
         const updatedPayroll = await this.payrollRepository.update(

@@ -26,6 +26,14 @@ export class NetworkDto {
   name: string;
 
   @ApiProperty({
+    description: 'The description of the network',
+    example: 'Ethereum Mainnet',
+  })
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @ApiProperty({
     description: 'The chain ID of the network',
     example: 1,
   })
@@ -145,11 +153,16 @@ export class CreatePayrollDto {
   amount: string;
 
   @ApiProperty({
-    description: 'Payment start date (will be set to next month)',
-    example: '2024-01-01T00:00:00Z',
+    description:
+      'Payday day-of-month (1-31). First pay starts next month on this day',
+    example: 5,
+    minimum: 1,
+    maximum: 31,
   })
-  @IsDateString()
-  payStartDate: string;
+  @IsNumber()
+  @Min(1)
+  @Max(31)
+  payday: number;
 
   @ApiProperty({
     description: 'Joining date',
@@ -254,12 +267,17 @@ export class UpdatePayrollDto {
   amount?: string;
 
   @ApiPropertyOptional({
-    description: 'Payment date',
-    example: '2024-01-01T00:00:00Z',
+    description:
+      'Payday day-of-month (1-31). If provided, next pay starts next month on this day',
+    example: 10,
+    minimum: 1,
+    maximum: 31,
   })
   @IsOptional()
-  @IsDateString()
-  payStartDate?: string;
+  @IsNumber()
+  @Min(1)
+  @Max(31)
+  payday?: number;
 
   @ApiPropertyOptional({
     description: 'Additional notes about the payroll',
