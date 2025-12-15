@@ -70,7 +70,15 @@ export class BillService {
         },
         {
           include: {
-            invoice: true,
+            invoice: {
+              include: {
+                employee: {
+                  include: {
+                    group: true,
+                  },
+                },
+              },
+            },
             company: true,
           },
         },

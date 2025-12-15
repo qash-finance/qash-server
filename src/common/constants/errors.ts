@@ -16,7 +16,7 @@ export enum ErrorToken {
 }
 
 export enum ErrorMail {
-  EmailNotSent = 'Email was not sent1',
+  EmailNotSent = 'Email was not sent',
 }
 
 export enum ErrorAuth {

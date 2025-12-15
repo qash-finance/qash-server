@@ -116,7 +116,9 @@ export class MailService {
       const fromEmail =
         'noreply@' + this.appConfigService.mailConfig.mailgun.domain;
       const baseUrl = 'http://localhost:3000';
-      const invoiceReviewUrl = `${baseUrl}/invoice-review?id=${invoiceUUID}`;
+      const invoiceReviewUrl = `${baseUrl}/invoice-review?id=${invoiceUUID}&email=${encodeURIComponent(
+        employeeEmail,
+      )}`;
 
       const subject = `Invoice ${invoiceNumber} - Review Required`;
       const html = `
