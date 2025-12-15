@@ -238,15 +238,18 @@ export class PayrollService {
         const payroll = await this.payrollRepository.create(payrollData, tx);
 
         // Create an invoice schedule record so the scheduler can generate invoices
-        const nextGenerateDate =
-          this.calculateNextGenerateDateFromPayStart(payStartDate);
+        const generateDaysBefore = dto.generateDaysBefore ?? 5; // Default 5 days before pay date
+        const nextGenerateDate = this.calculateNextGenerateDateFromPayStart(
+          payStartDate,
+          generateDaysBefore,
+        );
         await tx.invoiceSchedule.create({
           data: {
             payroll: { connect: { id: payroll.id } },
             isActive: true,
             frequency: scheduleFrequency,
             dayOfMonth: payStartDate.getDate(),
-            generateDaysBefore: 0,
+            generateDaysBefore,
             nextGenerateDate,
           },
         });
@@ -452,17 +455,30 @@ export class PayrollService {
 
   /**
    * Calculate the next generate date based on pay start date (monthly)
+   * This calculates when to generate the invoice (pay date minus generateDaysBefore)
    */
-  private calculateNextGenerateDateFromPayStart(payStartDate: Date): Date {
+  private calculateNextGenerateDateFromPayStart(
+    payStartDate: Date,
+    generateDaysBefore: number,
+  ): Date {
     const now = new Date();
+    let nextPayDate: Date;
+
     // If the pay start date is in the future, use it. Otherwise, use same day next month.
     if (payStartDate > now) {
-      return payStartDate;
+      nextPayDate = new Date(payStartDate);
+    } else {
+      nextPayDate = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        payStartDate.getDate(),
+      );
     }
-    return new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      payStartDate.getDate(),
-    );
+
+    // Generate invoice X days before the pay date
+    const generateDate = new Date(nextPayDate);
+    generateDate.setDate(generateDate.getDate() - generateDaysBefore);
+
+    return generateDate;
   }
 }

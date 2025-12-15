@@ -187,6 +187,20 @@ export class CreatePayrollDto {
   @IsOptional()
   @IsObject()
   metadata?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description:
+      'Number of days before pay date to generate invoice (default: 5)',
+    example: 5,
+    minimum: 0,
+    maximum: 30,
+    default: 5,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(30)
+  generateDaysBefore?: number;
 }
 
 export class UpdatePayrollDto {
