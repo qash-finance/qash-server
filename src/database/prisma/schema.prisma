@@ -136,6 +136,7 @@ model Company {
   bills        Bill[]
   invoicesFrom Invoice[]       @relation("InvoiceFromCompany") // B2B invoices where this company is the sender
   invoicesTo   Invoice[]       @relation("InvoiceToCompany") // B2B invoices where this company is the recipient
+  paymentLinks PaymentLink[]
 
   @@index([registrationNumber])
   @@index([companyName])
@@ -431,28 +432,32 @@ model Bill {
 }
 
 model PaymentLink {
-  id             Int                   @id() @default(autoincrement())
-  code           String                @unique() @map("code") @db.VarChar
-  createdAt      DateTime              @map("created_at") @db.Timestamp(6)
-  updatedAt      DateTime              @map("updated_at") @db.Timestamp(6)
-  title          String                @db.VarChar
-  description    String                @db.VarChar
-  amount         String                @db.VarChar
-  status         PaymentLinkStatusEnum @default(ACTIVE)
-  order          Int                   @default(autoincrement())
-  payee          String                @db.VarChar
-  records        PaymentLinkRecord[]
-  acceptedTokens Json?                 @map("accepted_tokens")
-  acceptedChains Json?                 @map("accepted_chains")
+  id                   Int                   @id() @default(autoincrement())
+  uuid                 String                @unique @default(cuid()) @map("uuid")
+  code                 String                @unique() @map("code") @db.VarChar
+  createdAt            DateTime              @map("created_at") @db.Timestamp(6)
+  updatedAt            DateTime              @map("updated_at") @db.Timestamp(6)
+  title                String                @db.VarChar
+  description          String                @db.VarChar
+  amount               String                @db.VarChar
+  status               PaymentLinkStatusEnum @default(ACTIVE)
+  order                Int                   @default(autoincrement())
+  companyId            Int                   @map("company_id")
+  company              Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  records              PaymentLinkRecord[]
+  paymentWalletAddress String                @map("payment_wallet_address") @db.VarChar
+  acceptedTokens       Json                  @map("accepted_tokens")
+  acceptedChains       Json?                 @map("accepted_chains")
 
   @@index([code])
-  @@index([payee])
+  @@index([companyId])
   @@index([order])
   @@map("payment_link")
 }
 
 model PaymentLinkRecord {
   id            Int         @id() @default(autoincrement())
+  uuid          String      @unique @default(cuid()) @map("uuid")
   createdAt     DateTime    @map("created_at") @db.Timestamp(6)
   updatedAt     DateTime    @map("updated_at") @db.Timestamp(6)
   payer         String      @db.VarChar

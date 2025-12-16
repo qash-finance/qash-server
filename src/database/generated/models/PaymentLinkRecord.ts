@@ -38,6 +38,7 @@ export type PaymentLinkRecordSumAggregateOutputType = {
 
 export type PaymentLinkRecordMinAggregateOutputType = {
   id: number | null
+  uuid: string | null
   createdAt: Date | null
   updatedAt: Date | null
   payer: string | null
@@ -47,6 +48,7 @@ export type PaymentLinkRecordMinAggregateOutputType = {
 
 export type PaymentLinkRecordMaxAggregateOutputType = {
   id: number | null
+  uuid: string | null
   createdAt: Date | null
   updatedAt: Date | null
   payer: string | null
@@ -56,6 +58,7 @@ export type PaymentLinkRecordMaxAggregateOutputType = {
 
 export type PaymentLinkRecordCountAggregateOutputType = {
   id: number
+  uuid: number
   createdAt: number
   updatedAt: number
   payer: number
@@ -79,6 +82,7 @@ export type PaymentLinkRecordSumAggregateInputType = {
 
 export type PaymentLinkRecordMinAggregateInputType = {
   id?: true
+  uuid?: true
   createdAt?: true
   updatedAt?: true
   payer?: true
@@ -88,6 +92,7 @@ export type PaymentLinkRecordMinAggregateInputType = {
 
 export type PaymentLinkRecordMaxAggregateInputType = {
   id?: true
+  uuid?: true
   createdAt?: true
   updatedAt?: true
   payer?: true
@@ -97,6 +102,7 @@ export type PaymentLinkRecordMaxAggregateInputType = {
 
 export type PaymentLinkRecordCountAggregateInputType = {
   id?: true
+  uuid?: true
   createdAt?: true
   updatedAt?: true
   payer?: true
@@ -195,6 +201,7 @@ export type PaymentLinkRecordGroupByArgs<ExtArgs extends runtime.Types.Extension
 
 export type PaymentLinkRecordGroupByOutputType = {
   id: number
+  uuid: string
   createdAt: Date
   updatedAt: Date
   payer: string
@@ -229,6 +236,7 @@ export type PaymentLinkRecordWhereInput = {
   OR?: Prisma.PaymentLinkRecordWhereInput[]
   NOT?: Prisma.PaymentLinkRecordWhereInput | Prisma.PaymentLinkRecordWhereInput[]
   id?: Prisma.IntFilter<"PaymentLinkRecord"> | number
+  uuid?: Prisma.StringFilter<"PaymentLinkRecord"> | string
   createdAt?: Prisma.DateTimeFilter<"PaymentLinkRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PaymentLinkRecord"> | Date | string
   payer?: Prisma.StringFilter<"PaymentLinkRecord"> | string
@@ -241,6 +249,7 @@ export type PaymentLinkRecordWhereInput = {
 
 export type PaymentLinkRecordOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   payer?: Prisma.SortOrder
@@ -253,6 +262,7 @@ export type PaymentLinkRecordOrderByWithRelationInput = {
 
 export type PaymentLinkRecordWhereUniqueInput = Prisma.AtLeast<{
   id?: number
+  uuid?: string
   AND?: Prisma.PaymentLinkRecordWhereInput | Prisma.PaymentLinkRecordWhereInput[]
   OR?: Prisma.PaymentLinkRecordWhereInput[]
   NOT?: Prisma.PaymentLinkRecordWhereInput | Prisma.PaymentLinkRecordWhereInput[]
@@ -264,10 +274,11 @@ export type PaymentLinkRecordWhereUniqueInput = Prisma.AtLeast<{
   token?: Prisma.JsonNullableFilter<"PaymentLinkRecord">
   chain?: Prisma.JsonNullableFilter<"PaymentLinkRecord">
   PaymentLink?: Prisma.XOR<Prisma.PaymentLinkScalarRelationFilter, Prisma.PaymentLinkWhereInput>
-}, "id">
+}, "id" | "uuid">
 
 export type PaymentLinkRecordOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   payer?: Prisma.SortOrder
@@ -287,6 +298,7 @@ export type PaymentLinkRecordScalarWhereWithAggregatesInput = {
   OR?: Prisma.PaymentLinkRecordScalarWhereWithAggregatesInput[]
   NOT?: Prisma.PaymentLinkRecordScalarWhereWithAggregatesInput | Prisma.PaymentLinkRecordScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"PaymentLinkRecord"> | number
+  uuid?: Prisma.StringWithAggregatesFilter<"PaymentLinkRecord"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PaymentLinkRecord"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PaymentLinkRecord"> | Date | string
   payer?: Prisma.StringWithAggregatesFilter<"PaymentLinkRecord"> | string
@@ -297,6 +309,7 @@ export type PaymentLinkRecordScalarWhereWithAggregatesInput = {
 }
 
 export type PaymentLinkRecordCreateInput = {
+  uuid?: string
   createdAt: Date | string
   updatedAt: Date | string
   payer: string
@@ -308,6 +321,7 @@ export type PaymentLinkRecordCreateInput = {
 
 export type PaymentLinkRecordUncheckedCreateInput = {
   id?: number
+  uuid?: string
   createdAt: Date | string
   updatedAt: Date | string
   payer: string
@@ -318,6 +332,7 @@ export type PaymentLinkRecordUncheckedCreateInput = {
 }
 
 export type PaymentLinkRecordUpdateInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payer?: Prisma.StringFieldUpdateOperationsInput | string
@@ -329,6 +344,7 @@ export type PaymentLinkRecordUpdateInput = {
 
 export type PaymentLinkRecordUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payer?: Prisma.StringFieldUpdateOperationsInput | string
@@ -340,6 +356,7 @@ export type PaymentLinkRecordUncheckedUpdateInput = {
 
 export type PaymentLinkRecordCreateManyInput = {
   id?: number
+  uuid?: string
   createdAt: Date | string
   updatedAt: Date | string
   payer: string
@@ -350,6 +367,7 @@ export type PaymentLinkRecordCreateManyInput = {
 }
 
 export type PaymentLinkRecordUpdateManyMutationInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payer?: Prisma.StringFieldUpdateOperationsInput | string
@@ -360,6 +378,7 @@ export type PaymentLinkRecordUpdateManyMutationInput = {
 
 export type PaymentLinkRecordUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payer?: Prisma.StringFieldUpdateOperationsInput | string
@@ -381,6 +400,7 @@ export type PaymentLinkRecordOrderByRelationAggregateInput = {
 
 export type PaymentLinkRecordCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   payer?: Prisma.SortOrder
@@ -397,6 +417,7 @@ export type PaymentLinkRecordAvgOrderByAggregateInput = {
 
 export type PaymentLinkRecordMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   payer?: Prisma.SortOrder
@@ -406,6 +427,7 @@ export type PaymentLinkRecordMaxOrderByAggregateInput = {
 
 export type PaymentLinkRecordMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   payer?: Prisma.SortOrder
@@ -461,6 +483,7 @@ export type PaymentLinkRecordUncheckedUpdateManyWithoutPaymentLinkNestedInput = 
 }
 
 export type PaymentLinkRecordCreateWithoutPaymentLinkInput = {
+  uuid?: string
   createdAt: Date | string
   updatedAt: Date | string
   payer: string
@@ -471,6 +494,7 @@ export type PaymentLinkRecordCreateWithoutPaymentLinkInput = {
 
 export type PaymentLinkRecordUncheckedCreateWithoutPaymentLinkInput = {
   id?: number
+  uuid?: string
   createdAt: Date | string
   updatedAt: Date | string
   payer: string
@@ -510,6 +534,7 @@ export type PaymentLinkRecordScalarWhereInput = {
   OR?: Prisma.PaymentLinkRecordScalarWhereInput[]
   NOT?: Prisma.PaymentLinkRecordScalarWhereInput | Prisma.PaymentLinkRecordScalarWhereInput[]
   id?: Prisma.IntFilter<"PaymentLinkRecord"> | number
+  uuid?: Prisma.StringFilter<"PaymentLinkRecord"> | string
   createdAt?: Prisma.DateTimeFilter<"PaymentLinkRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PaymentLinkRecord"> | Date | string
   payer?: Prisma.StringFilter<"PaymentLinkRecord"> | string
@@ -521,6 +546,7 @@ export type PaymentLinkRecordScalarWhereInput = {
 
 export type PaymentLinkRecordCreateManyPaymentLinkInput = {
   id?: number
+  uuid?: string
   createdAt: Date | string
   updatedAt: Date | string
   payer: string
@@ -530,6 +556,7 @@ export type PaymentLinkRecordCreateManyPaymentLinkInput = {
 }
 
 export type PaymentLinkRecordUpdateWithoutPaymentLinkInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payer?: Prisma.StringFieldUpdateOperationsInput | string
@@ -540,6 +567,7 @@ export type PaymentLinkRecordUpdateWithoutPaymentLinkInput = {
 
 export type PaymentLinkRecordUncheckedUpdateWithoutPaymentLinkInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payer?: Prisma.StringFieldUpdateOperationsInput | string
@@ -550,6 +578,7 @@ export type PaymentLinkRecordUncheckedUpdateWithoutPaymentLinkInput = {
 
 export type PaymentLinkRecordUncheckedUpdateManyWithoutPaymentLinkInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payer?: Prisma.StringFieldUpdateOperationsInput | string
@@ -562,6 +591,7 @@ export type PaymentLinkRecordUncheckedUpdateManyWithoutPaymentLinkInput = {
 
 export type PaymentLinkRecordSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  uuid?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   payer?: boolean
@@ -574,6 +604,7 @@ export type PaymentLinkRecordSelect<ExtArgs extends runtime.Types.Extensions.Int
 
 export type PaymentLinkRecordSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  uuid?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   payer?: boolean
@@ -586,6 +617,7 @@ export type PaymentLinkRecordSelectCreateManyAndReturn<ExtArgs extends runtime.T
 
 export type PaymentLinkRecordSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  uuid?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   payer?: boolean
@@ -598,6 +630,7 @@ export type PaymentLinkRecordSelectUpdateManyAndReturn<ExtArgs extends runtime.T
 
 export type PaymentLinkRecordSelectScalar = {
   id?: boolean
+  uuid?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   payer?: boolean
@@ -607,7 +640,7 @@ export type PaymentLinkRecordSelectScalar = {
   chain?: boolean
 }
 
-export type PaymentLinkRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "payer" | "txid" | "paymentLinkId" | "token" | "chain", ExtArgs["result"]["paymentLinkRecord"]>
+export type PaymentLinkRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "createdAt" | "updatedAt" | "payer" | "txid" | "paymentLinkId" | "token" | "chain", ExtArgs["result"]["paymentLinkRecord"]>
 export type PaymentLinkRecordInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   PaymentLink?: boolean | Prisma.PaymentLinkDefaultArgs<ExtArgs>
 }
@@ -625,6 +658,7 @@ export type $PaymentLinkRecordPayload<ExtArgs extends runtime.Types.Extensions.I
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
+    uuid: string
     createdAt: Date
     updatedAt: Date
     payer: string
@@ -1057,6 +1091,7 @@ export interface Prisma__PaymentLinkRecordClient<T, Null = never, ExtArgs extend
  */
 export interface PaymentLinkRecordFieldRefs {
   readonly id: Prisma.FieldRef<"PaymentLinkRecord", 'Int'>
+  readonly uuid: Prisma.FieldRef<"PaymentLinkRecord", 'String'>
   readonly createdAt: Prisma.FieldRef<"PaymentLinkRecord", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PaymentLinkRecord", 'DateTime'>
   readonly payer: Prisma.FieldRef<"PaymentLinkRecord", 'String'>

@@ -29,15 +29,18 @@ export type AggregatePaymentLink = {
 export type PaymentLinkAvgAggregateOutputType = {
   id: number | null
   order: number | null
+  companyId: number | null
 }
 
 export type PaymentLinkSumAggregateOutputType = {
   id: number | null
   order: number | null
+  companyId: number | null
 }
 
 export type PaymentLinkMinAggregateOutputType = {
   id: number | null
+  uuid: string | null
   code: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -46,11 +49,13 @@ export type PaymentLinkMinAggregateOutputType = {
   amount: string | null
   status: $Enums.PaymentLinkStatusEnum | null
   order: number | null
-  payee: string | null
+  companyId: number | null
+  paymentWalletAddress: string | null
 }
 
 export type PaymentLinkMaxAggregateOutputType = {
   id: number | null
+  uuid: string | null
   code: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -59,11 +64,13 @@ export type PaymentLinkMaxAggregateOutputType = {
   amount: string | null
   status: $Enums.PaymentLinkStatusEnum | null
   order: number | null
-  payee: string | null
+  companyId: number | null
+  paymentWalletAddress: string | null
 }
 
 export type PaymentLinkCountAggregateOutputType = {
   id: number
+  uuid: number
   code: number
   createdAt: number
   updatedAt: number
@@ -72,7 +79,8 @@ export type PaymentLinkCountAggregateOutputType = {
   amount: number
   status: number
   order: number
-  payee: number
+  companyId: number
+  paymentWalletAddress: number
   acceptedTokens: number
   acceptedChains: number
   _all: number
@@ -82,15 +90,18 @@ export type PaymentLinkCountAggregateOutputType = {
 export type PaymentLinkAvgAggregateInputType = {
   id?: true
   order?: true
+  companyId?: true
 }
 
 export type PaymentLinkSumAggregateInputType = {
   id?: true
   order?: true
+  companyId?: true
 }
 
 export type PaymentLinkMinAggregateInputType = {
   id?: true
+  uuid?: true
   code?: true
   createdAt?: true
   updatedAt?: true
@@ -99,11 +110,13 @@ export type PaymentLinkMinAggregateInputType = {
   amount?: true
   status?: true
   order?: true
-  payee?: true
+  companyId?: true
+  paymentWalletAddress?: true
 }
 
 export type PaymentLinkMaxAggregateInputType = {
   id?: true
+  uuid?: true
   code?: true
   createdAt?: true
   updatedAt?: true
@@ -112,11 +125,13 @@ export type PaymentLinkMaxAggregateInputType = {
   amount?: true
   status?: true
   order?: true
-  payee?: true
+  companyId?: true
+  paymentWalletAddress?: true
 }
 
 export type PaymentLinkCountAggregateInputType = {
   id?: true
+  uuid?: true
   code?: true
   createdAt?: true
   updatedAt?: true
@@ -125,7 +140,8 @@ export type PaymentLinkCountAggregateInputType = {
   amount?: true
   status?: true
   order?: true
-  payee?: true
+  companyId?: true
+  paymentWalletAddress?: true
   acceptedTokens?: true
   acceptedChains?: true
   _all?: true
@@ -219,6 +235,7 @@ export type PaymentLinkGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 
 export type PaymentLinkGroupByOutputType = {
   id: number
+  uuid: string
   code: string
   createdAt: Date
   updatedAt: Date
@@ -227,8 +244,9 @@ export type PaymentLinkGroupByOutputType = {
   amount: string
   status: $Enums.PaymentLinkStatusEnum
   order: number
-  payee: string
-  acceptedTokens: runtime.JsonValue | null
+  companyId: number
+  paymentWalletAddress: string
+  acceptedTokens: runtime.JsonValue
   acceptedChains: runtime.JsonValue | null
   _count: PaymentLinkCountAggregateOutputType | null
   _avg: PaymentLinkAvgAggregateOutputType | null
@@ -257,6 +275,7 @@ export type PaymentLinkWhereInput = {
   OR?: Prisma.PaymentLinkWhereInput[]
   NOT?: Prisma.PaymentLinkWhereInput | Prisma.PaymentLinkWhereInput[]
   id?: Prisma.IntFilter<"PaymentLink"> | number
+  uuid?: Prisma.StringFilter<"PaymentLink"> | string
   code?: Prisma.StringFilter<"PaymentLink"> | string
   createdAt?: Prisma.DateTimeFilter<"PaymentLink"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PaymentLink"> | Date | string
@@ -265,14 +284,17 @@ export type PaymentLinkWhereInput = {
   amount?: Prisma.StringFilter<"PaymentLink"> | string
   status?: Prisma.EnumPaymentLinkStatusEnumFilter<"PaymentLink"> | $Enums.PaymentLinkStatusEnum
   order?: Prisma.IntFilter<"PaymentLink"> | number
-  payee?: Prisma.StringFilter<"PaymentLink"> | string
-  acceptedTokens?: Prisma.JsonNullableFilter<"PaymentLink">
+  companyId?: Prisma.IntFilter<"PaymentLink"> | number
+  paymentWalletAddress?: Prisma.StringFilter<"PaymentLink"> | string
+  acceptedTokens?: Prisma.JsonFilter<"PaymentLink">
   acceptedChains?: Prisma.JsonNullableFilter<"PaymentLink">
+  company?: Prisma.XOR<Prisma.CompanyScalarRelationFilter, Prisma.CompanyWhereInput>
   records?: Prisma.PaymentLinkRecordListRelationFilter
 }
 
 export type PaymentLinkOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   code?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -281,14 +303,17 @@ export type PaymentLinkOrderByWithRelationInput = {
   amount?: Prisma.SortOrder
   status?: Prisma.SortOrder
   order?: Prisma.SortOrder
-  payee?: Prisma.SortOrder
-  acceptedTokens?: Prisma.SortOrderInput | Prisma.SortOrder
+  companyId?: Prisma.SortOrder
+  paymentWalletAddress?: Prisma.SortOrder
+  acceptedTokens?: Prisma.SortOrder
   acceptedChains?: Prisma.SortOrderInput | Prisma.SortOrder
+  company?: Prisma.CompanyOrderByWithRelationInput
   records?: Prisma.PaymentLinkRecordOrderByRelationAggregateInput
 }
 
 export type PaymentLinkWhereUniqueInput = Prisma.AtLeast<{
   id?: number
+  uuid?: string
   code?: string
   AND?: Prisma.PaymentLinkWhereInput | Prisma.PaymentLinkWhereInput[]
   OR?: Prisma.PaymentLinkWhereInput[]
@@ -300,14 +325,17 @@ export type PaymentLinkWhereUniqueInput = Prisma.AtLeast<{
   amount?: Prisma.StringFilter<"PaymentLink"> | string
   status?: Prisma.EnumPaymentLinkStatusEnumFilter<"PaymentLink"> | $Enums.PaymentLinkStatusEnum
   order?: Prisma.IntFilter<"PaymentLink"> | number
-  payee?: Prisma.StringFilter<"PaymentLink"> | string
-  acceptedTokens?: Prisma.JsonNullableFilter<"PaymentLink">
+  companyId?: Prisma.IntFilter<"PaymentLink"> | number
+  paymentWalletAddress?: Prisma.StringFilter<"PaymentLink"> | string
+  acceptedTokens?: Prisma.JsonFilter<"PaymentLink">
   acceptedChains?: Prisma.JsonNullableFilter<"PaymentLink">
+  company?: Prisma.XOR<Prisma.CompanyScalarRelationFilter, Prisma.CompanyWhereInput>
   records?: Prisma.PaymentLinkRecordListRelationFilter
-}, "id" | "code">
+}, "id" | "uuid" | "code">
 
 export type PaymentLinkOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   code?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -316,8 +344,9 @@ export type PaymentLinkOrderByWithAggregationInput = {
   amount?: Prisma.SortOrder
   status?: Prisma.SortOrder
   order?: Prisma.SortOrder
-  payee?: Prisma.SortOrder
-  acceptedTokens?: Prisma.SortOrderInput | Prisma.SortOrder
+  companyId?: Prisma.SortOrder
+  paymentWalletAddress?: Prisma.SortOrder
+  acceptedTokens?: Prisma.SortOrder
   acceptedChains?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.PaymentLinkCountOrderByAggregateInput
   _avg?: Prisma.PaymentLinkAvgOrderByAggregateInput
@@ -331,6 +360,7 @@ export type PaymentLinkScalarWhereWithAggregatesInput = {
   OR?: Prisma.PaymentLinkScalarWhereWithAggregatesInput[]
   NOT?: Prisma.PaymentLinkScalarWhereWithAggregatesInput | Prisma.PaymentLinkScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"PaymentLink"> | number
+  uuid?: Prisma.StringWithAggregatesFilter<"PaymentLink"> | string
   code?: Prisma.StringWithAggregatesFilter<"PaymentLink"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PaymentLink"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PaymentLink"> | Date | string
@@ -339,12 +369,14 @@ export type PaymentLinkScalarWhereWithAggregatesInput = {
   amount?: Prisma.StringWithAggregatesFilter<"PaymentLink"> | string
   status?: Prisma.EnumPaymentLinkStatusEnumWithAggregatesFilter<"PaymentLink"> | $Enums.PaymentLinkStatusEnum
   order?: Prisma.IntWithAggregatesFilter<"PaymentLink"> | number
-  payee?: Prisma.StringWithAggregatesFilter<"PaymentLink"> | string
-  acceptedTokens?: Prisma.JsonNullableWithAggregatesFilter<"PaymentLink">
+  companyId?: Prisma.IntWithAggregatesFilter<"PaymentLink"> | number
+  paymentWalletAddress?: Prisma.StringWithAggregatesFilter<"PaymentLink"> | string
+  acceptedTokens?: Prisma.JsonWithAggregatesFilter<"PaymentLink">
   acceptedChains?: Prisma.JsonNullableWithAggregatesFilter<"PaymentLink">
 }
 
 export type PaymentLinkCreateInput = {
+  uuid?: string
   code: string
   createdAt: Date | string
   updatedAt: Date | string
@@ -353,14 +385,16 @@ export type PaymentLinkCreateInput = {
   amount: string
   status?: $Enums.PaymentLinkStatusEnum
   order?: number
-  payee: string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  paymentWalletAddress: string
+  acceptedTokens: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  company: Prisma.CompanyCreateNestedOneWithoutPaymentLinksInput
   records?: Prisma.PaymentLinkRecordCreateNestedManyWithoutPaymentLinkInput
 }
 
 export type PaymentLinkUncheckedCreateInput = {
   id?: number
+  uuid?: string
   code: string
   createdAt: Date | string
   updatedAt: Date | string
@@ -369,13 +403,15 @@ export type PaymentLinkUncheckedCreateInput = {
   amount: string
   status?: $Enums.PaymentLinkStatusEnum
   order?: number
-  payee: string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  companyId: number
+  paymentWalletAddress: string
+  acceptedTokens: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   records?: Prisma.PaymentLinkRecordUncheckedCreateNestedManyWithoutPaymentLinkInput
 }
 
 export type PaymentLinkUpdateInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -384,14 +420,16 @@ export type PaymentLinkUpdateInput = {
   amount?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumPaymentLinkStatusEnumFieldUpdateOperationsInput | $Enums.PaymentLinkStatusEnum
   order?: Prisma.IntFieldUpdateOperationsInput | number
-  payee?: Prisma.StringFieldUpdateOperationsInput | string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  paymentWalletAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptedTokens?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  company?: Prisma.CompanyUpdateOneRequiredWithoutPaymentLinksNestedInput
   records?: Prisma.PaymentLinkRecordUpdateManyWithoutPaymentLinkNestedInput
 }
 
 export type PaymentLinkUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -400,14 +438,16 @@ export type PaymentLinkUncheckedUpdateInput = {
   amount?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumPaymentLinkStatusEnumFieldUpdateOperationsInput | $Enums.PaymentLinkStatusEnum
   order?: Prisma.IntFieldUpdateOperationsInput | number
-  payee?: Prisma.StringFieldUpdateOperationsInput | string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  companyId?: Prisma.IntFieldUpdateOperationsInput | number
+  paymentWalletAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptedTokens?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   records?: Prisma.PaymentLinkRecordUncheckedUpdateManyWithoutPaymentLinkNestedInput
 }
 
 export type PaymentLinkCreateManyInput = {
   id?: number
+  uuid?: string
   code: string
   createdAt: Date | string
   updatedAt: Date | string
@@ -416,12 +456,14 @@ export type PaymentLinkCreateManyInput = {
   amount: string
   status?: $Enums.PaymentLinkStatusEnum
   order?: number
-  payee: string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  companyId: number
+  paymentWalletAddress: string
+  acceptedTokens: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type PaymentLinkUpdateManyMutationInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -430,13 +472,14 @@ export type PaymentLinkUpdateManyMutationInput = {
   amount?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumPaymentLinkStatusEnumFieldUpdateOperationsInput | $Enums.PaymentLinkStatusEnum
   order?: Prisma.IntFieldUpdateOperationsInput | number
-  payee?: Prisma.StringFieldUpdateOperationsInput | string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  paymentWalletAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptedTokens?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type PaymentLinkUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -445,13 +488,25 @@ export type PaymentLinkUncheckedUpdateManyInput = {
   amount?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumPaymentLinkStatusEnumFieldUpdateOperationsInput | $Enums.PaymentLinkStatusEnum
   order?: Prisma.IntFieldUpdateOperationsInput | number
-  payee?: Prisma.StringFieldUpdateOperationsInput | string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  companyId?: Prisma.IntFieldUpdateOperationsInput | number
+  paymentWalletAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptedTokens?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+}
+
+export type PaymentLinkListRelationFilter = {
+  every?: Prisma.PaymentLinkWhereInput
+  some?: Prisma.PaymentLinkWhereInput
+  none?: Prisma.PaymentLinkWhereInput
+}
+
+export type PaymentLinkOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type PaymentLinkCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   code?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -460,7 +515,8 @@ export type PaymentLinkCountOrderByAggregateInput = {
   amount?: Prisma.SortOrder
   status?: Prisma.SortOrder
   order?: Prisma.SortOrder
-  payee?: Prisma.SortOrder
+  companyId?: Prisma.SortOrder
+  paymentWalletAddress?: Prisma.SortOrder
   acceptedTokens?: Prisma.SortOrder
   acceptedChains?: Prisma.SortOrder
 }
@@ -468,10 +524,12 @@ export type PaymentLinkCountOrderByAggregateInput = {
 export type PaymentLinkAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  companyId?: Prisma.SortOrder
 }
 
 export type PaymentLinkMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   code?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -480,11 +538,13 @@ export type PaymentLinkMaxOrderByAggregateInput = {
   amount?: Prisma.SortOrder
   status?: Prisma.SortOrder
   order?: Prisma.SortOrder
-  payee?: Prisma.SortOrder
+  companyId?: Prisma.SortOrder
+  paymentWalletAddress?: Prisma.SortOrder
 }
 
 export type PaymentLinkMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  uuid?: Prisma.SortOrder
   code?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -493,17 +553,61 @@ export type PaymentLinkMinOrderByAggregateInput = {
   amount?: Prisma.SortOrder
   status?: Prisma.SortOrder
   order?: Prisma.SortOrder
-  payee?: Prisma.SortOrder
+  companyId?: Prisma.SortOrder
+  paymentWalletAddress?: Prisma.SortOrder
 }
 
 export type PaymentLinkSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  companyId?: Prisma.SortOrder
 }
 
 export type PaymentLinkScalarRelationFilter = {
   is?: Prisma.PaymentLinkWhereInput
   isNot?: Prisma.PaymentLinkWhereInput
+}
+
+export type PaymentLinkCreateNestedManyWithoutCompanyInput = {
+  create?: Prisma.XOR<Prisma.PaymentLinkCreateWithoutCompanyInput, Prisma.PaymentLinkUncheckedCreateWithoutCompanyInput> | Prisma.PaymentLinkCreateWithoutCompanyInput[] | Prisma.PaymentLinkUncheckedCreateWithoutCompanyInput[]
+  connectOrCreate?: Prisma.PaymentLinkCreateOrConnectWithoutCompanyInput | Prisma.PaymentLinkCreateOrConnectWithoutCompanyInput[]
+  createMany?: Prisma.PaymentLinkCreateManyCompanyInputEnvelope
+  connect?: Prisma.PaymentLinkWhereUniqueInput | Prisma.PaymentLinkWhereUniqueInput[]
+}
+
+export type PaymentLinkUncheckedCreateNestedManyWithoutCompanyInput = {
+  create?: Prisma.XOR<Prisma.PaymentLinkCreateWithoutCompanyInput, Prisma.PaymentLinkUncheckedCreateWithoutCompanyInput> | Prisma.PaymentLinkCreateWithoutCompanyInput[] | Prisma.PaymentLinkUncheckedCreateWithoutCompanyInput[]
+  connectOrCreate?: Prisma.PaymentLinkCreateOrConnectWithoutCompanyInput | Prisma.PaymentLinkCreateOrConnectWithoutCompanyInput[]
+  createMany?: Prisma.PaymentLinkCreateManyCompanyInputEnvelope
+  connect?: Prisma.PaymentLinkWhereUniqueInput | Prisma.PaymentLinkWhereUniqueInput[]
+}
+
+export type PaymentLinkUpdateManyWithoutCompanyNestedInput = {
+  create?: Prisma.XOR<Prisma.PaymentLinkCreateWithoutCompanyInput, Prisma.PaymentLinkUncheckedCreateWithoutCompanyInput> | Prisma.PaymentLinkCreateWithoutCompanyInput[] | Prisma.PaymentLinkUncheckedCreateWithoutCompanyInput[]
+  connectOrCreate?: Prisma.PaymentLinkCreateOrConnectWithoutCompanyInput | Prisma.PaymentLinkCreateOrConnectWithoutCompanyInput[]
+  upsert?: Prisma.PaymentLinkUpsertWithWhereUniqueWithoutCompanyInput | Prisma.PaymentLinkUpsertWithWhereUniqueWithoutCompanyInput[]
+  createMany?: Prisma.PaymentLinkCreateManyCompanyInputEnvelope
+  set?: Prisma.PaymentLinkWhereUniqueInput | Prisma.PaymentLinkWhereUniqueInput[]
+  disconnect?: Prisma.PaymentLinkWhereUniqueInput | Prisma.PaymentLinkWhereUniqueInput[]
+  delete?: Prisma.PaymentLinkWhereUniqueInput | Prisma.PaymentLinkWhereUniqueInput[]
+  connect?: Prisma.PaymentLinkWhereUniqueInput | Prisma.PaymentLinkWhereUniqueInput[]
+  update?: Prisma.PaymentLinkUpdateWithWhereUniqueWithoutCompanyInput | Prisma.PaymentLinkUpdateWithWhereUniqueWithoutCompanyInput[]
+  updateMany?: Prisma.PaymentLinkUpdateManyWithWhereWithoutCompanyInput | Prisma.PaymentLinkUpdateManyWithWhereWithoutCompanyInput[]
+  deleteMany?: Prisma.PaymentLinkScalarWhereInput | Prisma.PaymentLinkScalarWhereInput[]
+}
+
+export type PaymentLinkUncheckedUpdateManyWithoutCompanyNestedInput = {
+  create?: Prisma.XOR<Prisma.PaymentLinkCreateWithoutCompanyInput, Prisma.PaymentLinkUncheckedCreateWithoutCompanyInput> | Prisma.PaymentLinkCreateWithoutCompanyInput[] | Prisma.PaymentLinkUncheckedCreateWithoutCompanyInput[]
+  connectOrCreate?: Prisma.PaymentLinkCreateOrConnectWithoutCompanyInput | Prisma.PaymentLinkCreateOrConnectWithoutCompanyInput[]
+  upsert?: Prisma.PaymentLinkUpsertWithWhereUniqueWithoutCompanyInput | Prisma.PaymentLinkUpsertWithWhereUniqueWithoutCompanyInput[]
+  createMany?: Prisma.PaymentLinkCreateManyCompanyInputEnvelope
+  set?: Prisma.PaymentLinkWhereUniqueInput | Prisma.PaymentLinkWhereUniqueInput[]
+  disconnect?: Prisma.PaymentLinkWhereUniqueInput | Prisma.PaymentLinkWhereUniqueInput[]
+  delete?: Prisma.PaymentLinkWhereUniqueInput | Prisma.PaymentLinkWhereUniqueInput[]
+  connect?: Prisma.PaymentLinkWhereUniqueInput | Prisma.PaymentLinkWhereUniqueInput[]
+  update?: Prisma.PaymentLinkUpdateWithWhereUniqueWithoutCompanyInput | Prisma.PaymentLinkUpdateWithWhereUniqueWithoutCompanyInput[]
+  updateMany?: Prisma.PaymentLinkUpdateManyWithWhereWithoutCompanyInput | Prisma.PaymentLinkUpdateManyWithWhereWithoutCompanyInput[]
+  deleteMany?: Prisma.PaymentLinkScalarWhereInput | Prisma.PaymentLinkScalarWhereInput[]
 }
 
 export type EnumPaymentLinkStatusEnumFieldUpdateOperationsInput = {
@@ -524,7 +628,8 @@ export type PaymentLinkUpdateOneRequiredWithoutRecordsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.PaymentLinkUpdateToOneWithWhereWithoutRecordsInput, Prisma.PaymentLinkUpdateWithoutRecordsInput>, Prisma.PaymentLinkUncheckedUpdateWithoutRecordsInput>
 }
 
-export type PaymentLinkCreateWithoutRecordsInput = {
+export type PaymentLinkCreateWithoutCompanyInput = {
+  uuid?: string
   code: string
   createdAt: Date | string
   updatedAt: Date | string
@@ -533,13 +638,94 @@ export type PaymentLinkCreateWithoutRecordsInput = {
   amount: string
   status?: $Enums.PaymentLinkStatusEnum
   order?: number
-  payee: string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  paymentWalletAddress: string
+  acceptedTokens: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  records?: Prisma.PaymentLinkRecordCreateNestedManyWithoutPaymentLinkInput
+}
+
+export type PaymentLinkUncheckedCreateWithoutCompanyInput = {
+  id?: number
+  uuid?: string
+  code: string
+  createdAt: Date | string
+  updatedAt: Date | string
+  title: string
+  description: string
+  amount: string
+  status?: $Enums.PaymentLinkStatusEnum
+  order?: number
+  paymentWalletAddress: string
+  acceptedTokens: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  records?: Prisma.PaymentLinkRecordUncheckedCreateNestedManyWithoutPaymentLinkInput
+}
+
+export type PaymentLinkCreateOrConnectWithoutCompanyInput = {
+  where: Prisma.PaymentLinkWhereUniqueInput
+  create: Prisma.XOR<Prisma.PaymentLinkCreateWithoutCompanyInput, Prisma.PaymentLinkUncheckedCreateWithoutCompanyInput>
+}
+
+export type PaymentLinkCreateManyCompanyInputEnvelope = {
+  data: Prisma.PaymentLinkCreateManyCompanyInput | Prisma.PaymentLinkCreateManyCompanyInput[]
+  skipDuplicates?: boolean
+}
+
+export type PaymentLinkUpsertWithWhereUniqueWithoutCompanyInput = {
+  where: Prisma.PaymentLinkWhereUniqueInput
+  update: Prisma.XOR<Prisma.PaymentLinkUpdateWithoutCompanyInput, Prisma.PaymentLinkUncheckedUpdateWithoutCompanyInput>
+  create: Prisma.XOR<Prisma.PaymentLinkCreateWithoutCompanyInput, Prisma.PaymentLinkUncheckedCreateWithoutCompanyInput>
+}
+
+export type PaymentLinkUpdateWithWhereUniqueWithoutCompanyInput = {
+  where: Prisma.PaymentLinkWhereUniqueInput
+  data: Prisma.XOR<Prisma.PaymentLinkUpdateWithoutCompanyInput, Prisma.PaymentLinkUncheckedUpdateWithoutCompanyInput>
+}
+
+export type PaymentLinkUpdateManyWithWhereWithoutCompanyInput = {
+  where: Prisma.PaymentLinkScalarWhereInput
+  data: Prisma.XOR<Prisma.PaymentLinkUpdateManyMutationInput, Prisma.PaymentLinkUncheckedUpdateManyWithoutCompanyInput>
+}
+
+export type PaymentLinkScalarWhereInput = {
+  AND?: Prisma.PaymentLinkScalarWhereInput | Prisma.PaymentLinkScalarWhereInput[]
+  OR?: Prisma.PaymentLinkScalarWhereInput[]
+  NOT?: Prisma.PaymentLinkScalarWhereInput | Prisma.PaymentLinkScalarWhereInput[]
+  id?: Prisma.IntFilter<"PaymentLink"> | number
+  uuid?: Prisma.StringFilter<"PaymentLink"> | string
+  code?: Prisma.StringFilter<"PaymentLink"> | string
+  createdAt?: Prisma.DateTimeFilter<"PaymentLink"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"PaymentLink"> | Date | string
+  title?: Prisma.StringFilter<"PaymentLink"> | string
+  description?: Prisma.StringFilter<"PaymentLink"> | string
+  amount?: Prisma.StringFilter<"PaymentLink"> | string
+  status?: Prisma.EnumPaymentLinkStatusEnumFilter<"PaymentLink"> | $Enums.PaymentLinkStatusEnum
+  order?: Prisma.IntFilter<"PaymentLink"> | number
+  companyId?: Prisma.IntFilter<"PaymentLink"> | number
+  paymentWalletAddress?: Prisma.StringFilter<"PaymentLink"> | string
+  acceptedTokens?: Prisma.JsonFilter<"PaymentLink">
+  acceptedChains?: Prisma.JsonNullableFilter<"PaymentLink">
+}
+
+export type PaymentLinkCreateWithoutRecordsInput = {
+  uuid?: string
+  code: string
+  createdAt: Date | string
+  updatedAt: Date | string
+  title: string
+  description: string
+  amount: string
+  status?: $Enums.PaymentLinkStatusEnum
+  order?: number
+  paymentWalletAddress: string
+  acceptedTokens: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  company: Prisma.CompanyCreateNestedOneWithoutPaymentLinksInput
 }
 
 export type PaymentLinkUncheckedCreateWithoutRecordsInput = {
   id?: number
+  uuid?: string
   code: string
   createdAt: Date | string
   updatedAt: Date | string
@@ -548,8 +734,9 @@ export type PaymentLinkUncheckedCreateWithoutRecordsInput = {
   amount: string
   status?: $Enums.PaymentLinkStatusEnum
   order?: number
-  payee: string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  companyId: number
+  paymentWalletAddress: string
+  acceptedTokens: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
@@ -570,6 +757,7 @@ export type PaymentLinkUpdateToOneWithWhereWithoutRecordsInput = {
 }
 
 export type PaymentLinkUpdateWithoutRecordsInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -578,13 +766,15 @@ export type PaymentLinkUpdateWithoutRecordsInput = {
   amount?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumPaymentLinkStatusEnumFieldUpdateOperationsInput | $Enums.PaymentLinkStatusEnum
   order?: Prisma.IntFieldUpdateOperationsInput | number
-  payee?: Prisma.StringFieldUpdateOperationsInput | string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  paymentWalletAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptedTokens?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  company?: Prisma.CompanyUpdateOneRequiredWithoutPaymentLinksNestedInput
 }
 
 export type PaymentLinkUncheckedUpdateWithoutRecordsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -593,8 +783,74 @@ export type PaymentLinkUncheckedUpdateWithoutRecordsInput = {
   amount?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumPaymentLinkStatusEnumFieldUpdateOperationsInput | $Enums.PaymentLinkStatusEnum
   order?: Prisma.IntFieldUpdateOperationsInput | number
-  payee?: Prisma.StringFieldUpdateOperationsInput | string
-  acceptedTokens?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  companyId?: Prisma.IntFieldUpdateOperationsInput | number
+  paymentWalletAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptedTokens?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+}
+
+export type PaymentLinkCreateManyCompanyInput = {
+  id?: number
+  uuid?: string
+  code: string
+  createdAt: Date | string
+  updatedAt: Date | string
+  title: string
+  description: string
+  amount: string
+  status?: $Enums.PaymentLinkStatusEnum
+  order?: number
+  paymentWalletAddress: string
+  acceptedTokens: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+}
+
+export type PaymentLinkUpdateWithoutCompanyInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumPaymentLinkStatusEnumFieldUpdateOperationsInput | $Enums.PaymentLinkStatusEnum
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  paymentWalletAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptedTokens?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  records?: Prisma.PaymentLinkRecordUpdateManyWithoutPaymentLinkNestedInput
+}
+
+export type PaymentLinkUncheckedUpdateWithoutCompanyInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumPaymentLinkStatusEnumFieldUpdateOperationsInput | $Enums.PaymentLinkStatusEnum
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  paymentWalletAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptedTokens?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  records?: Prisma.PaymentLinkRecordUncheckedUpdateManyWithoutPaymentLinkNestedInput
+}
+
+export type PaymentLinkUncheckedUpdateManyWithoutCompanyInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumPaymentLinkStatusEnumFieldUpdateOperationsInput | $Enums.PaymentLinkStatusEnum
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  paymentWalletAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptedTokens?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   acceptedChains?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
@@ -631,6 +887,7 @@ export type PaymentLinkCountOutputTypeCountRecordsArgs<ExtArgs extends runtime.T
 
 export type PaymentLinkSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  uuid?: boolean
   code?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -639,15 +896,18 @@ export type PaymentLinkSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   amount?: boolean
   status?: boolean
   order?: boolean
-  payee?: boolean
+  companyId?: boolean
+  paymentWalletAddress?: boolean
   acceptedTokens?: boolean
   acceptedChains?: boolean
+  company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>
   records?: boolean | Prisma.PaymentLink$recordsArgs<ExtArgs>
   _count?: boolean | Prisma.PaymentLinkCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["paymentLink"]>
 
 export type PaymentLinkSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  uuid?: boolean
   code?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -656,13 +916,16 @@ export type PaymentLinkSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   amount?: boolean
   status?: boolean
   order?: boolean
-  payee?: boolean
+  companyId?: boolean
+  paymentWalletAddress?: boolean
   acceptedTokens?: boolean
   acceptedChains?: boolean
+  company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["paymentLink"]>
 
 export type PaymentLinkSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  uuid?: boolean
   code?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -671,13 +934,16 @@ export type PaymentLinkSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   amount?: boolean
   status?: boolean
   order?: boolean
-  payee?: boolean
+  companyId?: boolean
+  paymentWalletAddress?: boolean
   acceptedTokens?: boolean
   acceptedChains?: boolean
+  company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["paymentLink"]>
 
 export type PaymentLinkSelectScalar = {
   id?: boolean
+  uuid?: boolean
   code?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -686,26 +952,34 @@ export type PaymentLinkSelectScalar = {
   amount?: boolean
   status?: boolean
   order?: boolean
-  payee?: boolean
+  companyId?: boolean
+  paymentWalletAddress?: boolean
   acceptedTokens?: boolean
   acceptedChains?: boolean
 }
 
-export type PaymentLinkOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "code" | "createdAt" | "updatedAt" | "title" | "description" | "amount" | "status" | "order" | "payee" | "acceptedTokens" | "acceptedChains", ExtArgs["result"]["paymentLink"]>
+export type PaymentLinkOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "code" | "createdAt" | "updatedAt" | "title" | "description" | "amount" | "status" | "order" | "companyId" | "paymentWalletAddress" | "acceptedTokens" | "acceptedChains", ExtArgs["result"]["paymentLink"]>
 export type PaymentLinkInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>
   records?: boolean | Prisma.PaymentLink$recordsArgs<ExtArgs>
   _count?: boolean | Prisma.PaymentLinkCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type PaymentLinkIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type PaymentLinkIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type PaymentLinkIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>
+}
+export type PaymentLinkIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>
+}
 
 export type $PaymentLinkPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "PaymentLink"
   objects: {
+    company: Prisma.$CompanyPayload<ExtArgs>
     records: Prisma.$PaymentLinkRecordPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
+    uuid: string
     code: string
     createdAt: Date
     updatedAt: Date
@@ -714,8 +988,9 @@ export type $PaymentLinkPayload<ExtArgs extends runtime.Types.Extensions.Interna
     amount: string
     status: $Enums.PaymentLinkStatusEnum
     order: number
-    payee: string
-    acceptedTokens: runtime.JsonValue | null
+    companyId: number
+    paymentWalletAddress: string
+    acceptedTokens: runtime.JsonValue
     acceptedChains: runtime.JsonValue | null
   }, ExtArgs["result"]["paymentLink"]>
   composites: {}
@@ -1111,6 +1386,7 @@ readonly fields: PaymentLinkFieldRefs;
  */
 export interface Prisma__PaymentLinkClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  company<T extends Prisma.CompanyDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CompanyDefaultArgs<ExtArgs>>): Prisma.Prisma__CompanyClient<runtime.Types.Result.GetResult<Prisma.$CompanyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   records<T extends Prisma.PaymentLink$recordsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PaymentLink$recordsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentLinkRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1142,6 +1418,7 @@ export interface Prisma__PaymentLinkClient<T, Null = never, ExtArgs extends runt
  */
 export interface PaymentLinkFieldRefs {
   readonly id: Prisma.FieldRef<"PaymentLink", 'Int'>
+  readonly uuid: Prisma.FieldRef<"PaymentLink", 'String'>
   readonly code: Prisma.FieldRef<"PaymentLink", 'String'>
   readonly createdAt: Prisma.FieldRef<"PaymentLink", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PaymentLink", 'DateTime'>
@@ -1150,7 +1427,8 @@ export interface PaymentLinkFieldRefs {
   readonly amount: Prisma.FieldRef<"PaymentLink", 'String'>
   readonly status: Prisma.FieldRef<"PaymentLink", 'PaymentLinkStatusEnum'>
   readonly order: Prisma.FieldRef<"PaymentLink", 'Int'>
-  readonly payee: Prisma.FieldRef<"PaymentLink", 'String'>
+  readonly companyId: Prisma.FieldRef<"PaymentLink", 'Int'>
+  readonly paymentWalletAddress: Prisma.FieldRef<"PaymentLink", 'String'>
   readonly acceptedTokens: Prisma.FieldRef<"PaymentLink", 'Json'>
   readonly acceptedChains: Prisma.FieldRef<"PaymentLink", 'Json'>
 }
@@ -1402,6 +1680,10 @@ export type PaymentLinkCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Ext
    */
   data: Prisma.PaymentLinkCreateManyInput | Prisma.PaymentLinkCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PaymentLinkIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1472,6 +1754,10 @@ export type PaymentLinkUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Ext
    * Limit how many PaymentLinks to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PaymentLinkIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**

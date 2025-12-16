@@ -315,6 +315,7 @@ export type CompanyWhereInput = {
   bills?: Prisma.BillListRelationFilter
   invoicesFrom?: Prisma.InvoiceListRelationFilter
   invoicesTo?: Prisma.InvoiceListRelationFilter
+  paymentLinks?: Prisma.PaymentLinkListRelationFilter
 }
 
 export type CompanyOrderByWithRelationInput = {
@@ -342,6 +343,7 @@ export type CompanyOrderByWithRelationInput = {
   bills?: Prisma.BillOrderByRelationAggregateInput
   invoicesFrom?: Prisma.InvoiceOrderByRelationAggregateInput
   invoicesTo?: Prisma.InvoiceOrderByRelationAggregateInput
+  paymentLinks?: Prisma.PaymentLinkOrderByRelationAggregateInput
 }
 
 export type CompanyWhereUniqueInput = Prisma.AtLeast<{
@@ -372,6 +374,7 @@ export type CompanyWhereUniqueInput = Prisma.AtLeast<{
   bills?: Prisma.BillListRelationFilter
   invoicesFrom?: Prisma.InvoiceListRelationFilter
   invoicesTo?: Prisma.InvoiceListRelationFilter
+  paymentLinks?: Prisma.PaymentLinkListRelationFilter
 }, "id" | "uuid" | "registrationNumber">
 
 export type CompanyOrderByWithAggregationInput = {
@@ -446,6 +449,7 @@ export type CompanyCreateInput = {
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyUncheckedCreateInput = {
@@ -473,6 +477,7 @@ export type CompanyUncheckedCreateInput = {
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceUncheckedCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyUpdateInput = {
@@ -499,6 +504,7 @@ export type CompanyUpdateInput = {
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyUncheckedUpdateInput = {
@@ -526,6 +532,7 @@ export type CompanyUncheckedUpdateInput = {
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUncheckedUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyCreateManyInput = {
@@ -773,6 +780,20 @@ export type CompanyUpdateOneRequiredWithoutBillsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CompanyUpdateToOneWithWhereWithoutBillsInput, Prisma.CompanyUpdateWithoutBillsInput>, Prisma.CompanyUncheckedUpdateWithoutBillsInput>
 }
 
+export type CompanyCreateNestedOneWithoutPaymentLinksInput = {
+  create?: Prisma.XOR<Prisma.CompanyCreateWithoutPaymentLinksInput, Prisma.CompanyUncheckedCreateWithoutPaymentLinksInput>
+  connectOrCreate?: Prisma.CompanyCreateOrConnectWithoutPaymentLinksInput
+  connect?: Prisma.CompanyWhereUniqueInput
+}
+
+export type CompanyUpdateOneRequiredWithoutPaymentLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.CompanyCreateWithoutPaymentLinksInput, Prisma.CompanyUncheckedCreateWithoutPaymentLinksInput>
+  connectOrCreate?: Prisma.CompanyCreateOrConnectWithoutPaymentLinksInput
+  upsert?: Prisma.CompanyUpsertWithoutPaymentLinksInput
+  connect?: Prisma.CompanyWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CompanyUpdateToOneWithWhereWithoutPaymentLinksInput, Prisma.CompanyUpdateWithoutPaymentLinksInput>, Prisma.CompanyUncheckedUpdateWithoutPaymentLinksInput>
+}
+
 export type CompanyCreateWithoutTeamMembersInput = {
   uuid?: string
   createdAt?: Date | string
@@ -796,6 +817,7 @@ export type CompanyCreateWithoutTeamMembersInput = {
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyUncheckedCreateWithoutTeamMembersInput = {
@@ -822,6 +844,7 @@ export type CompanyUncheckedCreateWithoutTeamMembersInput = {
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceUncheckedCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyCreateOrConnectWithoutTeamMembersInput = {
@@ -863,6 +886,7 @@ export type CompanyUpdateWithoutTeamMembersInput = {
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyUncheckedUpdateWithoutTeamMembersInput = {
@@ -889,6 +913,7 @@ export type CompanyUncheckedUpdateWithoutTeamMembersInput = {
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUncheckedUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyCreateWithoutContactsInput = {
@@ -914,6 +939,7 @@ export type CompanyCreateWithoutContactsInput = {
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyUncheckedCreateWithoutContactsInput = {
@@ -940,6 +966,7 @@ export type CompanyUncheckedCreateWithoutContactsInput = {
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceUncheckedCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyCreateOrConnectWithoutContactsInput = {
@@ -981,6 +1008,7 @@ export type CompanyUpdateWithoutContactsInput = {
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyUncheckedUpdateWithoutContactsInput = {
@@ -1007,6 +1035,7 @@ export type CompanyUncheckedUpdateWithoutContactsInput = {
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUncheckedUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyCreateWithoutGroupsInput = {
@@ -1032,6 +1061,7 @@ export type CompanyCreateWithoutGroupsInput = {
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyUncheckedCreateWithoutGroupsInput = {
@@ -1058,6 +1088,7 @@ export type CompanyUncheckedCreateWithoutGroupsInput = {
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceUncheckedCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyCreateOrConnectWithoutGroupsInput = {
@@ -1099,6 +1130,7 @@ export type CompanyUpdateWithoutGroupsInput = {
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyUncheckedUpdateWithoutGroupsInput = {
@@ -1125,6 +1157,7 @@ export type CompanyUncheckedUpdateWithoutGroupsInput = {
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUncheckedUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyCreateWithoutPayrollsInput = {
@@ -1150,6 +1183,7 @@ export type CompanyCreateWithoutPayrollsInput = {
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyUncheckedCreateWithoutPayrollsInput = {
@@ -1176,6 +1210,7 @@ export type CompanyUncheckedCreateWithoutPayrollsInput = {
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceUncheckedCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyCreateOrConnectWithoutPayrollsInput = {
@@ -1217,6 +1252,7 @@ export type CompanyUpdateWithoutPayrollsInput = {
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyUncheckedUpdateWithoutPayrollsInput = {
@@ -1243,6 +1279,7 @@ export type CompanyUncheckedUpdateWithoutPayrollsInput = {
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUncheckedUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyCreateWithoutInvoicesFromInput = {
@@ -1268,6 +1305,7 @@ export type CompanyCreateWithoutInvoicesFromInput = {
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
   invoicesTo?: Prisma.InvoiceCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyUncheckedCreateWithoutInvoicesFromInput = {
@@ -1294,6 +1332,7 @@ export type CompanyUncheckedCreateWithoutInvoicesFromInput = {
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
   invoicesTo?: Prisma.InvoiceUncheckedCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyCreateOrConnectWithoutInvoicesFromInput = {
@@ -1324,6 +1363,7 @@ export type CompanyCreateWithoutInvoicesToInput = {
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
+  paymentLinks?: Prisma.PaymentLinkCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyUncheckedCreateWithoutInvoicesToInput = {
@@ -1350,6 +1390,7 @@ export type CompanyUncheckedCreateWithoutInvoicesToInput = {
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyCreateOrConnectWithoutInvoicesToInput = {
@@ -1391,6 +1432,7 @@ export type CompanyUpdateWithoutInvoicesFromInput = {
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyUncheckedUpdateWithoutInvoicesFromInput = {
@@ -1417,6 +1459,7 @@ export type CompanyUncheckedUpdateWithoutInvoicesFromInput = {
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUncheckedUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyUpsertWithoutInvoicesToInput = {
@@ -1453,6 +1496,7 @@ export type CompanyUpdateWithoutInvoicesToInput = {
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyUncheckedUpdateWithoutInvoicesToInput = {
@@ -1479,6 +1523,7 @@ export type CompanyUncheckedUpdateWithoutInvoicesToInput = {
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyCreateWithoutBillsInput = {
@@ -1504,6 +1549,7 @@ export type CompanyCreateWithoutBillsInput = {
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyUncheckedCreateWithoutBillsInput = {
@@ -1530,6 +1576,7 @@ export type CompanyUncheckedCreateWithoutBillsInput = {
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
   invoicesTo?: Prisma.InvoiceUncheckedCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedCreateNestedManyWithoutCompanyInput
 }
 
 export type CompanyCreateOrConnectWithoutBillsInput = {
@@ -1571,6 +1618,7 @@ export type CompanyUpdateWithoutBillsInput = {
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUpdateManyWithoutCompanyNestedInput
 }
 
 export type CompanyUncheckedUpdateWithoutBillsInput = {
@@ -1597,6 +1645,129 @@ export type CompanyUncheckedUpdateWithoutBillsInput = {
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
   invoicesTo?: Prisma.InvoiceUncheckedUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedUpdateManyWithoutCompanyNestedInput
+}
+
+export type CompanyCreateWithoutPaymentLinksInput = {
+  uuid?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  companyName: string
+  registrationNumber: string
+  companyType: $Enums.CompanyTypeEnum
+  taxId?: string | null
+  notificationEmail?: string | null
+  country: string
+  address1: string
+  address2?: string | null
+  city: string
+  postalCode: string
+  verificationStatus?: $Enums.CompanyVerificationStatusEnum
+  isActive?: boolean
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  teamMembers?: Prisma.TeamMemberCreateNestedManyWithoutCompanyInput
+  contacts?: Prisma.EmployeeCreateNestedManyWithoutCompanyInput
+  groups?: Prisma.EmployeeGroupCreateNestedManyWithoutCompanyInput
+  payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
+  bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
+  invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
+  invoicesTo?: Prisma.InvoiceCreateNestedManyWithoutToCompanyInput
+}
+
+export type CompanyUncheckedCreateWithoutPaymentLinksInput = {
+  id?: number
+  uuid?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  companyName: string
+  registrationNumber: string
+  companyType: $Enums.CompanyTypeEnum
+  taxId?: string | null
+  notificationEmail?: string | null
+  country: string
+  address1: string
+  address2?: string | null
+  city: string
+  postalCode: string
+  verificationStatus?: $Enums.CompanyVerificationStatusEnum
+  isActive?: boolean
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  teamMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutCompanyInput
+  contacts?: Prisma.EmployeeUncheckedCreateNestedManyWithoutCompanyInput
+  groups?: Prisma.EmployeeGroupUncheckedCreateNestedManyWithoutCompanyInput
+  payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
+  bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
+  invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
+  invoicesTo?: Prisma.InvoiceUncheckedCreateNestedManyWithoutToCompanyInput
+}
+
+export type CompanyCreateOrConnectWithoutPaymentLinksInput = {
+  where: Prisma.CompanyWhereUniqueInput
+  create: Prisma.XOR<Prisma.CompanyCreateWithoutPaymentLinksInput, Prisma.CompanyUncheckedCreateWithoutPaymentLinksInput>
+}
+
+export type CompanyUpsertWithoutPaymentLinksInput = {
+  update: Prisma.XOR<Prisma.CompanyUpdateWithoutPaymentLinksInput, Prisma.CompanyUncheckedUpdateWithoutPaymentLinksInput>
+  create: Prisma.XOR<Prisma.CompanyCreateWithoutPaymentLinksInput, Prisma.CompanyUncheckedCreateWithoutPaymentLinksInput>
+  where?: Prisma.CompanyWhereInput
+}
+
+export type CompanyUpdateToOneWithWhereWithoutPaymentLinksInput = {
+  where?: Prisma.CompanyWhereInput
+  data: Prisma.XOR<Prisma.CompanyUpdateWithoutPaymentLinksInput, Prisma.CompanyUncheckedUpdateWithoutPaymentLinksInput>
+}
+
+export type CompanyUpdateWithoutPaymentLinksInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  companyName?: Prisma.StringFieldUpdateOperationsInput | string
+  registrationNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
+  taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  country?: Prisma.StringFieldUpdateOperationsInput | string
+  address1?: Prisma.StringFieldUpdateOperationsInput | string
+  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  postalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  verificationStatus?: Prisma.EnumCompanyVerificationStatusEnumFieldUpdateOperationsInput | $Enums.CompanyVerificationStatusEnum
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  teamMembers?: Prisma.TeamMemberUpdateManyWithoutCompanyNestedInput
+  contacts?: Prisma.EmployeeUpdateManyWithoutCompanyNestedInput
+  groups?: Prisma.EmployeeGroupUpdateManyWithoutCompanyNestedInput
+  payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
+  bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
+  invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
+  invoicesTo?: Prisma.InvoiceUpdateManyWithoutToCompanyNestedInput
+}
+
+export type CompanyUncheckedUpdateWithoutPaymentLinksInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  companyName?: Prisma.StringFieldUpdateOperationsInput | string
+  registrationNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
+  taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  country?: Prisma.StringFieldUpdateOperationsInput | string
+  address1?: Prisma.StringFieldUpdateOperationsInput | string
+  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  postalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  verificationStatus?: Prisma.EnumCompanyVerificationStatusEnumFieldUpdateOperationsInput | $Enums.CompanyVerificationStatusEnum
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  teamMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutCompanyNestedInput
+  contacts?: Prisma.EmployeeUncheckedUpdateManyWithoutCompanyNestedInput
+  groups?: Prisma.EmployeeGroupUncheckedUpdateManyWithoutCompanyNestedInput
+  payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
+  bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
+  invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
+  invoicesTo?: Prisma.InvoiceUncheckedUpdateManyWithoutToCompanyNestedInput
 }
 
 
@@ -1612,6 +1783,7 @@ export type CompanyCountOutputType = {
   bills: number
   invoicesFrom: number
   invoicesTo: number
+  paymentLinks: number
 }
 
 export type CompanyCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1622,6 +1794,7 @@ export type CompanyCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   bills?: boolean | CompanyCountOutputTypeCountBillsArgs
   invoicesFrom?: boolean | CompanyCountOutputTypeCountInvoicesFromArgs
   invoicesTo?: boolean | CompanyCountOutputTypeCountInvoicesToArgs
+  paymentLinks?: boolean | CompanyCountOutputTypeCountPaymentLinksArgs
 }
 
 /**
@@ -1683,6 +1856,13 @@ export type CompanyCountOutputTypeCountInvoicesToArgs<ExtArgs extends runtime.Ty
   where?: Prisma.InvoiceWhereInput
 }
 
+/**
+ * CompanyCountOutputType without action
+ */
+export type CompanyCountOutputTypeCountPaymentLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PaymentLinkWhereInput
+}
+
 
 export type CompanySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1709,6 +1889,7 @@ export type CompanySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   bills?: boolean | Prisma.Company$billsArgs<ExtArgs>
   invoicesFrom?: boolean | Prisma.Company$invoicesFromArgs<ExtArgs>
   invoicesTo?: boolean | Prisma.Company$invoicesToArgs<ExtArgs>
+  paymentLinks?: boolean | Prisma.Company$paymentLinksArgs<ExtArgs>
   _count?: boolean | Prisma.CompanyCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["company"]>
 
@@ -1781,6 +1962,7 @@ export type CompanyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   bills?: boolean | Prisma.Company$billsArgs<ExtArgs>
   invoicesFrom?: boolean | Prisma.Company$invoicesFromArgs<ExtArgs>
   invoicesTo?: boolean | Prisma.Company$invoicesToArgs<ExtArgs>
+  paymentLinks?: boolean | Prisma.Company$paymentLinksArgs<ExtArgs>
   _count?: boolean | Prisma.CompanyCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CompanyIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1796,6 +1978,7 @@ export type $CompanyPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     bills: Prisma.$BillPayload<ExtArgs>[]
     invoicesFrom: Prisma.$InvoicePayload<ExtArgs>[]
     invoicesTo: Prisma.$InvoicePayload<ExtArgs>[]
+    paymentLinks: Prisma.$PaymentLinkPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -2216,6 +2399,7 @@ export interface Prisma__CompanyClient<T, Null = never, ExtArgs extends runtime.
   bills<T extends Prisma.Company$billsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Company$billsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   invoicesFrom<T extends Prisma.Company$invoicesFromArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Company$invoicesFromArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   invoicesTo<T extends Prisma.Company$invoicesToArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Company$invoicesToArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  paymentLinks<T extends Prisma.Company$paymentLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Company$paymentLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2815,6 +2999,30 @@ export type Company$invoicesToArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.InvoiceScalarFieldEnum | Prisma.InvoiceScalarFieldEnum[]
+}
+
+/**
+ * Company.paymentLinks
+ */
+export type Company$paymentLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PaymentLink
+   */
+  select?: Prisma.PaymentLinkSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PaymentLink
+   */
+  omit?: Prisma.PaymentLinkOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PaymentLinkInclude<ExtArgs> | null
+  where?: Prisma.PaymentLinkWhereInput
+  orderBy?: Prisma.PaymentLinkOrderByWithRelationInput | Prisma.PaymentLinkOrderByWithRelationInput[]
+  cursor?: Prisma.PaymentLinkWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PaymentLinkScalarFieldEnum | Prisma.PaymentLinkScalarFieldEnum[]
 }
 
 /**

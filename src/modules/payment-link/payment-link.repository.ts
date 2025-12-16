@@ -50,22 +50,36 @@ export class PaymentLinkRepository extends BaseRepository<
     const model = this.getModel(tx);
     return model.findFirst({
       where: { code },
-      include: { records: true },
+      include: { records: true, company: true },
     });
   }
 
   /**
-   * Find payment links by payee address
+   * Find payment link by code with company included (for public access, no records)
    */
-  async findByPayee(
-    payeeAddress: string,
+  async findByCodeWithCompany(
+    code: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<(PaymentLink & { company: any }) | null> {
+    const model = this.getModel(tx);
+    return model.findFirst({
+      where: { code },
+      include: { company: true },
+    });
+  }
+
+  /**
+   * Find payment links by company ID
+   */
+  async findByCompanyId(
+    companyId: number,
     options?: {
       skip?: number;
       take?: number;
       status?: PaymentLinkStatusEnum;
     },
   ): Promise<PaymentLink[]> {
-    const where: Prisma.PaymentLinkWhereInput = { payee: payeeAddress };
+    const where: Prisma.PaymentLinkWhereInput = { companyId };
     if (options?.status) where.status = options.status;
 
     return this.findMany(where, {
@@ -76,10 +90,10 @@ export class PaymentLinkRepository extends BaseRepository<
   }
 
   /**
-   * Find payment links by payee with records included
+   * Find payment links by company ID with records included
    */
-  async findByPayeeWithRecords(
-    payeeAddress: string,
+  async findByCompanyIdWithRecords(
+    companyId: number,
     options?: {
       skip?: number;
       take?: number;
@@ -88,7 +102,7 @@ export class PaymentLinkRepository extends BaseRepository<
     tx?: PrismaTransactionClient,
   ): Promise<(PaymentLink & { records: PaymentLinkRecord[] })[]> {
     const model = this.getModel(tx);
-    const where: Prisma.PaymentLinkWhereInput = { payee: payeeAddress };
+    const where: Prisma.PaymentLinkWhereInput = { companyId };
     if (options?.status) where.status = options.status;
 
     return model.findMany({
@@ -111,18 +125,18 @@ export class PaymentLinkRepository extends BaseRepository<
   }
 
   /**
-   * Count payment links by payee
+   * Count payment links by company ID
    */
-  async countByPayee(payeeAddress: string): Promise<number> {
-    return this.count({ payee: payeeAddress });
+  async countByCompanyId(companyId: number): Promise<number> {
+    return this.count({ companyId });
   }
 
   /**
-   * Count active payment links by payee
+   * Count active payment links by company ID
    */
-  async countActiveByPayee(payeeAddress: string): Promise<number> {
+  async countActiveByCompanyId(companyId: number): Promise<number> {
     return this.count({
-      payee: payeeAddress,
+      companyId,
       status: PaymentLinkStatusEnum.ACTIVE,
     });
   }
@@ -176,11 +190,11 @@ export class PaymentLinkRepository extends BaseRepository<
    */
   async findByCodes(
     codes: string[],
-    payeeAddress: string,
+    companyId: number,
   ): Promise<PaymentLink[]> {
     return this.findMany({
       code: { in: codes },
-      payee: payeeAddress,
+      companyId,
     });
   }
 
@@ -188,11 +202,11 @@ export class PaymentLinkRepository extends BaseRepository<
    * Update payment link order
    */
   async updateLinkOrder(
-    payeeAddress: string,
+    companyId: number,
     linkIds: number[],
   ): Promise<PaymentLink[]> {
     const updates = linkIds.map((id, index) =>
-      this.update({ id, payee: payeeAddress }, { order: index + 1 }),
+      this.update({ id, companyId }, { order: index + 1 }),
     );
 
     await Promise.all(updates);
@@ -200,7 +214,7 @@ export class PaymentLinkRepository extends BaseRepository<
     // Return updated links in the new order
     return this.findMany(
       {
-        payee: payeeAddress,
+        companyId,
         id: { in: linkIds },
       },
       {

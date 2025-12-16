@@ -310,6 +310,7 @@ CREATE TABLE "bills" (
 -- CreateTable
 CREATE TABLE "payment_link" (
     "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
     "code" VARCHAR NOT NULL,
     "created_at" TIMESTAMP(6) NOT NULL,
     "updated_at" TIMESTAMP(6) NOT NULL,
@@ -318,8 +319,9 @@ CREATE TABLE "payment_link" (
     "amount" VARCHAR NOT NULL,
     "status" "PaymentLinkStatusEnum" NOT NULL DEFAULT 'ACTIVE',
     "order" SERIAL NOT NULL,
-    "payee" VARCHAR NOT NULL,
-    "accepted_tokens" JSONB,
+    "company_id" INTEGER NOT NULL,
+    "payment_wallet_address" VARCHAR NOT NULL,
+    "accepted_tokens" JSONB NOT NULL,
     "accepted_chains" JSONB,
 
     CONSTRAINT "payment_link_pkey" PRIMARY KEY ("id")
@@ -328,6 +330,7 @@ CREATE TABLE "payment_link" (
 -- CreateTable
 CREATE TABLE "payment_link_record" (
     "id" SERIAL NOT NULL,
+    "uuid" TEXT NOT NULL,
     "created_at" TIMESTAMP(6) NOT NULL,
     "updated_at" TIMESTAMP(6) NOT NULL,
     "payer" VARCHAR NOT NULL,
@@ -540,16 +543,22 @@ CREATE INDEX "bills_status_idx" ON "bills"("status");
 CREATE INDEX "bills_invoice_id_idx" ON "bills"("invoice_id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "payment_link_uuid_key" ON "payment_link"("uuid");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "payment_link_code_key" ON "payment_link"("code");
 
 -- CreateIndex
 CREATE INDEX "payment_link_code_idx" ON "payment_link"("code");
 
 -- CreateIndex
-CREATE INDEX "payment_link_payee_idx" ON "payment_link"("payee");
+CREATE INDEX "payment_link_company_id_idx" ON "payment_link"("company_id");
 
 -- CreateIndex
 CREATE INDEX "payment_link_order_idx" ON "payment_link"("order");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "payment_link_record_uuid_key" ON "payment_link_record"("uuid");
 
 -- CreateIndex
 CREATE INDEX "notifications_status_idx" ON "notifications"("status");
@@ -619,6 +628,9 @@ ALTER TABLE "bills" ADD CONSTRAINT "bills_company_id_fkey" FOREIGN KEY ("company
 
 -- AddForeignKey
 ALTER TABLE "bills" ADD CONSTRAINT "bills_invoice_id_fkey" FOREIGN KEY ("invoice_id") REFERENCES "invoices"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payment_link" ADD CONSTRAINT "payment_link_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "payment_link_record" ADD CONSTRAINT "payment_link_record_payment_link_id_fkey" FOREIGN KEY ("payment_link_id") REFERENCES "payment_link"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

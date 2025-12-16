@@ -350,6 +350,7 @@ export type BillScalarFieldEnum = (typeof BillScalarFieldEnum)[keyof typeof Bill
 
 export const PaymentLinkScalarFieldEnum = {
   id: 'id',
+  uuid: 'uuid',
   code: 'code',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
@@ -358,7 +359,8 @@ export const PaymentLinkScalarFieldEnum = {
   amount: 'amount',
   status: 'status',
   order: 'order',
-  payee: 'payee',
+  companyId: 'companyId',
+  paymentWalletAddress: 'paymentWalletAddress',
   acceptedTokens: 'acceptedTokens',
   acceptedChains: 'acceptedChains'
 } as const
@@ -368,6 +370,7 @@ export type PaymentLinkScalarFieldEnum = (typeof PaymentLinkScalarFieldEnum)[key
 
 export const PaymentLinkRecordScalarFieldEnum = {
   id: 'id',
+  uuid: 'uuid',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   payer: 'payer',

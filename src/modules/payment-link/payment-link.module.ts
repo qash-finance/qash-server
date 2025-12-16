@@ -6,9 +6,11 @@ import {
   PaymentLinkRecordRepository,
 } from './payment-link.repository';
 import { PrismaModule } from '../../database/prisma.module';
+import { AuthModule } from '../auth/auth.module';
+import { CompanyModule } from '../company/company.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuthModule, CompanyModule],
   providers: [
     PaymentLinkService,
     PaymentLinkRepository,

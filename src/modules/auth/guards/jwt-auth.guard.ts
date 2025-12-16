@@ -15,7 +15,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   private readonly logger = new Logger(JwtAuthGuard.name);
 
   constructor(
-    private reflector: Reflector,
+    protected reflector: Reflector,
     private jwtAuthService: JwtAuthService,
   ) {
     super();

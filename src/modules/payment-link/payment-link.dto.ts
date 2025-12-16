@@ -14,49 +14,7 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { PaymentLinkStatusEnum } from 'src/database/generated/enums';
-
-export class TokenMetadataDto {
-  @ApiProperty({
-    description: 'Token symbol',
-    example: 'MTST',
-  })
-  @IsString()
-  @IsNotEmpty()
-  symbol: string;
-
-  @ApiProperty({
-    description: 'Token decimals',
-    example: 18,
-  })
-  @IsNotEmpty()
-  decimals: number;
-
-  @ApiProperty({
-    description: 'Token faucet ID',
-    example: '0x123...',
-  })
-  @IsString()
-  @IsNotEmpty()
-  faucetId: string;
-}
-
-export class ChainMetadataDto {
-  @ApiProperty({
-    description: 'Chain ID',
-    example: '1',
-  })
-  @IsString()
-  @IsNotEmpty()
-  chainId: string;
-
-  @ApiProperty({
-    description: 'Chain name',
-    example: 'Ethereum',
-  })
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-}
+import { NetworkDto, TokenDto } from '../employee/employee.dto';
 
 export class CreatePaymentLinkDto {
   @ApiProperty({
@@ -97,32 +55,33 @@ export class CreatePaymentLinkDto {
   @IsNotEmpty()
   @IsString()
   @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
-    message: 'payee must be a valid address starting with mt or mm',
+    message:
+      'paymentWalletAddress must be a valid address starting with mt or mm',
   })
-  @MinLength(3, { message: 'payee address is too short' })
-  payee: string;
+  @MinLength(3, { message: 'paymentWalletAddress is too short' })
+  paymentWalletAddress: string;
 
   @ApiProperty({
     description: 'Accepted tokens for this payment link',
-    type: [TokenMetadataDto],
+    type: [TokenDto],
     required: false,
   })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => TokenMetadataDto)
-  acceptedTokens?: TokenMetadataDto[];
+  @Type(() => TokenDto)
+  acceptedTokens?: TokenDto[];
 
   @ApiProperty({
     description: 'Accepted chains for this payment link',
-    type: [ChainMetadataDto],
+    type: [NetworkDto],
     required: false,
   })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ChainMetadataDto)
-  acceptedChains?: ChainMetadataDto[];
+  @Type(() => NetworkDto)
+  acceptedChains?: NetworkDto[];
 }
 
 export class UpdatePaymentLinkDto {
@@ -171,25 +130,25 @@ export class UpdatePaymentLinkDto {
 
   @ApiProperty({
     description: 'Accepted tokens for this payment link',
-    type: [TokenMetadataDto],
+    type: [TokenDto],
     required: false,
   })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => TokenMetadataDto)
-  acceptedTokens?: TokenMetadataDto[];
+  @Type(() => TokenDto)
+  acceptedTokens?: TokenDto[];
 
   @ApiProperty({
     description: 'Accepted chains for this payment link',
-    type: [ChainMetadataDto],
+    type: [NetworkDto],
     required: false,
   })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ChainMetadataDto)
-  acceptedChains?: ChainMetadataDto[];
+  @Type(() => NetworkDto)
+  acceptedChains?: NetworkDto[];
 }
 
 export class PaymentLinkRecordDto {
@@ -216,25 +175,25 @@ export class PaymentLinkRecordDto {
 
   @ApiProperty({
     description: 'Token used for payment',
-    type: TokenMetadataDto,
+    type: TokenDto,
     required: false,
   })
   @IsOptional()
   @IsObject()
   @ValidateNested()
-  @Type(() => TokenMetadataDto)
-  token?: TokenMetadataDto;
+  @Type(() => TokenDto)
+  token?: TokenDto;
 
   @ApiProperty({
     description: 'Chain used for payment',
-    type: ChainMetadataDto,
+    type: NetworkDto,
     required: false,
   })
   @IsOptional()
   @IsObject()
   @ValidateNested()
-  @Type(() => ChainMetadataDto)
-  chain?: ChainMetadataDto;
+  @Type(() => NetworkDto)
+  chain?: NetworkDto;
 }
 
 export class PaymentLinkOrderDto {

@@ -328,4 +328,27 @@ export class CompanyService {
   }
 
   //#endregion Checker Methods
+
+  //#region Transform Methods
+  // *************************************************
+  // **************** TRANSFORM METHODS **************
+  // *************************************************
+  /**
+   * Transform company to public-safe format (only companyName and metadata)
+   * Used for public endpoints where full company details are not needed
+   */
+  transformToPublicFormat(company: CompanyModel | null): {
+    companyName: string;
+    metadata: any;
+  } | null {
+    if (!company) {
+      return null;
+    }
+
+    return {
+      companyName: company.companyName,
+      metadata: company.metadata,
+    };
+  }
+  //#endregion Transform Methods
 }

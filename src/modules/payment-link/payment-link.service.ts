@@ -8,9 +8,7 @@ import {
 } from './payment-link.dto';
 import { handleError } from '../../common/utils/errors';
 import {
-  validateAddress,
   validateAmount,
-  normalizeAddress,
   sanitizeString,
 } from '../../common/utils/validation.util';
 import { ErrorPaymentLink } from '../../common/constants/errors';
@@ -21,6 +19,8 @@ import {
 import { randomBytes } from 'crypto';
 import { PaymentLinkStatusEnum } from 'src/database/generated/enums';
 import { PaymentLink } from 'src/database/generated/client';
+import { PaymentLinkUpdateInput } from 'src/database/generated/models';
+import { CompanyService } from '../company/company.service';
 
 @Injectable()
 export class PaymentLinkService {
@@ -29,6 +29,7 @@ export class PaymentLinkService {
   constructor(
     private readonly paymentLinkRepository: PaymentLinkRepository,
     private readonly paymentLinkRecordRepository: PaymentLinkRecordRepository,
+    private readonly companyService: CompanyService,
   ) {}
 
   // *************************************************
@@ -36,17 +37,12 @@ export class PaymentLinkService {
   // *************************************************
 
   /**
-   * Get all payment links for a payee
+   * Get all payment links for a company
    */
-  async getPaymentLinks(payeeAddress: string) {
+  async getPaymentLinks(companyId: number) {
     try {
-      validateAddress(payeeAddress, 'payeeAddress');
-      const normalizedPayeeAddress = normalizeAddress(payeeAddress);
-
-      const links = await this.paymentLinkRepository.findByPayeeWithRecords(
-        normalizedPayeeAddress,
-      );
-
+      const links =
+        await this.paymentLinkRepository.findByCompanyIdWithRecords(companyId);
       return links;
     } catch (error) {
       handleError(error, this.logger);
@@ -54,7 +50,7 @@ export class PaymentLinkService {
   }
 
   /**
-   * Get payment link by code
+   * Get payment link by code (public access - no records, includes company)
    */
   async getPaymentLinkByCode(code: string) {
     try {
@@ -64,29 +60,36 @@ export class PaymentLinkService {
 
       const sanitizedCode = sanitizeString(code);
       const link =
-        await this.paymentLinkRepository.findByCodeWithRecords(sanitizedCode);
+        await this.paymentLinkRepository.findByCodeWithCompany(sanitizedCode);
 
       if (!link) {
         throw new BadRequestException(ErrorPaymentLink.NotFound);
       }
 
-      return link;
+      // Transform company to public-safe format (only companyName and metadata)
+      const publicCompany = this.companyService.transformToPublicFormat(
+        link.company,
+      );
+
+      // Return payment link with transformed company data (no records, minimal company info)
+      return {
+        ...link,
+        company: publicCompany,
+      };
     } catch (error) {
       handleError(error, this.logger);
     }
   }
 
   /**
-   * Get payment link by code for payee (with ownership check)
+   * Get payment link by code for company (with ownership check)
    */
-  async getPaymentLinkByCodeForPayee(code: string, payeeAddress: string) {
+  async getPaymentLinkByCodeForCompany(code: string, companyId: number) {
     try {
       if (!code || typeof code !== 'string') {
         throw new BadRequestException(ErrorPaymentLink.InvalidCode);
       }
 
-      validateAddress(payeeAddress, 'payeeAddress');
-      const normalizedPayeeAddress = normalizeAddress(payeeAddress);
       const sanitizedCode = sanitizeString(code);
 
       const link =
@@ -97,7 +100,7 @@ export class PaymentLinkService {
       }
 
       // Check ownership
-      if (normalizeAddress(link.payee) !== normalizedPayeeAddress) {
+      if (link.companyId !== companyId) {
         throw new BadRequestException(ErrorPaymentLink.NotOwner);
       }
 
@@ -114,10 +117,9 @@ export class PaymentLinkService {
   /**
    * Create a new payment link
    */
-  async createPaymentLink(dto: CreatePaymentLinkDto) {
+  async createPaymentLink(dto: CreatePaymentLinkDto, companyId: number) {
     try {
       // Validate inputs
-      validateAddress(dto.payee, 'payee');
       validateAmount(dto.amount, 'amount');
 
       if (!dto.title || dto.title.trim().length === 0) {
@@ -128,8 +130,7 @@ export class PaymentLinkService {
         throw new BadRequestException(ErrorPaymentLink.InvalidDescription);
       }
 
-      // Normalize and sanitize
-      const normalizedPayee = normalizeAddress(dto.payee);
+      // Sanitize
       const sanitizedTitle = sanitizeString(dto.title);
       const sanitizedDescription = sanitizeString(dto.description);
 
@@ -142,8 +143,9 @@ export class PaymentLinkService {
         title: sanitizedTitle,
         description: sanitizedDescription,
         amount: dto.amount,
-        payee: normalizedPayee,
+        company: { connect: { id: companyId } },
         status: PaymentLinkStatusEnum.ACTIVE,
+        paymentWalletAddress: dto.paymentWalletAddress,
         acceptedTokens: dto.acceptedTokens
           ? (dto.acceptedTokens as any)
           : undefined,
@@ -169,9 +171,7 @@ export class PaymentLinkService {
         throw new BadRequestException(ErrorPaymentLink.InvalidCode);
       }
 
-      validateAddress(paymentDto.payer, 'payer');
       const sanitizedCode = sanitizeString(code);
-      const normalizedPayer = normalizeAddress(paymentDto.payer);
 
       // Find the payment link
       const link = await this.paymentLinkRepository.findByCode(sanitizedCode);
@@ -189,7 +189,7 @@ export class PaymentLinkService {
       const now = new Date();
       const paymentRecord = await this.paymentLinkRecordRepository.createRecord(
         {
-          payer: normalizedPayer,
+          payer: paymentDto.payer,
           txid: paymentDto.txid,
           token: paymentDto.token ? (paymentDto.token as any) : undefined,
           chain: paymentDto.chain ? (paymentDto.chain as any) : undefined,
@@ -214,7 +214,7 @@ export class PaymentLinkService {
    */
   async updatePaymentLink(
     code: string,
-    payeeAddress: string,
+    companyId: number,
     dto: UpdatePaymentLinkDto,
   ) {
     try {
@@ -222,8 +222,6 @@ export class PaymentLinkService {
         throw new BadRequestException(ErrorPaymentLink.InvalidCode);
       }
 
-      validateAddress(payeeAddress, 'payeeAddress');
-      const normalizedPayeeAddress = normalizeAddress(payeeAddress);
       const sanitizedCode = sanitizeString(code);
 
       // Find the payment link
@@ -234,12 +232,12 @@ export class PaymentLinkService {
       }
 
       // Check ownership
-      if (normalizeAddress(link.payee) !== normalizedPayeeAddress) {
+      if (link.companyId !== companyId) {
         throw new BadRequestException(ErrorPaymentLink.NotOwner);
       }
 
       // Validate and sanitize update data
-      const updateData: any = {};
+      const updateData: PaymentLinkUpdateInput = {};
 
       if (dto.title !== undefined) {
         if (!dto.title || dto.title.trim().length === 0) {
@@ -287,14 +285,12 @@ export class PaymentLinkService {
   /**
    * Deactivate a payment link
    */
-  async deactivatePaymentLink(code: string, payeeAddress: string) {
+  async deactivatePaymentLink(code: string, companyId: number) {
     try {
       if (!code || typeof code !== 'string') {
         throw new BadRequestException(ErrorPaymentLink.InvalidCode);
       }
 
-      validateAddress(payeeAddress, 'payeeAddress');
-      const normalizedPayeeAddress = normalizeAddress(payeeAddress);
       const sanitizedCode = sanitizeString(code);
 
       // Find the payment link
@@ -305,7 +301,7 @@ export class PaymentLinkService {
       }
 
       // Check ownership
-      if (normalizeAddress(link.payee) !== normalizedPayeeAddress) {
+      if (link.companyId !== companyId) {
         throw new BadRequestException(ErrorPaymentLink.NotOwner);
       }
 
@@ -329,14 +325,12 @@ export class PaymentLinkService {
   /**
    * Activate a payment link
    */
-  async activatePaymentLink(code: string, payeeAddress: string) {
+  async activatePaymentLink(code: string, companyId: number) {
     try {
       if (!code || typeof code !== 'string') {
         throw new BadRequestException(ErrorPaymentLink.InvalidCode);
       }
 
-      validateAddress(payeeAddress, 'payeeAddress');
-      const normalizedPayeeAddress = normalizeAddress(payeeAddress);
       const sanitizedCode = sanitizeString(code);
 
       // Find the payment link
@@ -347,7 +341,7 @@ export class PaymentLinkService {
       }
 
       // Check ownership
-      if (normalizeAddress(link.payee) !== normalizedPayeeAddress) {
+      if (link.companyId !== companyId) {
         throw new BadRequestException(ErrorPaymentLink.NotOwner);
       }
 
@@ -371,11 +365,7 @@ export class PaymentLinkService {
   /**
    * Update payment record with txid
    */
-  async updatePaymentTxid(
-    paymentId: number,
-    txid: string,
-    payeeAddress: string,
-  ) {
+  async updatePaymentTxid(paymentId: number, txid: string, companyId: number) {
     try {
       if (!paymentId || paymentId <= 0) {
         throw new BadRequestException(ErrorPaymentLink.PaymentRecordNotFound);
@@ -384,9 +374,6 @@ export class PaymentLinkService {
       if (!txid || typeof txid !== 'string') {
         throw new BadRequestException('Invalid transaction ID');
       }
-
-      validateAddress(payeeAddress, 'payeeAddress');
-      const normalizedPayeeAddress = normalizeAddress(payeeAddress);
 
       // Find the payment record
       const paymentRecord =
@@ -405,7 +392,7 @@ export class PaymentLinkService {
         throw new BadRequestException(ErrorPaymentLink.NotFound);
       }
 
-      if (normalizeAddress(link.payee) !== normalizedPayeeAddress) {
+      if (link.companyId !== companyId) {
         throw new BadRequestException(ErrorPaymentLink.NotOwner);
       }
 
@@ -430,43 +417,39 @@ export class PaymentLinkService {
    */
   async updatePaymentLinkOrder(
     dto: PaymentLinkOrderDto,
-    payeeAddress: string,
+    companyId: number,
   ): Promise<PaymentLink[]> {
     try {
-      // Validate user address
-      validateAddress(payeeAddress, 'payeeAddress');
-      const normalizedPayeeAddress = normalizeAddress(payeeAddress);
-
       // Validate that all link IDs are provided
       if (!dto.linkIds || dto.linkIds.length === 0) {
         throw new BadRequestException('Link IDs array cannot be empty');
       }
 
-      // Check if all links belong to the user
-      const userLinks = await this.paymentLinkRepository.findByPayee(
-        normalizedPayeeAddress,
-      );
-      const userLinkIds = userLinks.map((link) => link.id);
+      // Check if all links belong to the company
+      const companyLinks =
+        await this.paymentLinkRepository.findByCompanyId(companyId);
+      const companyLinkIds = companyLinks.map((link) => link.id);
 
-      const invalidIds = dto.linkIds.filter((id) => !userLinkIds.includes(id));
+      const invalidIds = dto.linkIds.filter(
+        (id) => !companyLinkIds.includes(id),
+      );
       if (invalidIds.length > 0) {
         throw new BadRequestException(
           `Invalid link IDs: ${invalidIds.join(', ')}`,
         );
       }
 
-      // Check if all user links are included
-      const missingIds = userLinkIds.filter((id) => !dto.linkIds.includes(id));
+      // Check if all company links are included
+      const missingIds = companyLinkIds.filter(
+        (id) => !dto.linkIds.includes(id),
+      );
       if (missingIds.length > 0) {
         throw new BadRequestException(
           `Missing link IDs: ${missingIds.join(', ')}`,
         );
       }
 
-      return this.paymentLinkRepository.updateLinkOrder(
-        normalizedPayeeAddress,
-        dto.linkIds,
-      );
+      return this.paymentLinkRepository.updateLinkOrder(companyId, dto.linkIds);
     } catch (error) {
       handleError(error, this.logger);
     }
@@ -479,11 +462,8 @@ export class PaymentLinkService {
   /**
    * Delete payment links (supports both single and multiple)
    */
-  async deletePaymentLinks(dto: DeletePaymentLinksDto, payeeAddress: string) {
+  async deletePaymentLinks(dto: DeletePaymentLinksDto, companyId: number) {
     try {
-      validateAddress(payeeAddress, 'payeeAddress');
-      const normalizedPayeeAddress = normalizeAddress(payeeAddress);
-
       // Validate that all codes are provided
       if (!dto.codes || dto.codes.length === 0) {
         throw new BadRequestException('Codes array cannot be empty');
@@ -495,10 +475,10 @@ export class PaymentLinkService {
       // Find all payment links for ownership validation
       const links = await this.paymentLinkRepository.findByCodes(
         sanitizedCodes,
-        normalizedPayeeAddress,
+        companyId,
       );
 
-      // Check if all links belong to the user
+      // Check if all links belong to the company
       const foundCodes = links.map((link) => link.code);
       const invalidCodes = sanitizedCodes.filter(
         (code) => !foundCodes.includes(code),
