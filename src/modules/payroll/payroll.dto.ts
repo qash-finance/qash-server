@@ -11,9 +11,8 @@ import {
   Min,
   Max,
   ValidateNested,
-  IsEmail,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { ContractTermEnum } from 'src/database/generated/client';
 
 export class NetworkDto {

@@ -1,4 +1,4 @@
-import { Controller, Get, Redirect, UseGuards } from '@nestjs/common';
+import { Controller, Get, Redirect } from '@nestjs/common';
 
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AppService } from './app.service';

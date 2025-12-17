@@ -269,6 +269,18 @@ export class DeleteAddressBookDto {
   ids: number[];
 }
 
+export class BulkDeleteEmployeesDto {
+  @ApiProperty({
+    description: 'Array of employee IDs to delete',
+    example: [1, 3, 2, 4],
+    type: [Number],
+  })
+  @IsArray()
+  @IsNotEmpty()
+  @IsNumber({}, { each: true })
+  ids: number[];
+}
+
 export class AddressBookOrderDto {
   @ApiProperty({
     description: 'The address book entry ID',

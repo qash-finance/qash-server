@@ -1,28 +1,28 @@
 import {
   Controller,
-  Get,
-  Patch,
-  Param,
-  Query,
-  Request,
-  UseGuards,
-  ParseIntPipe,
+  // Get,
+  // Patch,
+  // Param,
+  // Query,
+  // Request,
+  // UseGuards,
+  // ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
+  // ApiOperation,
+  // ApiResponse,
   ApiTags,
-  ApiParam,
-  ApiQuery,
+  // ApiParam,
+  // ApiQuery,
 } from '@nestjs/swagger';
 
 import { NotificationService } from './notification.service';
-import { RequestWithWalletAuth } from '../../common/interfaces';
-import {
-  NotificationQueryDto,
-  NotificationResponseDto,
-} from './notification.dto';
+// import { RequestWithWalletAuth } from '../../common/interfaces';
+// import {
+//   NotificationQueryDto,
+//   NotificationResponseDto,
+// } from './notification.dto';
 
 @ApiBearerAuth()
 @ApiTags('Notifications')

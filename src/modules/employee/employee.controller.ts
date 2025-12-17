@@ -18,6 +18,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import {
   CreateContactDto,
@@ -27,6 +28,7 @@ import {
   PaginatedContactsResponseDto,
   CompanyContactResponseDto,
   CompanyGroupResponseDto,
+  BulkDeleteEmployeesDto,
 } from './employee.dto';
 import { PaginationOptions } from '../../database/base.repository';
 import {
@@ -521,6 +523,7 @@ export class EmployeeController {
     summary: 'Bulk delete employees',
     description: 'Delete multiple employees at once within the company',
   })
+  @ApiBody({ type: BulkDeleteEmployeesDto })
   @ApiResponse({
     status: 200,
     description: 'Employees deleted successfully',
@@ -536,9 +539,9 @@ export class EmployeeController {
   @HttpCode(HttpStatus.OK)
   async bulkDeleteContacts(
     @CurrentUser('withCompany') user: UserWithCompany,
-    @Body('ids') ids: number[],
+    @Body() dto: BulkDeleteEmployeesDto,
   ) {
-    return this.employeeService.bulkDeleteEmployees(user.company.id, ids);
+    return this.employeeService.bulkDeleteEmployees(user.company.id, dto.ids);
   }
   //#endregion DELETE METHODS
 }

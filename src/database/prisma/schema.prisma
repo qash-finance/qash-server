@@ -515,6 +515,7 @@ enum InvoiceStatusEnum {
   CONFIRMED
   CANCELLED
   PAID
+  OVERDUE
 }
 
 enum BillStatusEnum {

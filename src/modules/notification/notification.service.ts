@@ -16,7 +16,6 @@ import { NotificationRepository } from './notification.repository';
 import {
   Notifications,
   NotificationsStatusEnum,
-  NotificationsTypeEnum,
 } from 'src/database/generated/client';
 
 @Injectable()

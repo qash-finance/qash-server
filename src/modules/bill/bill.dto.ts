@@ -1,19 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
-  IsNotEmpty,
   IsOptional,
   IsString,
-  IsObject,
   IsNumber,
   IsArray,
-  IsBoolean,
   Min,
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BillStatusEnum } from 'src/database/generated/client';
-import { BillWithInvoice } from './bill.repository';
 
 export class BillQueryDto {
   @ApiPropertyOptional({

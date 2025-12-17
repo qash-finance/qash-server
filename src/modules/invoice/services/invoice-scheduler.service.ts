@@ -50,6 +50,26 @@ export class InvoiceSchedulerService {
   }
 
   /**
+   * Run daily to mark invoices as overdue
+   * Checks invoices that are past their due date and marks them as OVERDUE
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async markOverdueInvoices() {
+    try {
+      const now = new Date();
+      const count = await this.invoiceService.markInvoicesAsOverdue(now);
+
+      if (count > 0) {
+        this.logger.log(`Marked ${count} invoice(s) as overdue`);
+      } else {
+        this.logger.debug('No invoices to mark as overdue');
+      }
+    } catch (error) {
+      this.logger.error('Error in overdue invoice scheduler:', error);
+    }
+  }
+
+  /**
    * Generate invoice from a schedule
    */
   private async generateInvoiceFromSchedule(

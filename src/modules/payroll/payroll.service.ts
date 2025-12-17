@@ -14,6 +14,7 @@ import {
   PayrollStatsDto,
 } from './payroll.dto';
 import {
+  InvoiceScheduleUpdateInput,
   PayrollCreateInput,
   PayrollModel,
   PayrollUpdateInput,
@@ -27,7 +28,10 @@ import { handleError } from 'src/common/utils/errors';
 import { PrismaService } from 'src/database/prisma.service';
 import { ErrorEmployee, ErrorPayroll } from 'src/common/constants/errors';
 import { JsonValue } from '@prisma/client/runtime/client';
-import { PaginatedResult } from 'src/database/base.repository';
+import {
+  PaginatedResult,
+  PrismaTransactionClient,
+} from 'src/database/base.repository';
 
 @Injectable()
 export class PayrollService {
@@ -329,52 +333,87 @@ export class PayrollService {
     dto: UpdatePayrollDto,
   ): Promise<PayrollModel> {
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        const existingPayroll = await this.payrollRepository.findOne(
-          { id, companyId },
-          tx,
-        );
-
-        if (!existingPayroll) {
-          throw new NotFoundException(ErrorPayroll.PayrollNotFound);
-        }
-
-        let payStartDate = existingPayroll.payStartDate;
-        let payEndDate = existingPayroll.payEndDate;
-
-        // If payday updated, recompute next pay start date starting next month
-        if (dto.payday) {
-          const paydayDay = dto.payday;
-          const now = new Date();
-          payStartDate = new Date(
-            now.getFullYear(),
-            now.getMonth() + 1,
-            paydayDay,
+      return await this.prisma.$transaction(
+        async (tx: PrismaTransactionClient) => {
+          const existingPayroll = await this.payrollRepository.findOne(
+            { id, companyId },
+            tx,
           );
-        }
 
-        // If payroll cycle updated, recalc end date from (possibly new) start date
-        if (dto.payrollCycle) {
-          payEndDate = new Date(payStartDate);
-          payEndDate.setMonth(payEndDate.getMonth() + dto.payrollCycle);
-        }
+          if (!existingPayroll) {
+            throw new NotFoundException(ErrorPayroll.PayrollNotFound);
+          }
 
-        const updateData: PayrollUpdateInput = {
-          ...dto,
-          network: dto.network as unknown as JsonValue,
-          token: dto.token as unknown as JsonValue,
-          ...(dto.payrollCycle && { payEndDate }),
-          ...(dto.payday && { payStartDate }),
-        };
+          let payStartDate = existingPayroll.payStartDate;
+          let payEndDate = existingPayroll.payEndDate;
 
-        const updatedPayroll = await this.payrollRepository.update(
-          { id, companyId },
-          updateData,
-          tx,
-        );
+          // If payday updated, recompute next pay start date starting next month
+          if (dto.payday) {
+            const paydayDay = dto.payday;
+            const now = new Date();
+            payStartDate = new Date(
+              now.getFullYear(),
+              now.getMonth() + 1,
+              paydayDay,
+            );
+          }
 
-        return updatedPayroll;
-      });
+          // If payroll cycle updated, recalc end date from (possibly new) start date
+          if (dto.payrollCycle) {
+            payEndDate = new Date(payStartDate);
+            payEndDate.setMonth(payEndDate.getMonth() + dto.payrollCycle);
+          }
+
+          const updateData: PayrollUpdateInput = {
+            ...dto,
+            network: dto.network as unknown as JsonValue,
+            token: dto.token as unknown as JsonValue,
+            ...(dto.payrollCycle && { payEndDate }),
+            ...(dto.payday && { payStartDate }),
+          };
+
+          const updatedPayroll = await this.payrollRepository.update(
+            { id, companyId },
+            updateData,
+            tx,
+          );
+
+          // Update invoice schedule if payday or payrollCycle changed
+          const schedule = await tx.invoiceSchedule.findFirst({
+            where: { payrollId: id, isActive: true },
+          });
+
+          if (schedule) {
+            const scheduleUpdates: InvoiceScheduleUpdateInput = {};
+
+            // If payday changed, update dayOfMonth and recalculate nextGenerateDate
+            if (dto.payday) {
+              scheduleUpdates.dayOfMonth = payStartDate.getDate();
+              // Recalculate nextGenerateDate based on new payday
+              const generateDaysBefore = schedule.generateDaysBefore ?? 5;
+              scheduleUpdates.nextGenerateDate =
+                this.calculateNextGenerateDateFromPayStart(
+                  payStartDate,
+                  generateDaysBefore,
+                );
+            }
+
+            // If payrollCycle changed, we might need to update frequency
+            // For now, we'll keep the existing frequency since payrollCycle is months
+            // and most payrolls are monthly regardless of cycle length
+
+            // Update the schedule if there are changes
+            if (Object.keys(scheduleUpdates).length > 0) {
+              await tx.invoiceSchedule.update({
+                where: { id: schedule.id },
+                data: scheduleUpdates,
+              });
+            }
+          }
+
+          return updatedPayroll;
+        },
+      );
     } catch (error) {
       this.logger.error('Error updating payroll:', error);
       handleError(error, this.logger);

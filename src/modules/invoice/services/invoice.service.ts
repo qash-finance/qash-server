@@ -168,6 +168,21 @@ export class InvoiceService {
   }
 
   /**
+   * Mark invoices as overdue (called by scheduler)
+   * Marks invoices that are past their due date and not yet paid or cancelled
+   */
+  async markInvoicesAsOverdue(date?: Date): Promise<number> {
+    try {
+      const overdueDate = date || new Date();
+      return await this.invoiceRepository.markOverdueInvoices(overdueDate);
+    } catch (error) {
+      this.logger.error('Error marking invoices as overdue:', error);
+      handleError(error, this.logger);
+      return 0;
+    }
+  }
+
+  /**
    * Find latest invoice for payroll (used by scheduler)
    */
   async findLatestInvoiceForPayroll(
@@ -430,6 +445,10 @@ export class InvoiceService {
           );
         } catch (emailError) {
           // TODO: Handle email error, should try again a few times
+          this.logger.error(
+            'Failed to send invoice notification email:',
+            emailError,
+          );
         }
 
         return updatedInvoice;

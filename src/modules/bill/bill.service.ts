@@ -381,7 +381,7 @@ export class BillService {
    */
   async deleteBill(uuid: string, companyId: number): Promise<void> {
     try {
-      await this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (_tx: PrismaTransactionClient) => {
         const bill = await this.billRepository.findOne({ uuid, companyId });
 
         if (!bill) {

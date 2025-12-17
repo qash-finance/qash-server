@@ -202,7 +202,12 @@ export class InvoiceRepository extends BaseRepository<
     return model.findMany({
       where: {
         status: {
-          in: [InvoiceStatusEnum.SENT, InvoiceStatusEnum.REVIEWED],
+          in: [
+            InvoiceStatusEnum.SENT,
+            InvoiceStatusEnum.REVIEWED,
+            InvoiceStatusEnum.CONFIRMED,
+            InvoiceStatusEnum.OVERDUE,
+          ],
         },
         dueDate: {
           lte: date,
@@ -315,5 +320,37 @@ export class InvoiceRepository extends BaseRepository<
       where: { payrollId },
       orderBy: { issueDate: 'desc' },
     });
+  }
+
+  /**
+   * Mark invoices as overdue
+   * Marks invoices that are past their due date and not yet paid or cancelled
+   */
+  async markOverdueInvoices(
+    date?: Date,
+    tx?: PrismaTransactionClient,
+  ): Promise<number> {
+    const model = this.getModel(tx);
+    const overdueDate = date || new Date();
+
+    const result = await model.updateMany({
+      where: {
+        status: {
+          in: [
+            InvoiceStatusEnum.SENT,
+            InvoiceStatusEnum.REVIEWED,
+            InvoiceStatusEnum.CONFIRMED,
+          ],
+        },
+        dueDate: {
+          lt: overdueDate,
+        },
+      },
+      data: {
+        status: InvoiceStatusEnum.OVERDUE,
+      },
+    });
+
+    return result.count;
   }
 }

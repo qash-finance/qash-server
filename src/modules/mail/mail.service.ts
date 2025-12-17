@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ErrorMail } from '../../common/constants/errors';
-import { Address } from 'nodemailer/lib/mailer';
 import { MailgunMessageData, MailgunService } from 'nestjs-mailgun';
 import { AppConfigService } from '../shared/config/config.service';
 
@@ -8,6 +7,7 @@ import { AppConfigService } from '../shared/config/config.service';
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private readonly mailgundefaultFromName: string;
+  private readonly frontendUrl: string;
 
   constructor(
     private mailgunService: MailgunService,
@@ -15,6 +15,7 @@ export class MailService {
   ) {
     this.mailgundefaultFromName =
       this.appConfigService.mailConfig.mailgun.from.name;
+    this.frontendUrl = this.appConfigService.otherConfig.frontendUrl;
   }
 
   async sendEmail({
@@ -44,7 +45,6 @@ export class MailService {
   async sendOtpEmail(email: string, otpCode: string): Promise<void> {
     try {
       const fromEmail = 'noreply@qash.finance';
-
       const subject = `Your OTP Code`;
       const html = `
        <!DOCTYPE html>
@@ -115,8 +115,7 @@ export class MailService {
     try {
       const fromEmail =
         'noreply@' + this.appConfigService.mailConfig.mailgun.domain;
-      const baseUrl = 'http://localhost:3000';
-      const invoiceReviewUrl = `${baseUrl}/invoice-review?id=${invoiceUUID}&email=${encodeURIComponent(
+      const invoiceReviewUrl = `${this.frontendUrl}/invoice-review?id=${invoiceUUID}&email=${encodeURIComponent(
         employeeEmail,
       )}`;
 
@@ -199,9 +198,6 @@ export class MailService {
     try {
       const fromEmail =
         'noreply@' + this.appConfigService.mailConfig.mailgun.domain;
-      const baseUrl = 'http://localhost:3001'; // TODO: Add baseUrl to server config
-      const billsUrl = `${baseUrl}/dashboard/bills`;
-      const frontEndURL = `${baseUrl}`;
 
       const subject = `Invoice ${invoiceNumber} from ${employeeName} Confirmed`;
       const html = `
@@ -231,7 +227,7 @@ export class MailService {
                 <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(0deg, #002c69 0%, #0061e7 100%); border-radius: 10px; padding: 2px;">
                   <tr>
                     <td align="center" style="background: #0059ff; border-top: 2px solid #4888ff; border-radius: 8px; padding: 12px;">
-                      <a href="${frontEndURL}" style="color: white; font-size: 15px; text-decoration: none; font-weight: 500; display: block;">Open App</a>
+                      <a href="${this.frontendUrl}" style="color: white; font-size: 15px; text-decoration: none; font-weight: 500; display: block;">Open App</a>
                     </td>
                   </tr>
                 </table>
@@ -268,74 +264,6 @@ export class MailService {
   }
 
   /**
-   * Send payroll reminder notification (1 week before pay date)
-   */
-  async sendPayrollReminder(
-    companyEmail: string,
-    payrollCount: number,
-    nextPayDate: Date,
-  ): Promise<void> {
-    try {
-      const fromEmail =
-        'noreply@' + this.appConfigService.mailConfig.mailgun.domain;
-      const baseUrl = 'http://localhost:3001'; // TODO: Add baseUrl to server config
-      const payrollUrl = `${baseUrl}/dashboard/payroll`;
-
-      const subject = `Payroll Reminder - ${payrollCount} Payment${payrollCount > 1 ? 's' : ''} Due Soon`;
-      const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Payroll Reminder</h2>
-          
-          <p>Hello,</p>
-          
-          <p>This is a reminder that you have upcoming payroll payments:</p>
-          
-          <div style="background-color: #fff3cd; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
-            <p><strong>${payrollCount}</strong> payment${payrollCount > 1 ? 's' : ''} due on <strong>${nextPayDate.toLocaleDateString()}</strong></p>
-          </div>
-          
-          <p>Invoices will be automatically generated and sent to employees 1 week before the payment date for their review.</p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${payrollUrl}" 
-               style="background-color: #007bff; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 5px; display: inline-block;">
-              View Payroll
-            </a>
-          </div>
-          
-          <p>Please ensure you have sufficient funds and review your payroll settings before the payment date.</p>
-          
-          <p>Best regards,<br>
-          The Payroll System</p>
-          
-          <hr style="margin-top: 30px; border: none; border-top: 1px solid #eee;">
-          <p style="font-size: 12px; color: #666;">
-            This is an automated message. Please do not reply to this email.
-          </p>
-        </div>
-      `;
-
-      await this.sendEmail({
-        to: companyEmail,
-        fromEmail,
-        subject,
-        html,
-      });
-
-      this.logger.log(
-        `Payroll reminder sent to ${companyEmail} for ${payrollCount} payments`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to send payroll reminder to ${companyEmail}:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
    * Send overdue bill notification
    */
   async sendOverdueBillNotification(
@@ -346,8 +274,7 @@ export class MailService {
     try {
       const fromEmail =
         'noreply@' + this.appConfigService.mailConfig.mailgun.domain;
-      const baseUrl = 'http://localhost:3001'; // TODO: Add baseUrl to server config
-      const billsUrl = `${baseUrl}/dashboard/bills?status=OVERDUE`;
+      const billsUrl = `${this.frontendUrl}/dashboard/bills?status=OVERDUE`;
 
       const subject = `Overdue Bills Alert - ${overdueCount} Bill${overdueCount > 1 ? 's' : ''} Past Due`;
       const html = `

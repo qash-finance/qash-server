@@ -1,6 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { JwtPayload } from '../../../common/interfaces/jwt-payload';
-import { CompanyService } from '../../company/company.service';
 import { CompanyModel } from 'src/database/generated/models';
 
 export interface UserWithCompany extends JwtPayload {

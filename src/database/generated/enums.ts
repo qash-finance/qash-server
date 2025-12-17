@@ -41,7 +41,8 @@ export const InvoiceStatusEnum = {
   REVIEWED: 'REVIEWED',
   CONFIRMED: 'CONFIRMED',
   CANCELLED: 'CANCELLED',
-  PAID: 'PAID'
+  PAID: 'PAID',
+  OVERDUE: 'OVERDUE'
 } as const
 
 export type InvoiceStatusEnum = (typeof InvoiceStatusEnum)[keyof typeof InvoiceStatusEnum]

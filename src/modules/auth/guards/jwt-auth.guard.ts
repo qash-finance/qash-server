@@ -53,7 +53,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return type === 'Bearer' ? token : undefined;
   }
 
-  handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
+  handleRequest(err: any, user: any, info: any, _context: ExecutionContext) {
     if (err || !user) {
       const errorMessage =
         info?.message || err?.message || 'Unauthorized access';

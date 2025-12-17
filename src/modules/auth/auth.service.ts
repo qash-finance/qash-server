@@ -48,7 +48,7 @@ export class AuthService {
   ): Promise<AuthResponseDto> {
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const { userId, isNewUser } = await this.otpService.verifyOtpInternal(
+        const { userId } = await this.otpService.verifyOtpInternal(
           email,
           otp,
           OtpTypeEnum.LOGIN,
