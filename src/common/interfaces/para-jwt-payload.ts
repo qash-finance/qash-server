@@ -1,3 +1,5 @@
+import { UserModel } from '../../database/generated/models/User';
+
 /**
  * Para JWT Token Payload Structure
  * Based on Para's JWT token format from their documentation
@@ -30,5 +32,14 @@ export interface ParaJwtPayload {
   // Normalized fields for our application
   email: string; // Extracted email or identifier
   userId?: string; // Alias for sub or data.userId
+}
+
+/**
+ * Authenticated user payload with internal database user information
+ * This is what gets attached to the request after Para JWT authentication
+ */
+export interface AuthenticatedUser extends ParaJwtPayload {
+  internalUserId: number; // Our database user ID (integer)
+  internalUser: UserModel; // Full user model from our database
 }
 

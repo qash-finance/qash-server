@@ -38,14 +38,12 @@ export class ParaJwtStrategy extends PassportStrategy(Strategy, 'para-jwt') {
     try {
       // Validate that the token has the required Para structure
       if (!payload.data || !payload.sub) {
-        this.logger.error('Invalid Para JWT payload structure');
         throw new UnauthorizedException(ErrorAuth.InvalidToken);
       }
 
       // Extract email from the payload
       const email = payload.data.email || payload.data.identifier;
       if (!email) {
-        this.logger.error('No email or identifier found in Para JWT');
         throw new UnauthorizedException(ErrorAuth.InvalidToken);
       }
 
@@ -59,9 +57,7 @@ export class ParaJwtStrategy extends PassportStrategy(Strategy, 'para-jwt') {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      this.logger.error('Para JWT validation failed:', error);
       throw new UnauthorizedException(ErrorAuth.InvalidToken);
     }
   }
 }
-

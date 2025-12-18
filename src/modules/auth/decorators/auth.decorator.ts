@@ -1,6 +1,6 @@
 import { applyDecorators, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { ParaJwtAuthGuard } from '../guards/para-jwt-auth.guard';
 
 /**
  * Combined decorator for authentication
@@ -17,7 +17,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
  */
 export function Auth() {
   return applyDecorators(
-    UseGuards(JwtAuthGuard),
+    UseGuards(ParaJwtAuthGuard),
     ApiBearerAuth(),
     ApiUnauthorizedResponse({
       description: 'Unauthorized - Invalid or missing token',

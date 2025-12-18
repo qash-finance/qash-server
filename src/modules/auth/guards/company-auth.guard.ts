@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ParaJwtAuthGuard } from './para-jwt-auth.guard';
+import { AuthService } from '../auth.service';
 import { CompanyService } from '../../company/company.service';
 import { ErrorAuth, ErrorCompany } from 'src/common/constants/errors';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -16,7 +17,7 @@ export class CompanyAuthGuard extends ParaJwtAuthGuard {
 
   constructor(
     reflector: Reflector,
-    authService: any, // AuthService from parent
+    authService: AuthService,
     private readonly companyService: CompanyService,
   ) {
     super(reflector, authService);
@@ -42,15 +43,16 @@ export class CompanyAuthGuard extends ParaJwtAuthGuard {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    // Use internalUserId from Para JWT guard
-    const userId = user?.internalUserId;
+    // Use email from Para JWT token (common identifier between Para and our DB)
+    const userEmail = user?.email;
 
-    if (!user || !userId) {
+    if (!user || !userEmail) {
       throw new UnauthorizedException(ErrorAuth.NotAuthenticated);
     }
 
     try {
-      const company = await this.companyService.getCompanyByUserId(userId);
+      const company =
+        await this.companyService.getCompanyByUserEmail(userEmail);
 
       if (!company) {
         throw new UnauthorizedException(
@@ -66,7 +68,7 @@ export class CompanyAuthGuard extends ParaJwtAuthGuard {
       return true;
     } catch (error) {
       this.companyAuthLogger.error(
-        `Failed to fetch company for user ${userId}:`,
+        `Failed to fetch company for user email ${userEmail}:`,
         error,
       );
       throw new UnauthorizedException(ErrorCompany.FailedToFetchCompany);

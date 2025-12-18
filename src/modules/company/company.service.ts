@@ -46,6 +46,17 @@ export class CompanyService {
   }
 
   /**
+   * Get company by user email
+   * This is used with Para authentication where we identify users by email
+   */
+  async getCompanyByUserEmail(userEmail: string): Promise<CompanyModel | null> {
+    const teamMember = await this.teamMemberRepository.findByUserEmail(
+      userEmail,
+    );
+    return teamMember?.company || null;
+  }
+
+  /**
    * Get company statistics
    */
   async getCompanyStats(userId?: number) {

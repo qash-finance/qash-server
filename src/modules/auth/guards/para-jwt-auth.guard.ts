@@ -9,7 +9,10 @@ import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { AuthService } from '../auth.service';
 import { ErrorAuth } from 'src/common/constants/errors';
-import { ParaJwtPayload } from '../../../common/interfaces/para-jwt-payload';
+import {
+  ParaJwtPayload,
+  AuthenticatedUser,
+} from '../../../common/interfaces/para-jwt-payload';
 
 @Injectable()
 export class ParaJwtAuthGuard extends AuthGuard('para-jwt') {
@@ -48,13 +51,13 @@ export class ParaJwtAuthGuard extends AuthGuard('para-jwt') {
     try {
       // Sync user from Para token to our database
       const user = await this.authService.syncUserFromParaToken(paraPayload);
-      
-      // Attach our internal user to the request
+
+      // Attach our internal user to the request with proper typing
       request.user = {
         ...paraPayload,
         internalUserId: user.id,
         internalUser: user,
-      };
+      } as AuthenticatedUser;
 
       return true;
     } catch (error) {
@@ -73,4 +76,3 @@ export class ParaJwtAuthGuard extends AuthGuard('para-jwt') {
     return user;
   }
 }
-
