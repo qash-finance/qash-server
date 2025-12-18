@@ -38,8 +38,10 @@ async function bootstrap() {
             }
           }
         : true,
-    credentials: true,
+    credentials: true, // Required for HTTP-only cookies
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: [],
   });
 
   useContainer(app.select(AppModule), { fallbackOnErrors: true });

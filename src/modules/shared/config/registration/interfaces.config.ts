@@ -37,6 +37,13 @@ export interface AuthConfig {
     clientSecret: string;
     callbackUrl: string;
   };
+  para: {
+    apiKey: string;
+    secretApiKey: string;
+    verifyUrl: string;
+    jwksUrl: string;
+    environment: 'beta' | 'sandbox' | 'prod';
+  };
 }
 
 export interface OthersConfig {

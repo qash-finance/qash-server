@@ -5,22 +5,21 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { JwtAuthService } from '../services/jwt.service';
+import { ParaJwtAuthGuard } from './para-jwt-auth.guard';
 import { CompanyService } from '../../company/company.service';
 import { ErrorAuth, ErrorCompany } from 'src/common/constants/errors';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
-export class CompanyAuthGuard extends JwtAuthGuard {
+export class CompanyAuthGuard extends ParaJwtAuthGuard {
   private readonly companyAuthLogger = new Logger(CompanyAuthGuard.name);
 
   constructor(
     reflector: Reflector,
-    jwtAuthService: JwtAuthService,
+    authService: any, // AuthService from parent
     private readonly companyService: CompanyService,
   ) {
-    super(reflector, jwtAuthService);
+    super(reflector, authService);
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -34,7 +33,7 @@ export class CompanyAuthGuard extends JwtAuthGuard {
       return true;
     }
 
-    // First, run the JWT authentication
+    // First, run the Para JWT authentication (which syncs user)
     const canActivate = await super.canActivate(context);
     if (!canActivate) {
       return false;
@@ -43,12 +42,15 @@ export class CompanyAuthGuard extends JwtAuthGuard {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    if (!user || !user.sub) {
+    // Use internalUserId from Para JWT guard
+    const userId = user?.internalUserId;
+
+    if (!user || !userId) {
       throw new UnauthorizedException(ErrorAuth.NotAuthenticated);
     }
 
     try {
-      const company = await this.companyService.getCompanyByUserId(user.sub);
+      const company = await this.companyService.getCompanyByUserId(userId);
 
       if (!company) {
         throw new UnauthorizedException(
@@ -64,7 +66,7 @@ export class CompanyAuthGuard extends JwtAuthGuard {
       return true;
     } catch (error) {
       this.companyAuthLogger.error(
-        `Failed to fetch company for user ${user.sub}:`,
+        `Failed to fetch company for user ${userId}:`,
         error,
       );
       throw new UnauthorizedException(ErrorCompany.FailedToFetchCompany);

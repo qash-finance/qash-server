@@ -15,4 +15,11 @@ export default registerAs('auth', () => ({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackUrl: process.env.GOOGLE_CALLBACK_URL,
   },
+  para: {
+    apiKey: process.env.PARA_API_KEY || '',
+    secretApiKey: process.env.PARA_SECRET_API_KEY || '',
+    verifyUrl: process.env.PARA_VERIFY_URL || 'https://api.beta.getpara.com/sessions/verify',
+    jwksUrl: process.env.PARA_JWKS_URL || 'https://api.beta.getpara.com/.well-known/jwks.json',
+    environment: process.env.PARA_ENVIRONMENT || 'beta', // beta, sandbox, or prod
+  },
 }));

@@ -246,3 +246,45 @@ export class UserMeResponseDto {
   })
   teamMembership?: TeamMembershipInfoDto | null;
 }
+
+export class VerifySessionDto {
+  @ApiProperty({
+    description: 'Para verification token',
+    example: 'verification_token_here',
+  })
+  @IsString({ message: 'Verification token must be a string' })
+  @IsNotEmpty({ message: 'Verification token is required' })
+  verificationToken: string;
+}
+
+export class VerifySessionResponseDto {
+  @ApiProperty({
+    description: 'User data from Para verification',
+    example: {
+      authType: 'email',
+      identifier: 'user@example.com',
+    },
+  })
+  userData: {
+    authType: string;
+    identifier: string;
+  };
+}
+
+export class SetJwtCookieDto {
+  @ApiProperty({
+    description: 'Para JWT token from client',
+    example: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  @IsString({ message: 'JWT token must be a string' })
+  @IsNotEmpty({ message: 'JWT token is required' })
+  token: string;
+}
+
+export class SetJwtCookieResponseDto {
+  @ApiProperty({
+    description: 'Success message',
+    example: 'Cookie set successfully',
+  })
+  message: string;
+}

@@ -15,7 +15,9 @@ import { UserRepository } from './repositories/user.repository';
 import { OtpRepository } from './repositories/otp.repository';
 import { UserSessionRepository } from './repositories/user-session.repository';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { ParaJwtStrategy } from './strategies/para-jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ParaJwtAuthGuard } from './guards/para-jwt-auth.guard';
 import { CompanyAuthGuard } from './guards/company-auth.guard';
 
 @Module({
@@ -48,10 +50,11 @@ import { CompanyAuthGuard } from './guards/company-auth.guard';
 
     // Auth Strategy & Guards
     JwtStrategy,
+    ParaJwtStrategy, // Para JWT authentication strategy
     CompanyAuthGuard,
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: ParaJwtAuthGuard, // Use Para JWT guard as default
     },
   ],
   controllers: [AuthController],
