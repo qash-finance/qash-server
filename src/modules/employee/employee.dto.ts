@@ -12,7 +12,10 @@ import {
   IsObject,
   IsArray,
   IsNumber,
+  IsInt,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class TokenDto {
   @ApiProperty({
@@ -200,7 +203,6 @@ export class AddressBookNameDuplicateDto {
   @MinLength(3, { message: 'userAddress is too short' })
   userAddress: string;
 }
-
 export class UpdateAddressBookDto {
   @ApiProperty({
     description: 'The name of the address book entry',
@@ -211,19 +213,32 @@ export class UpdateAddressBookDto {
   @IsString()
   @MaxLength(100, { message: 'name cannot be longer than 100 characters' })
   @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
-    message:
-      'name can only contain letters, numbers, spaces, hyphens, and underscores',
+    message: 'name can only contain letters, numbers, spaces, hyphens, and underscores',
   })
   name?: string;
 
+  // Preferred new property used by frontend
   @ApiProperty({
-    description: 'The address of the address book entry',
+    description: 'The wallet address of the address book entry',
+    example: 'mtst1apq3rg90yj9xgyq8s7fej0hgkgcnp8aj_qruqqypuyph',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(10, { message: 'address is too short' })
+  @Matches(/^mtst1[a-z0-9_]+$/i, {
+    message: "Address must start with 'mtst1' and contain only letters, numbers, and underscores",
+  })
+  walletAddress?: string;
+
+  // Backwards-compatible alias (if existing clients send `address`)
+  @ApiProperty({
+    description: 'Legacy address property (alias for compatibility)',
     example: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
     required: false,
   })
   @IsOptional()
   @IsString()
-  @MinLength(3, { message: 'address is too short' })
   address?: string;
 
   @ApiProperty({
@@ -239,22 +254,35 @@ export class UpdateAddressBookDto {
   @ApiProperty({
     description: 'The token information of the address book entry',
     example: {
-      address: 'mtst1qzxh4e7uwlu5xyrnms9d5tfm7v2y7u6a',
-      symbol: 'USDC',
+      address: 'mtst1ar600d6s8uwwjgznqtxqt085qs9a50ej_qruqqypuyph',
+      symbol: 'QASH',
     },
     required: false,
   })
   @IsOptional()
-  @IsObject()
-  token?: any;
+  @ValidateNested()
+  @Type(() => TokenDto)
+  token?: TokenDto;
 
+  // Preferred new property (frontend uses groupId)
   @ApiProperty({
-    description: 'The category ID of the address book entry',
+    description: 'The group ID of the address book entry',
     example: 1,
     required: false,
   })
   @IsOptional()
-  categoryId?: number;
+  @IsInt()
+  groupId?: number;
+
+  @ApiProperty({
+    description: 'Network details for the address book entry',
+    example: { name: 'Miden Testnet', chainId: 0 },
+    required: false,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NetworkDto)
+  network?: NetworkDto;
 }
 
 export class DeleteAddressBookDto {

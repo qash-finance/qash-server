@@ -390,7 +390,7 @@ export class EmployeeService {
 
           // Check name duplicate if name is being changed
           if (updateData.name !== existingContact.name) {
-            const isDuplicate = await this.isEmployeeNameDuplicate(
+            const { isDuplicate } = await this.isEmployeeNameDuplicate(
               companyId,
               updateData.name,
               existingContact.groupId,
@@ -429,11 +429,11 @@ export class EmployeeService {
           updateData.token = JSON.parse(JSON.stringify(dto.token));
         }
 
-        if (dto.categoryId !== undefined) {
+        if (dto.groupId !== undefined) {
           // Verify the group exists and belongs to the company
           const group = await this.employeeGroupRepository.findOne(
             {
-              id: dto.categoryId,
+              id: dto.groupId,
               companyId,
             },
             tx,
@@ -443,7 +443,7 @@ export class EmployeeService {
             throw new BadRequestException(ErrorEmployeeGroup.NotFound);
           }
 
-          updateData.groupId = dto.categoryId;
+          updateData.groupId = dto.groupId;
         }
 
         // Update the contact

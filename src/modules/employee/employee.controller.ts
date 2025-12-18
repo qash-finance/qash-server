@@ -488,6 +488,31 @@ export class EmployeeController {
   // *************************************************
   // **************** DELETE METHODS *****************
   // *************************************************
+  @Delete('bulk')
+  @ApiOperation({
+    summary: 'Bulk delete employees',
+    description: 'Delete multiple employees at once within the company',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Employees deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        deletedCount: { type: 'number' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @HttpCode(HttpStatus.OK)
+  async bulkDeleteContacts(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Body('ids') ids: number[],
+  ) {
+    return this.employeeService.bulkDeleteEmployees(user.company.id, ids);
+  }
+
   @Delete(':id')
   @ApiOperation({
     summary: 'Delete employee',
@@ -518,30 +543,5 @@ export class EmployeeController {
     return this.employeeService.deleteEmployee(user.company.id, id);
   }
 
-  @Delete('bulk')
-  @ApiOperation({
-    summary: 'Bulk delete employees',
-    description: 'Delete multiple employees at once within the company',
-  })
-  @ApiBody({ type: BulkDeleteEmployeesDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Employees deleted successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        deletedCount: { type: 'number' },
-      },
-    },
-  })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @HttpCode(HttpStatus.OK)
-  async bulkDeleteContacts(
-    @CurrentUser('withCompany') user: UserWithCompany,
-    @Body() dto: BulkDeleteEmployeesDto,
-  ) {
-    return this.employeeService.bulkDeleteEmployees(user.company.id, dto.ids);
-  }
   //#endregion DELETE METHODS
 }
