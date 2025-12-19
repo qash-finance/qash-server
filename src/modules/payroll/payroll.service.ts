@@ -63,16 +63,64 @@ export class PayrollService {
     };
   }> {
     try {
-      const filters = {
+      // Build Prisma where clause
+      const whereClause: any = {
         companyId,
-        employeeId: query.employeeId,
-        contractTerm: query.contractTerm,
-        search: query.search,
       };
+
+      if (query.employeeId) {
+        whereClause.employeeId = query.employeeId;
+      }
+
+      if (query.contractTerm) {
+        whereClause.contractTerm = query.contractTerm;
+      }
+
+      // Convert search parameter to Prisma filters
+      if (query.search) {
+        whereClause.OR = [
+          {
+            description: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            note: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            amount: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            employee: {
+              OR: [
+                {
+                  name: {
+                    contains: query.search,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  email: {
+                    contains: query.search,
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            },
+          },
+        ];
+      }
 
       const result: PaginatedResult<Payroll> =
         await this.payrollRepository.findManyPaginated(
-          filters,
+          whereClause,
           {
             page: query.page || 1,
             limit: query.limit || 10,

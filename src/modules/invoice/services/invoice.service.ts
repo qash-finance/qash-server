@@ -604,15 +604,14 @@ export class InvoiceService {
           throw new ForbiddenException(ErrorInvoice.NotOwner);
         }
 
-        if (invoice.status === InvoiceStatusEnum.CONFIRMED) {
-          throw new BadRequestException(ErrorInvoice.InvoiceNotCancelable);
-        }
-
         const updatedInvoice = await this.invoiceRepository.update(
           { uuid: invoiceUUID },
           { status: InvoiceStatusEnum.CANCELLED },
           tx,
         );
+
+        // update bill related invoice status to cancelled
+        await this.billService.deleteBill(invoice.bill.uuid, companyId, tx);
 
         return updatedInvoice;
       });
