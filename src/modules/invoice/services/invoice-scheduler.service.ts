@@ -182,8 +182,37 @@ export class InvoiceSchedulerService {
         tx,
       );
 
+      // Increment current cycle number for the payroll
+      const updatedPayroll = await tx.payroll.findUnique({
+        where: { id: payroll.id },
+        select: { currentCycleNumber: true, payrollCycle: true },
+      });
+
+      if (updatedPayroll) {
+        const newCycleNumber = updatedPayroll.currentCycleNumber + 1;
+
+        // Only increment if we haven't reached the cycle limit
+        if (newCycleNumber <= updatedPayroll.payrollCycle) {
+          await tx.payroll.update({
+            where: { id: payroll.id },
+            data: { currentCycleNumber: newCycleNumber },
+          });
+
+          // If we've reached the cycle limit, deactivate the schedule
+          if (newCycleNumber >= updatedPayroll.payrollCycle) {
+            await tx.invoiceSchedule.update({
+              where: { id: schedule.id },
+              data: { isActive: false },
+            });
+            this.logger.log(
+              `Payroll ${payroll.id} reached cycle limit (${updatedPayroll.payrollCycle}). Schedule ${schedule.id} deactivated.`,
+            );
+          }
+        }
+      }
+
       this.logger.log(
-        `Generated invoice ${invoice.invoiceNumber} from schedule ${schedule.id}`,
+        `Generated invoice ${invoice.invoiceNumber} from schedule ${schedule.id} (Cycle ${updatedPayroll?.currentCycleNumber || 0}/${updatedPayroll?.payrollCycle || 0})`,
       );
     });
   }

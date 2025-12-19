@@ -548,8 +548,24 @@ export class InvoiceService {
             });
           };
 
-          const fromMonthYear = formatMonthYear(invoice.payroll.payStartDate);
-          const toMonthYear = formatMonthYear(invoice.payroll.payEndDate);
+          // Calculate dates for this specific invoice
+          // Each invoice covers: work month (issueDate - 1 month) to pay month (issueDate month)
+          // Example: If issueDate is July 2025, invoice is for June 2025 to July 2025
+          // Cycle 1: June 2025 to July 2025
+          // Cycle 2: July 2025 to August 2025
+          // etc.
+
+          // From date: one month before the invoice issue date (the work month)
+          const fromDate = new Date(invoice.issueDate);
+          fromDate.setMonth(fromDate.getMonth() - 1);
+          fromDate.setDate(1); // Start of the work month
+
+          // To date: the invoice issue date month (the pay month)
+          const toDate = new Date(invoice.issueDate);
+          toDate.setDate(1); // Start of the pay month
+
+          const fromMonthYear = formatMonthYear(fromDate);
+          const toMonthYear = formatMonthYear(toDate);
 
           // Find the only team member of the company
           const teamMember = await this.teamMemberRepository.findOnlyTeamMember(
@@ -687,6 +703,11 @@ export class InvoiceService {
       postalCode: payroll.employee.postalCode,
     };
 
+    // find the only team member of the company
+    const teamMember = await this.teamMemberRepository.findOnlyTeamMember(
+      payroll.companyId,
+    );
+
     const toDetails = {
       companyName: payroll.company.companyName,
       address1: payroll.company.address1,
@@ -694,7 +715,7 @@ export class InvoiceService {
       city: payroll.company.city,
       country: payroll.company.country,
       postalCode: payroll.company.postalCode,
-      email: payroll.company.notificationEmail,
+      email: teamMember?.user?.email, // TODO: should change to company notification email
     };
 
     // Calculate financials
@@ -735,6 +756,24 @@ export class InvoiceService {
     };
 
     const invoice = await this.invoiceRepository.create(invoiceData, tx);
+
+    // Increment current cycle number for the payroll
+    const updatedPayroll = await tx.payroll.findUnique({
+      where: { id: payrollId },
+      select: { currentCycleNumber: true, payrollCycle: true },
+    });
+
+    if (updatedPayroll) {
+      const newCycleNumber = updatedPayroll.currentCycleNumber + 1;
+
+      // Only increment if we haven't reached the cycle limit
+      if (newCycleNumber <= updatedPayroll.payrollCycle) {
+        await tx.payroll.update({
+          where: { id: payrollId },
+          data: { currentCycleNumber: newCycleNumber },
+        });
+      }
+    }
 
     // Calculate invoice period dates
     // If payDate is provided, use it. Otherwise, use dueDate as pay date.

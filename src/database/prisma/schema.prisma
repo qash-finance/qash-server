@@ -224,6 +224,7 @@ model Payroll {
 
   contractTerm ContractTermEnum
   payrollCycle Int               @map("payroll_cycle")
+  currentCycleNumber Int         @default(0) @map("current_cycle_number")
   joiningDate  DateTime          @map("joining_date") @db.Timestamp(6)
   payStartDate DateTime          @map("pay_start_date") @db.Timestamp(6)
   payEndDate   DateTime          @map("pay_end_date") @db.Timestamp(6)
