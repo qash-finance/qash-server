@@ -54,9 +54,9 @@ export class CreatePaymentLinkDto {
   })
   @IsNotEmpty()
   @IsString()
-  @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
+  @Matches(/^mtst1[a-z0-9_]+$/i, {
     message:
-      'paymentWalletAddress must be a valid address starting with mt or mm',
+      'Address must start with \'mtst1\' and contain only letters, numbers, and underscores',
   })
   @MinLength(3, { message: 'paymentWalletAddress is too short' })
   paymentWalletAddress: string;

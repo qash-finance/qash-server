@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InvoiceModel } from 'src/database/generated/models';
+import puppeteer from 'puppeteer';
 
 @Injectable()
 export class PdfService {
@@ -7,22 +8,30 @@ export class PdfService {
 
   /**
    * Generate PDF buffer from invoice data
-   * TODO: Implement actual PDF generation using puppeteer or similar library
    */
   async generateInvoicePdf(invoice: InvoiceModel): Promise<Buffer> {
     try {
-      // For now, return a placeholder PDF content
-      // In production, you would use a library like puppeteer, jsPDF, or PDFKit
-
       const htmlContent = this.generateInvoiceHtml(invoice);
 
-      // Placeholder: Return HTML as buffer for now
-      // TODO: Convert HTML to PDF using puppeteer
-      const pdfBuffer = Buffer.from(htmlContent, 'utf-8');
+      const browser = await puppeteer.launch({
+        headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+      const page = await browser.newPage();
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        margin: { top: '0.5cm', bottom: '0.5cm', left: '0.5cm', right: '0.5cm' },
+        printBackground: true,
+      });
+
+      await browser.close();
 
       this.logger.log(`Generated PDF for invoice ${invoice.invoiceNumber}`);
 
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
     } catch (error) {
       this.logger.error(
         `Error generating PDF for invoice ${invoice.invoiceNumber}:`,
@@ -39,6 +48,12 @@ export class PdfService {
     const fromDetails = (invoice as any).fromDetails || {};
     const toDetails = (invoice as any).toDetails || {};
     const items = (invoice as any).items || [];
+
+    // Use payment details from the invoice model if available, otherwise fallback to fromDetails
+    const paymentNetwork = (invoice as any).paymentNetwork || {};
+    const paymentToken = (invoice as any).paymentToken || {};
+    const walletAddress =
+      invoice.paymentWalletAddress || fromDetails.walletAddress || 'N/A';
 
     return `
     <!DOCTYPE html>
@@ -170,30 +185,30 @@ export class PdfService {
             <div class="from-section">
                 <div class="section-title">FROM</div>
                 <div class="address-block">
-                    <div><strong>${fromDetails.name}</strong></div>
+                    <div><strong>${fromDetails.name || 'N/A'}</strong></div>
                     ${fromDetails.companyName ? `<div>${fromDetails.companyName}</div>` : ''}
-                    <div>${fromDetails.email}</div>
+                    <div>${fromDetails.email || 'N/A'}</div>
                     ${fromDetails.address1 ? `<div>${fromDetails.address1}</div>` : ''}
                     ${fromDetails.address2 ? `<div>${fromDetails.address2}</div>` : ''}
                     ${fromDetails.city && fromDetails.country ? `<div>${fromDetails.city}, ${fromDetails.country} ${fromDetails.postalCode || ''}</div>` : ''}
                 </div>
                 <div class="network-info">
                     <div><strong>Payment Details:</strong></div>
-                    <div>Network: ${fromDetails.network?.name || 'N/A'}</div>
-                    <div>Token: ${fromDetails.token?.symbol || 'N/A'}</div>
-                    <div>Address: ${fromDetails.walletAddress}</div>
+                    <div>Network: ${paymentNetwork.name || fromDetails.network?.name || 'N/A'}</div>
+                    <div>Token: ${paymentToken.symbol || fromDetails.token?.symbol || 'N/A'}</div>
+                    <div>Address: ${walletAddress}</div>
                 </div>
             </div>
 
             <div class="bill-to-section">
                 <div class="section-title">BILL TO</div>
                 <div class="address-block">
-                    <div><strong>${toDetails.companyName || ''}</strong></div>
-                    <div>${toDetails.contactName ? `Attn: ${toDetails.contactName}` : ''}</div>
-                    <div>${toDetails.email || ''}</div>
-                    <div>${toDetails.address1 || ''}</div>
+                    <div><strong>${toDetails.companyName || invoice.toCompanyName || 'N/A'}</strong></div>
+                    <div>${toDetails.contactName ? `Attn: ${toDetails.contactName}` : invoice.toCompanyContactName ? `Attn: ${invoice.toCompanyContactName}` : ''}</div>
+                    <div>${toDetails.email || invoice.toCompanyEmail || ''}</div>
+                    <div>${toDetails.address1 || invoice.toCompanyAddress || ''}</div>
                     ${toDetails.address2 ? `<div>${toDetails.address2}</div>` : ''}
-                    <div>${[toDetails.city, toDetails.country, toDetails.postalCode].filter(Boolean).join(' ')}</div>
+                    <div>${[toDetails.city, toDetails.country, toDetails.postalCode].filter(Boolean).join(' ') || ''}</div>
                 </div>
             </div>
         </div>
@@ -214,7 +229,7 @@ export class PdfService {
                     <tr>
                         <td>${item.description}</td>
                         <td>${item.quantity}</td>
-                        <td class="amount-column">$${item.pricePerUnit}</td>
+                        <td class="amount-column">$${item.unitPrice || item.pricePerUnit || '0.00'}</td>
                         <td class="amount-column">$${item.total}</td>
                     </tr>
                 `,
