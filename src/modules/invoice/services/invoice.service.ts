@@ -38,6 +38,7 @@ import { PrismaTransactionClient } from 'src/database/base.repository';
 import { EmployeeRepository } from 'src/modules/employee/repositories/employee.repository';
 import { BillService } from 'src/modules/bill/bill.service';
 import { TeamMemberRepository } from 'src/modules/team-member/team-member.repository';
+import { TokenDto } from 'src/modules/employee/employee.dto';
 
 @Injectable()
 export class InvoiceService {
@@ -442,6 +443,7 @@ export class InvoiceService {
             invoice.employee.name,
             invoice.total,
             month,
+            (invoice.paymentToken as unknown as TokenDto).name,
           );
         } catch (emailError) {
           // TODO: Handle email error, should try again a few times

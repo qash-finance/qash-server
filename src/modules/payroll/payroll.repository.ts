@@ -130,6 +130,12 @@ export class PayrollRepository extends BaseRepository<
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+    // Exclude deleted payrolls from stats
+    const baseWhere = {
+      companyId,
+      status: { not: PayrollStatusEnum.DELETED },
+    };
+
     const [
       activePayrolls,
       pausedPayrolls,
@@ -138,17 +144,17 @@ export class PayrollRepository extends BaseRepository<
       allActivePayrolls,
     ] = await Promise.all([
       client.count({
-        where: { companyId, status: PayrollStatusEnum.ACTIVE },
+        where: { ...baseWhere, status: PayrollStatusEnum.ACTIVE },
       }),
       client.count({
-        where: { companyId, status: PayrollStatusEnum.PAUSED },
+        where: { ...baseWhere, status: PayrollStatusEnum.PAUSED },
       }),
       client.count({
-        where: { companyId, status: PayrollStatusEnum.COMPLETED },
+        where: { ...baseWhere, status: PayrollStatusEnum.COMPLETED },
       }),
       client.count({
         where: {
-          companyId,
+          ...baseWhere,
           status: PayrollStatusEnum.ACTIVE,
           payStartDate: {
             gte: startOfMonth,
@@ -157,7 +163,7 @@ export class PayrollRepository extends BaseRepository<
         },
       }),
       client.findMany({
-        where: { companyId, status: PayrollStatusEnum.ACTIVE },
+        where: { ...baseWhere, status: PayrollStatusEnum.ACTIVE },
         select: { amount: true },
       }),
     ]);
@@ -188,6 +194,7 @@ export class PayrollRepository extends BaseRepository<
         payStartDate: {
           lte: date,
         },
+        // Note: DELETED payrolls are already excluded since we're filtering by ACTIVE status
       },
       include: {
         employee: {
@@ -211,6 +218,10 @@ export class PayrollRepository extends BaseRepository<
       where: {
         employeeId,
         companyId,
+        // Exclude deleted payrolls
+        status: {
+          not: PayrollStatusEnum.DELETED,
+        },
       },
       include: {
         employee: {

@@ -501,6 +501,7 @@ enum PayrollStatusEnum {
   PAUSED
   COMPLETED
   CANCELLED
+  DELETED
 }
 
 enum InvoiceTypeEnum {
@@ -516,6 +517,7 @@ enum InvoiceStatusEnum {
   CANCELLED
   PAID
   OVERDUE
+  DELETED
 }
 
 enum BillStatusEnum {

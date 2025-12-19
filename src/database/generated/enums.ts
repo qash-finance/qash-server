@@ -21,7 +21,8 @@ export const PayrollStatusEnum = {
   ACTIVE: 'ACTIVE',
   PAUSED: 'PAUSED',
   COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED'
+  CANCELLED: 'CANCELLED',
+  DELETED: 'DELETED'
 } as const
 
 export type PayrollStatusEnum = (typeof PayrollStatusEnum)[keyof typeof PayrollStatusEnum]
@@ -42,7 +43,8 @@ export const InvoiceStatusEnum = {
   CONFIRMED: 'CONFIRMED',
   CANCELLED: 'CANCELLED',
   PAID: 'PAID',
-  OVERDUE: 'OVERDUE'
+  OVERDUE: 'OVERDUE',
+  DELETED: 'DELETED'
 } as const
 
 export type InvoiceStatusEnum = (typeof InvoiceStatusEnum)[keyof typeof InvoiceStatusEnum]

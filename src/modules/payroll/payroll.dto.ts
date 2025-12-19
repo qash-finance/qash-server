@@ -375,3 +375,24 @@ export class PayrollStatsDto {
   })
   dueThisMonth: number;
 }
+
+export class PendingInvoiceReviewsDto {
+  @ApiProperty({
+    description: 'Whether the payroll has pending invoice reviews',
+    example: true,
+  })
+  hasPendingReviews: boolean;
+
+  @ApiProperty({
+    description: 'Number of invoices pending review (status: SENT)',
+    example: 3,
+  })
+  pendingCount: number;
+
+  @ApiProperty({
+    description: 'List of invoice UUIDs pending review',
+    example: ['clx123abc', 'clx456def'],
+    type: [String],
+  })
+  pendingInvoiceUuids: string[];
+}

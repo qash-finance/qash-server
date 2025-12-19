@@ -111,6 +111,7 @@ export class MailService {
     employeeName: string,
     amount: string,
     month: string,
+    tokenSymbol: string,
   ): Promise<void> {
     try {
       const fromEmail =
@@ -141,7 +142,7 @@ export class MailService {
             <div>
               <div style="padding: 0 36px 32px 36px; font-size: 15px; line-height: 1.6; color: #1f2937;">
               <p style="margin-bottom: 40px; margin-top: 0;">
-                 Your monthly invoice for the ${month} salary of $${amount} for ${companyName} is ready. Please review the details and confirm so that ${companyName} can proceed with the payment
+                 Your monthly invoice for the ${month} salary of ${amount} ${tokenSymbol} for ${companyName} is ready. Please review the details and confirm so that ${companyName} can proceed with the payment
               </p>
               <div style="margin: 20px 0;">
                 <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(0deg, #002c69 0%, #0061e7 100%); border-radius: 10px; padding: 2px;">

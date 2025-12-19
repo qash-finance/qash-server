@@ -6,6 +6,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { InvoiceScheduleModel } from 'src/database/generated/models/InvoiceSchedule';
 import { PayrollStatusEnum } from 'src/database/generated/enums';
 import { MailService } from 'src/modules/mail/mail.service';
+import { TokenDto } from 'src/modules/employee/employee.dto';
 
 @Injectable()
 export class InvoiceSchedulerService {
@@ -161,6 +162,7 @@ export class InvoiceSchedulerService {
         payroll.employee.name,
         payroll.amount,
         month,
+        (invoice.paymentToken as unknown as TokenDto).name,
       );
 
       // Calculate next generate date based on the current pay date

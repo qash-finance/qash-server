@@ -21,6 +21,7 @@ import {
 } from 'src/database/generated/models';
 import {
   ContractTermEnum,
+  InvoiceStatusEnum,
   Payroll,
   PayrollStatusEnum,
 } from 'src/database/generated/client';
@@ -66,6 +67,10 @@ export class PayrollService {
       // Build Prisma where clause
       const whereClause: any = {
         companyId,
+        // Exclude deleted payrolls by default
+        status: {
+          not: PayrollStatusEnum.DELETED,
+        },
       };
 
       if (query.employeeId) {
@@ -192,6 +197,54 @@ export class PayrollService {
       return await this.payrollRepository.findDuePayrolls(dueDate);
     } catch (error) {
       this.logger.error('Error fetching due payrolls:', error);
+      handleError(error, this.logger);
+    }
+  }
+
+  /**
+   * Check if payroll has pending invoice reviews from employee
+   * Returns information about invoices that are SENT and waiting for employee review
+   */
+  async checkPendingInvoiceReviews(
+    id: number,
+    companyId: number,
+  ): Promise<{
+    hasPendingReviews: boolean;
+    pendingCount: number;
+    pendingInvoiceUuids: string[];
+  }> {
+    try {
+      // First verify payroll exists and belongs to company
+      const payroll = await this.payrollRepository.findById(id, companyId);
+
+      if (!payroll) {
+        throw new NotFoundException(ErrorPayroll.PayrollNotFound);
+      }
+
+      // Query invoices with SENT status for this payroll
+      const pendingInvoices = await this.prisma.invoice.findMany({
+        where: {
+          payrollId: id,
+          status: InvoiceStatusEnum.SENT,
+        },
+        select: {
+          uuid: true,
+        },
+      });
+
+      const pendingCount = pendingInvoices.length;
+      const pendingInvoiceUuids = pendingInvoices.map((inv) => inv.uuid);
+
+      return {
+        hasPendingReviews: pendingCount > 0,
+        pendingCount,
+        pendingInvoiceUuids,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error checking pending invoice reviews for payroll ${id}:`,
+        error,
+      );
       handleError(error, this.logger);
     }
   }
@@ -498,7 +551,10 @@ export class PayrollService {
   }
 
   /**
-   * Delete payroll
+   * Delete payroll (soft delete)
+   * - Marks all SENT invoices as DELETED
+   * - Stops the invoice scheduler (sets isActive to false)
+   * - Soft deletes the payroll (sets status to DELETED)
    */
   async deletePayroll(id: number, companyId: number): Promise<void> {
     try {
@@ -510,19 +566,42 @@ export class PayrollService {
           throw new NotFoundException(ErrorPayroll.PayrollNotFound);
         }
 
-        // Only allow deletion if no invoices have been generated
-        if (payroll.invoices && payroll.invoices.length > 0) {
-          throw new ConflictException(
-            ErrorPayroll.CannotDeletePayrollWithExistingInvoices,
-          );
+        // Check if payroll is already deleted
+        if (payroll.status === PayrollStatusEnum.DELETED) {
+          throw new ConflictException(ErrorPayroll.PayrollAlreadyDeleted);
         }
 
-        await this.payrollRepository.delete({ id, companyId }, tx);
+        // Mark all SENT invoices (pending review) as DELETED
+        if (payroll.invoices && payroll.invoices.length > 0) {
+          const sentInvoices = payroll.invoices.filter(
+            (invoice) => invoice.status === InvoiceStatusEnum.SENT,
+          );
 
-        // Remove invoice schedules for this payroll
-        await tx.invoiceSchedule.deleteMany({
+          if (sentInvoices.length > 0) {
+            await tx.invoice.updateMany({
+              where: {
+                id: { in: sentInvoices.map((inv) => inv.id) },
+                status: InvoiceStatusEnum.SENT,
+              },
+              data: {
+                status: InvoiceStatusEnum.DELETED,
+              },
+            });
+          }
+        }
+
+        // Stop the invoice scheduler (set isActive to false)
+        await tx.invoiceSchedule.updateMany({
           where: { payrollId: id },
+          data: { isActive: false },
         });
+
+        // Soft delete the payroll (set status to DELETED)
+        await this.payrollRepository.update(
+          { id, companyId },
+          { status: PayrollStatusEnum.DELETED },
+          tx,
+        );
       });
     } catch (error) {
       this.logger.error(`Error deleting payroll ${id}:`, error);
