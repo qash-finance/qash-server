@@ -17,11 +17,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Use Docker
         uses: actions-hub/docker/cli@master
         env:
@@ -30,11 +34,11 @@ jobs:
         run: cp .env.example .env.test
       - name: copy secrets to .env.test
         run: echo "${{ secrets.ENV_TEST }}" >> .env.test
-      - run: npm install
-      - run: npm run prisma:generate
-      - run: npm run build
+      - run: pnpm install
+      - run: pnpm run prisma:generate
+      - run: pnpm run build
         name: Build
-      - run: npm run lint
+      - run: pnpm run lint
         name: Lint
-      - run: npm run test
+      - run: pnpm run test
         name: Test
