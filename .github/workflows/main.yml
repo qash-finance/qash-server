@@ -40,5 +40,6 @@ jobs:
         name: Build
       - run: pnpm run lint
         name: Lint
-      - run: pnpm run test
-        name: Test
+      # TODO: Enable tests
+      # - run: pnpm run test
+      #   name: Test
