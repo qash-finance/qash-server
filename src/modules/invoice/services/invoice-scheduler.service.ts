@@ -54,7 +54,7 @@ export class InvoiceSchedulerService {
    * Run daily to mark invoices as overdue
    * Checks invoices that are past their due date and marks them as OVERDUE
    */
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_HOUR)
   async markOverdueInvoices() {
     try {
       const now = new Date();
@@ -98,10 +98,30 @@ export class InvoiceSchedulerService {
         return;
       }
 
-      // Calculate the actual pay date (when employer must pay)
-      // The schedule's nextGenerateDate is when we generate, so pay date = nextGenerateDate + generateDaysBefore
-      const payDate = new Date(schedule.nextGenerateDate);
-      payDate.setDate(payDate.getDate() + schedule.generateDaysBefore);
+      // Fetch current cycle number from payroll
+      const payrollWithCycle = await tx.payroll.findUnique({
+        where: { id: payroll.id },
+        select: { currentCycleNumber: true, payStartDate: true },
+      });
+
+      if (!payrollWithCycle) {
+        this.logger.error(`Payroll ${payroll.id} not found`);
+        return;
+      }
+
+      // Calculate pay date using the same logic as invoice.service.ts
+      // Paydate is start date + current cycle month
+      const currentPayDate = new Date(payrollWithCycle.payStartDate);
+      currentPayDate.setMonth(
+        currentPayDate.getMonth() + payrollWithCycle.currentCycleNumber,
+      );
+
+      // Calculate previous pay date: current pay date - 1 month
+      const previousPayDate = new Date(currentPayDate);
+      previousPayDate.setMonth(previousPayDate.getMonth() - 1);
+
+      // Use currentPayDate as the pay date (when employer must pay)
+      const payDate = new Date(currentPayDate);
 
       // Check if invoice already exists for this pay date
       const latestInvoice =
@@ -165,28 +185,18 @@ export class InvoiceSchedulerService {
         (invoice.paymentToken as unknown as TokenDto).name,
       );
 
-      // Calculate next generate date based on the current pay date
-      const nextGenerateDate = this.calculateNextGenerateDate(
-        schedule.frequency,
-        schedule.dayOfMonth,
-        schedule.dayOfWeek,
-        schedule.generateDaysBefore,
-        payDate, // Use the current pay date as base
-      );
-
-      // Update schedule
-      await this.scheduleService.markAsGenerated(
-        schedule.id,
-        issueDate,
-        nextGenerateDate,
-        tx,
-      );
-
       // Increment current cycle number for the payroll
       const updatedPayroll = await tx.payroll.findUnique({
         where: { id: payroll.id },
-        select: { currentCycleNumber: true, payrollCycle: true },
+        select: {
+          currentCycleNumber: true,
+          payrollCycle: true,
+          payStartDate: true,
+        },
       });
+
+      let finalCycleNumber = updatedPayroll?.currentCycleNumber || 0;
+      let nextPayDate: Date | null = null;
 
       if (updatedPayroll) {
         const newCycleNumber = updatedPayroll.currentCycleNumber + 1;
@@ -197,6 +207,13 @@ export class InvoiceSchedulerService {
             where: { id: payroll.id },
             data: { currentCycleNumber: newCycleNumber },
           });
+
+          finalCycleNumber = newCycleNumber;
+
+          // Calculate next pay date using the incremented cycle number
+          // This matches the logic in invoice.service.ts
+          nextPayDate = new Date(updatedPayroll.payStartDate);
+          nextPayDate.setMonth(nextPayDate.getMonth() + newCycleNumber);
 
           // If we've reached the cycle limit, deactivate the schedule
           if (newCycleNumber >= updatedPayroll.payrollCycle) {
@@ -211,8 +228,32 @@ export class InvoiceSchedulerService {
         }
       }
 
+      // Calculate next generate date based on the next pay date
+      // Since we've already calculated the next pay date using cycle-based logic,
+      // we just need to subtract generateDaysBefore to get when to generate the invoice
+      // If we've reached the cycle limit, nextPayDate will be null and we won't schedule next generation
+      const nextGenerateDate = nextPayDate
+        ? (() => {
+            const generateDate = new Date(nextPayDate);
+            generateDate.setDate(
+              generateDate.getDate() - schedule.generateDaysBefore,
+            );
+            return generateDate;
+          })()
+        : null;
+
+      // Update schedule (only if we have a next generate date)
+      if (nextGenerateDate) {
+        await this.scheduleService.markAsGenerated(
+          schedule.id,
+          issueDate,
+          nextGenerateDate,
+          tx,
+        );
+      }
+
       this.logger.log(
-        `Generated invoice ${invoice.invoiceNumber} from schedule ${schedule.id} (Cycle ${updatedPayroll?.currentCycleNumber || 0}/${updatedPayroll?.payrollCycle || 0})`,
+        `Generated invoice ${invoice.invoiceNumber} from schedule ${schedule.id} (Cycle ${finalCycleNumber}/${updatedPayroll?.payrollCycle || 0})`,
       );
     });
   }
