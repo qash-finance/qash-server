@@ -188,6 +188,7 @@ CREATE TABLE "payrolls" (
     "amount" VARCHAR(50) NOT NULL,
     "contractTerm" "ContractTermEnum" NOT NULL,
     "payroll_cycle" INTEGER NOT NULL,
+    "current_cycle_number" INTEGER NOT NULL DEFAULT 0,
     "joining_date" TIMESTAMP(6) NOT NULL,
     "pay_start_date" TIMESTAMP(6) NOT NULL,
     "pay_end_date" TIMESTAMP(6) NOT NULL,
