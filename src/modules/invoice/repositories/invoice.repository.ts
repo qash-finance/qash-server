@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import {
-  InvoiceDelegate,
-  InvoiceModel,
-} from '../../../database/generated/models/Invoice';
+import { InvoiceModel } from '../../../database/generated/models/Invoice';
 import {
   InvoiceStatusEnum,
   Prisma,

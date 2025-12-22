@@ -13,7 +13,6 @@ import { handleError } from '../../../common/utils/errors';
 import {
   validateAddress,
   validateName,
-  normalizeAddress,
   sanitizeString,
 } from '../../../common/utils/validation.util';
 import {

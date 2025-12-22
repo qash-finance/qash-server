@@ -224,6 +224,7 @@ export class InvoiceSchedulerService {
   private calculateNextGenerateDate(
     frequency: string,
     dayOfMonth?: number,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     dayOfWeek?: number,
     generateDaysBefore: number = 0,
     lastPayDate?: Date,
