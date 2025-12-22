@@ -3,7 +3,6 @@ import {
   Logger,
   NotFoundException,
   ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { PayrollRepository, PayrollWithInvoices } from './payroll.repository';
 import { EmployeeRepository } from '../employee/repositories/employee.repository';

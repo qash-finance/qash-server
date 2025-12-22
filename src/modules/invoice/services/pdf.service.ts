@@ -53,7 +53,7 @@ export class PdfService {
         this.logger.debug(`Found Chrome/Chromium via which: ${chromePath}`);
         return chromePath;
       }
-    } catch (error) {
+    } catch (_error) {
       // which command failed, continue
     }
 
