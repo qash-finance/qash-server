@@ -379,6 +379,14 @@ export class UpdatePayrollDto {
   amount?: string;
 
   @ApiPropertyOptional({
+    description: 'Item description of the payroll',
+    example: 'Consultant service',
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({
     description:
       'Payday day-of-month (1-31). If provided, next pay starts next month on this day',
     example: 10,
