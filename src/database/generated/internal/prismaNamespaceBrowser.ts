@@ -229,6 +229,7 @@ export const PayrollScalarFieldEnum = {
   contractTerm: 'contractTerm',
   payrollCycle: 'payrollCycle',
   currentCycleNumber: 'currentCycleNumber',
+  paydayDay: 'paydayDay',
   joiningDate: 'joiningDate',
   payStartDate: 'payStartDate',
   payEndDate: 'payEndDate',

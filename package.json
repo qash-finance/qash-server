@@ -28,7 +28,8 @@
     "prisma:reset": "prisma migrate reset --schema ./src/database/prisma/schema.prisma --config ./src/database/prisma/prisma.config.ts",
     "prisma:migrate:deploy": "prisma migrate deploy --schema ./src/database/prisma/schema.prisma --config ./src/database/prisma/prisma.config.ts",
     "prisma:migrate:dev": "prisma migrate dev --schema ./src/database/prisma/schema.prisma --config ./src/database/prisma/prisma.config.ts",
-    "prisma:studio": "npx prisma studio --config ./src/database/prisma/prisma.config.ts"
+    "prisma:studio": "npx prisma studio --config ./src/database/prisma/prisma.config.ts",
+    "puppeteer:install": "npx puppeteer browsers install chrome"
   },
   "dependencies": {
     "@json2csv/plainjs": "^7.0.6",
@@ -118,6 +119,9 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    }
   }
 }

@@ -12,6 +12,7 @@ import {
   UpdatePayrollDto,
   PayrollQueryDto,
   PayrollStatsDto,
+  CreatePayroll,
 } from './payroll.dto';
 import {
   InvoiceScheduleUpdateInput,
@@ -307,12 +308,13 @@ export class PayrollService {
         const payEndDate = new Date(payStartDate);
         payEndDate.setMonth(payEndDate.getMonth() + dto.payrollCycle);
 
+        // TODO: Uncomment this when we have a way to handle this
         // Pay start date must be after joining date
-        if (payStartDate < joiningDate) {
-          throw new BadRequestException(
-            ErrorPayroll.PayStartDateBeforeJoiningDate,
-          );
-        }
+        // if (payStartDate < joiningDate) {
+        //   throw new BadRequestException(
+        //     ErrorPayroll.PayStartDateBeforeJoiningDate,
+        //   );
+        // }
 
         const payrollData: PayrollCreateInput = {
           company: {
@@ -336,6 +338,7 @@ export class PayrollService {
           description: dto.description,
           note: dto.note,
           metadata: dto.metadata,
+          paydayDay: paydayDay,
         };
 
         const payroll = await this.payrollRepository.create(payrollData, tx);
@@ -389,7 +392,7 @@ export class PayrollService {
     const payEndDate = new Date(payStartDate);
     payEndDate.setMonth(payEndDate.getMonth() + 1);
 
-    const dto: CreatePayrollDto = {
+    const dto: CreatePayroll = {
       employeeId,
       network: {
         name: 'Miden Testnet',
@@ -441,6 +444,8 @@ export class PayrollService {
             tx,
           );
 
+          console.log('DID WE HIT HERE');
+
           if (!existingPayroll) {
             throw new NotFoundException(ErrorPayroll.PayrollNotFound);
           }
@@ -449,8 +454,8 @@ export class PayrollService {
           let payEndDate = existingPayroll.payEndDate;
 
           // If payday updated, recompute next pay start date starting next month
-          if (dto.payday) {
-            const paydayDay = dto.payday;
+          if (dto.paydayDay) {
+            const paydayDay = dto.paydayDay;
             const now = new Date();
             payStartDate = new Date(
               now.getFullYear(),
@@ -470,7 +475,7 @@ export class PayrollService {
             network: dto.network as unknown as JsonValue,
             token: dto.token as unknown as JsonValue,
             ...(dto.payrollCycle && { payEndDate }),
-            ...(dto.payday && { payStartDate }),
+            ...(dto.paydayDay && { payStartDate }),
           };
 
           const updatedPayroll = await this.payrollRepository.update(
@@ -488,7 +493,7 @@ export class PayrollService {
             const scheduleUpdates: InvoiceScheduleUpdateInput = {};
 
             // If payday changed, update dayOfMonth and recalculate nextGenerateDate
-            if (dto.payday) {
+            if (dto.paydayDay) {
               scheduleUpdates.dayOfMonth = payStartDate.getDate();
               // Recalculate nextGenerateDate based on new payday
               const generateDaysBefore = schedule.generateDaysBefore ?? 5;

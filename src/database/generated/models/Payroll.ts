@@ -32,6 +32,7 @@ export type PayrollAvgAggregateOutputType = {
   employeeId: number | null
   payrollCycle: number | null
   currentCycleNumber: number | null
+  paydayDay: number | null
 }
 
 export type PayrollSumAggregateOutputType = {
@@ -40,6 +41,7 @@ export type PayrollSumAggregateOutputType = {
   employeeId: number | null
   payrollCycle: number | null
   currentCycleNumber: number | null
+  paydayDay: number | null
 }
 
 export type PayrollMinAggregateOutputType = {
@@ -53,6 +55,7 @@ export type PayrollMinAggregateOutputType = {
   contractTerm: $Enums.ContractTermEnum | null
   payrollCycle: number | null
   currentCycleNumber: number | null
+  paydayDay: number | null
   joiningDate: Date | null
   payStartDate: Date | null
   payEndDate: Date | null
@@ -72,6 +75,7 @@ export type PayrollMaxAggregateOutputType = {
   contractTerm: $Enums.ContractTermEnum | null
   payrollCycle: number | null
   currentCycleNumber: number | null
+  paydayDay: number | null
   joiningDate: Date | null
   payStartDate: Date | null
   payEndDate: Date | null
@@ -93,6 +97,7 @@ export type PayrollCountAggregateOutputType = {
   contractTerm: number
   payrollCycle: number
   currentCycleNumber: number
+  paydayDay: number
   joiningDate: number
   payStartDate: number
   payEndDate: number
@@ -110,6 +115,7 @@ export type PayrollAvgAggregateInputType = {
   employeeId?: true
   payrollCycle?: true
   currentCycleNumber?: true
+  paydayDay?: true
 }
 
 export type PayrollSumAggregateInputType = {
@@ -118,6 +124,7 @@ export type PayrollSumAggregateInputType = {
   employeeId?: true
   payrollCycle?: true
   currentCycleNumber?: true
+  paydayDay?: true
 }
 
 export type PayrollMinAggregateInputType = {
@@ -131,6 +138,7 @@ export type PayrollMinAggregateInputType = {
   contractTerm?: true
   payrollCycle?: true
   currentCycleNumber?: true
+  paydayDay?: true
   joiningDate?: true
   payStartDate?: true
   payEndDate?: true
@@ -150,6 +158,7 @@ export type PayrollMaxAggregateInputType = {
   contractTerm?: true
   payrollCycle?: true
   currentCycleNumber?: true
+  paydayDay?: true
   joiningDate?: true
   payStartDate?: true
   payEndDate?: true
@@ -171,6 +180,7 @@ export type PayrollCountAggregateInputType = {
   contractTerm?: true
   payrollCycle?: true
   currentCycleNumber?: true
+  paydayDay?: true
   joiningDate?: true
   payStartDate?: true
   payEndDate?: true
@@ -280,6 +290,7 @@ export type PayrollGroupByOutputType = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber: number
+  paydayDay: number
   joiningDate: Date
   payStartDate: Date
   payEndDate: Date
@@ -325,6 +336,7 @@ export type PayrollWhereInput = {
   contractTerm?: Prisma.EnumContractTermEnumFilter<"Payroll"> | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFilter<"Payroll"> | number
   currentCycleNumber?: Prisma.IntFilter<"Payroll"> | number
+  paydayDay?: Prisma.IntFilter<"Payroll"> | number
   joiningDate?: Prisma.DateTimeFilter<"Payroll"> | Date | string
   payStartDate?: Prisma.DateTimeFilter<"Payroll"> | Date | string
   payEndDate?: Prisma.DateTimeFilter<"Payroll"> | Date | string
@@ -351,6 +363,7 @@ export type PayrollOrderByWithRelationInput = {
   contractTerm?: Prisma.SortOrder
   payrollCycle?: Prisma.SortOrder
   currentCycleNumber?: Prisma.SortOrder
+  paydayDay?: Prisma.SortOrder
   joiningDate?: Prisma.SortOrder
   payStartDate?: Prisma.SortOrder
   payEndDate?: Prisma.SortOrder
@@ -380,6 +393,7 @@ export type PayrollWhereUniqueInput = Prisma.AtLeast<{
   contractTerm?: Prisma.EnumContractTermEnumFilter<"Payroll"> | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFilter<"Payroll"> | number
   currentCycleNumber?: Prisma.IntFilter<"Payroll"> | number
+  paydayDay?: Prisma.IntFilter<"Payroll"> | number
   joiningDate?: Prisma.DateTimeFilter<"Payroll"> | Date | string
   payStartDate?: Prisma.DateTimeFilter<"Payroll"> | Date | string
   payEndDate?: Prisma.DateTimeFilter<"Payroll"> | Date | string
@@ -406,6 +420,7 @@ export type PayrollOrderByWithAggregationInput = {
   contractTerm?: Prisma.SortOrder
   payrollCycle?: Prisma.SortOrder
   currentCycleNumber?: Prisma.SortOrder
+  paydayDay?: Prisma.SortOrder
   joiningDate?: Prisma.SortOrder
   payStartDate?: Prisma.SortOrder
   payEndDate?: Prisma.SortOrder
@@ -436,6 +451,7 @@ export type PayrollScalarWhereWithAggregatesInput = {
   contractTerm?: Prisma.EnumContractTermEnumWithAggregatesFilter<"Payroll"> | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntWithAggregatesFilter<"Payroll"> | number
   currentCycleNumber?: Prisma.IntWithAggregatesFilter<"Payroll"> | number
+  paydayDay?: Prisma.IntWithAggregatesFilter<"Payroll"> | number
   joiningDate?: Prisma.DateTimeWithAggregatesFilter<"Payroll"> | Date | string
   payStartDate?: Prisma.DateTimeWithAggregatesFilter<"Payroll"> | Date | string
   payEndDate?: Prisma.DateTimeWithAggregatesFilter<"Payroll"> | Date | string
@@ -455,6 +471,7 @@ export type PayrollCreateInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -481,6 +498,7 @@ export type PayrollUncheckedCreateInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -502,6 +520,7 @@ export type PayrollUpdateInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -528,6 +547,7 @@ export type PayrollUncheckedUpdateInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -552,6 +572,7 @@ export type PayrollCreateManyInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -571,6 +592,7 @@ export type PayrollUpdateManyMutationInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -593,6 +615,7 @@ export type PayrollUncheckedUpdateManyInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -625,6 +648,7 @@ export type PayrollCountOrderByAggregateInput = {
   contractTerm?: Prisma.SortOrder
   payrollCycle?: Prisma.SortOrder
   currentCycleNumber?: Prisma.SortOrder
+  paydayDay?: Prisma.SortOrder
   joiningDate?: Prisma.SortOrder
   payStartDate?: Prisma.SortOrder
   payEndDate?: Prisma.SortOrder
@@ -640,6 +664,7 @@ export type PayrollAvgOrderByAggregateInput = {
   employeeId?: Prisma.SortOrder
   payrollCycle?: Prisma.SortOrder
   currentCycleNumber?: Prisma.SortOrder
+  paydayDay?: Prisma.SortOrder
 }
 
 export type PayrollMaxOrderByAggregateInput = {
@@ -653,6 +678,7 @@ export type PayrollMaxOrderByAggregateInput = {
   contractTerm?: Prisma.SortOrder
   payrollCycle?: Prisma.SortOrder
   currentCycleNumber?: Prisma.SortOrder
+  paydayDay?: Prisma.SortOrder
   joiningDate?: Prisma.SortOrder
   payStartDate?: Prisma.SortOrder
   payEndDate?: Prisma.SortOrder
@@ -672,6 +698,7 @@ export type PayrollMinOrderByAggregateInput = {
   contractTerm?: Prisma.SortOrder
   payrollCycle?: Prisma.SortOrder
   currentCycleNumber?: Prisma.SortOrder
+  paydayDay?: Prisma.SortOrder
   joiningDate?: Prisma.SortOrder
   payStartDate?: Prisma.SortOrder
   payEndDate?: Prisma.SortOrder
@@ -686,6 +713,7 @@ export type PayrollSumOrderByAggregateInput = {
   employeeId?: Prisma.SortOrder
   payrollCycle?: Prisma.SortOrder
   currentCycleNumber?: Prisma.SortOrder
+  paydayDay?: Prisma.SortOrder
 }
 
 export type PayrollNullableScalarRelationFilter = {
@@ -830,6 +858,7 @@ export type PayrollCreateWithoutCompanyInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -854,6 +883,7 @@ export type PayrollUncheckedCreateWithoutCompanyInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -907,6 +937,7 @@ export type PayrollScalarWhereInput = {
   contractTerm?: Prisma.EnumContractTermEnumFilter<"Payroll"> | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFilter<"Payroll"> | number
   currentCycleNumber?: Prisma.IntFilter<"Payroll"> | number
+  paydayDay?: Prisma.IntFilter<"Payroll"> | number
   joiningDate?: Prisma.DateTimeFilter<"Payroll"> | Date | string
   payStartDate?: Prisma.DateTimeFilter<"Payroll"> | Date | string
   payEndDate?: Prisma.DateTimeFilter<"Payroll"> | Date | string
@@ -926,6 +957,7 @@ export type PayrollCreateWithoutEmployeeInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -950,6 +982,7 @@ export type PayrollUncheckedCreateWithoutEmployeeInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -997,6 +1030,7 @@ export type PayrollCreateWithoutInvoicesInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -1022,6 +1056,7 @@ export type PayrollUncheckedCreateWithoutInvoicesInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -1058,6 +1093,7 @@ export type PayrollUpdateWithoutInvoicesInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1083,6 +1119,7 @@ export type PayrollUncheckedUpdateWithoutInvoicesInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1103,6 +1140,7 @@ export type PayrollCreateWithoutInvoiceSchedulesInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -1128,6 +1166,7 @@ export type PayrollUncheckedCreateWithoutInvoiceSchedulesInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -1164,6 +1203,7 @@ export type PayrollUpdateWithoutInvoiceSchedulesInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1189,6 +1229,7 @@ export type PayrollUncheckedUpdateWithoutInvoiceSchedulesInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1211,6 +1252,7 @@ export type PayrollCreateManyCompanyInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -1230,6 +1272,7 @@ export type PayrollUpdateWithoutCompanyInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1254,6 +1297,7 @@ export type PayrollUncheckedUpdateWithoutCompanyInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1277,6 +1321,7 @@ export type PayrollUncheckedUpdateManyWithoutCompanyInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1298,6 +1343,7 @@ export type PayrollCreateManyEmployeeInput = {
   contractTerm: $Enums.ContractTermEnum
   payrollCycle: number
   currentCycleNumber?: number
+  paydayDay: number
   joiningDate: Date | string
   payStartDate: Date | string
   payEndDate: Date | string
@@ -1317,6 +1363,7 @@ export type PayrollUpdateWithoutEmployeeInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1341,6 +1388,7 @@ export type PayrollUncheckedUpdateWithoutEmployeeInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1364,6 +1412,7 @@ export type PayrollUncheckedUpdateManyWithoutEmployeeInput = {
   contractTerm?: Prisma.EnumContractTermEnumFieldUpdateOperationsInput | $Enums.ContractTermEnum
   payrollCycle?: Prisma.IntFieldUpdateOperationsInput | number
   currentCycleNumber?: Prisma.IntFieldUpdateOperationsInput | number
+  paydayDay?: Prisma.IntFieldUpdateOperationsInput | number
   joiningDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payStartDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payEndDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1426,6 +1475,7 @@ export type PayrollSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   contractTerm?: boolean
   payrollCycle?: boolean
   currentCycleNumber?: boolean
+  paydayDay?: boolean
   joiningDate?: boolean
   payStartDate?: boolean
   payEndDate?: boolean
@@ -1453,6 +1503,7 @@ export type PayrollSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   contractTerm?: boolean
   payrollCycle?: boolean
   currentCycleNumber?: boolean
+  paydayDay?: boolean
   joiningDate?: boolean
   payStartDate?: boolean
   payEndDate?: boolean
@@ -1477,6 +1528,7 @@ export type PayrollSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   contractTerm?: boolean
   payrollCycle?: boolean
   currentCycleNumber?: boolean
+  paydayDay?: boolean
   joiningDate?: boolean
   payStartDate?: boolean
   payEndDate?: boolean
@@ -1501,6 +1553,7 @@ export type PayrollSelectScalar = {
   contractTerm?: boolean
   payrollCycle?: boolean
   currentCycleNumber?: boolean
+  paydayDay?: boolean
   joiningDate?: boolean
   payStartDate?: boolean
   payEndDate?: boolean
@@ -1510,7 +1563,7 @@ export type PayrollSelectScalar = {
   metadata?: boolean
 }
 
-export type PayrollOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "createdAt" | "updatedAt" | "companyId" | "employeeId" | "network" | "token" | "amount" | "contractTerm" | "payrollCycle" | "currentCycleNumber" | "joiningDate" | "payStartDate" | "payEndDate" | "description" | "status" | "note" | "metadata", ExtArgs["result"]["payroll"]>
+export type PayrollOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "createdAt" | "updatedAt" | "companyId" | "employeeId" | "network" | "token" | "amount" | "contractTerm" | "payrollCycle" | "currentCycleNumber" | "paydayDay" | "joiningDate" | "payStartDate" | "payEndDate" | "description" | "status" | "note" | "metadata", ExtArgs["result"]["payroll"]>
 export type PayrollInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   company?: boolean | Prisma.CompanyDefaultArgs<ExtArgs>
   employee?: boolean | Prisma.EmployeeDefaultArgs<ExtArgs>
@@ -1548,6 +1601,7 @@ export type $PayrollPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     contractTerm: $Enums.ContractTermEnum
     payrollCycle: number
     currentCycleNumber: number
+    paydayDay: number
     joiningDate: Date
     payStartDate: Date
     payEndDate: Date
@@ -1994,6 +2048,7 @@ export interface PayrollFieldRefs {
   readonly contractTerm: Prisma.FieldRef<"Payroll", 'ContractTermEnum'>
   readonly payrollCycle: Prisma.FieldRef<"Payroll", 'Int'>
   readonly currentCycleNumber: Prisma.FieldRef<"Payroll", 'Int'>
+  readonly paydayDay: Prisma.FieldRef<"Payroll", 'Int'>
   readonly joiningDate: Prisma.FieldRef<"Payroll", 'DateTime'>
   readonly payStartDate: Prisma.FieldRef<"Payroll", 'DateTime'>
   readonly payEndDate: Prisma.FieldRef<"Payroll", 'DateTime'>

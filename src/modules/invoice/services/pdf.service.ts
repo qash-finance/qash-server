@@ -1,10 +1,66 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InvoiceModel } from 'src/database/generated/models';
 import puppeteer from 'puppeteer';
+import { execSync } from 'child_process';
+import { existsSync } from 'fs';
 
 @Injectable()
 export class PdfService {
   private readonly logger = new Logger(PdfService.name);
+
+  /**
+   * Get Chrome/Chromium executable path
+   * Checks environment variable first, then common system paths
+   */
+  private getChromeExecutablePath(): string | undefined {
+    // Check environment variable first
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      return process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
+    // Common Chrome/Chromium paths for different platforms
+    const commonPaths = [
+      // macOS
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      // Linux
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      // Windows (if running on Windows)
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    ];
+
+    // Check if any common path exists
+    for (const path of commonPaths) {
+      if (existsSync(path)) {
+        this.logger.debug(`Found Chrome/Chromium at: ${path}`);
+        return path;
+      }
+    }
+
+    // Try to find Chrome via which command (Unix-like systems)
+    try {
+      const chromePath = execSync(
+        'which google-chrome || which chromium || which chromium-browser',
+        {
+          encoding: 'utf-8',
+        },
+      ).trim();
+      if (chromePath) {
+        this.logger.debug(`Found Chrome/Chromium via which: ${chromePath}`);
+        return chromePath;
+      }
+    } catch (error) {
+      // which command failed, continue
+    }
+
+    // If no path found, return undefined to let Puppeteer use its bundled Chrome
+    // (requires: npx puppeteer browsers install chrome)
+    return undefined;
+  }
 
   /**
    * Generate PDF buffer from invoice data
@@ -13,17 +69,28 @@ export class PdfService {
     try {
       const htmlContent = this.generateInvoiceHtml(invoice);
 
-      const browser = await puppeteer.launch({
+      const executablePath = this.getChromeExecutablePath();
+      const launchOptions: any = {
         headless: true,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      };
+
+      if (executablePath) {
+        launchOptions.executablePath = executablePath;
+      }
+
+      const browser = await puppeteer.launch(launchOptions);
       const page = await browser.newPage();
       await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
       const pdfBuffer = await page.pdf({
         format: 'A4',
-        margin: { top: '0.5cm', bottom: '0.5cm', left: '0.5cm', right: '0.5cm' },
+        margin: {
+          top: '0.5cm',
+          bottom: '0.5cm',
+          left: '0.5cm',
+          right: '0.5cm',
+        },
         printBackground: true,
       });
 
