@@ -19,7 +19,7 @@ Before you begin, you need to install the following tools:
 1. Clone the repository:
    ```sh
     git clone https://github.com/qash-finance/qash-server.git
-    cd qash-ui
+    cd qash-server
    ```
 2. Make sure to install all dependencies by running `pnpm install`
 3. Run `cp .env.example .env`
