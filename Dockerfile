@@ -1,17 +1,6 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install dependencies for Puppeteer/Chromium
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
-
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-
 # Copy package files
 COPY package*.json pnpm-lock.yaml ./
 
@@ -33,19 +22,6 @@ RUN pnpm run build
 
 FROM node:20-alpine
 WORKDIR /app
-
-# Install dependencies for Puppeteer/Chromium in production
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
-
-# Set Puppeteer environment variables
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Install pnpm
 RUN npm install -g pnpm
