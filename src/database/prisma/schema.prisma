@@ -131,6 +131,7 @@ model Company {
 
   teamMembers  TeamMember[]
   contacts     Employee[]
+  clients      Client[]
   groups       EmployeeGroup[]
   payrolls     Payroll[]
   bills        Bill[]
@@ -181,6 +182,35 @@ model Employee {
   @@index([groupId])
   @@index([email])
   @@map("employees")
+}
+
+model Client {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
+  createdAt DateTime @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @map("updated_at") @db.Timestamp(6)
+
+  companyId Int     @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  email     String @db.VarChar(255)
+  companyName String @map("company_name") @db.VarChar(255)
+
+  companyType        String? @map("company_type") @db.VarChar(100)
+  country            String? @db.VarChar(100)
+  state              String? @db.VarChar(100)
+  city               String? @db.VarChar(100)
+  address1           String? @map("address_1") @db.VarChar(255)
+  address2           String? @map("address_2") @db.VarChar(255)
+  taxId              String? @map("tax_id") @db.VarChar(100)
+  postalCode         String? @map("postal_code") @db.VarChar(20)
+  registrationNumber String? @map("registration_number") @db.VarChar(100)
+
+  @@index([companyId])
+  @@index([email])
+  @@unique([companyId, email])
+  @@map("clients")
 }
 
 model EmployeeGroup {

@@ -310,6 +310,7 @@ export type CompanyWhereInput = {
   metadata?: Prisma.JsonNullableFilter<"Company">
   teamMembers?: Prisma.TeamMemberListRelationFilter
   contacts?: Prisma.EmployeeListRelationFilter
+  clients?: Prisma.ClientListRelationFilter
   groups?: Prisma.EmployeeGroupListRelationFilter
   payrolls?: Prisma.PayrollListRelationFilter
   bills?: Prisma.BillListRelationFilter
@@ -338,6 +339,7 @@ export type CompanyOrderByWithRelationInput = {
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   teamMembers?: Prisma.TeamMemberOrderByRelationAggregateInput
   contacts?: Prisma.EmployeeOrderByRelationAggregateInput
+  clients?: Prisma.ClientOrderByRelationAggregateInput
   groups?: Prisma.EmployeeGroupOrderByRelationAggregateInput
   payrolls?: Prisma.PayrollOrderByRelationAggregateInput
   bills?: Prisma.BillOrderByRelationAggregateInput
@@ -369,6 +371,7 @@ export type CompanyWhereUniqueInput = Prisma.AtLeast<{
   metadata?: Prisma.JsonNullableFilter<"Company">
   teamMembers?: Prisma.TeamMemberListRelationFilter
   contacts?: Prisma.EmployeeListRelationFilter
+  clients?: Prisma.ClientListRelationFilter
   groups?: Prisma.EmployeeGroupListRelationFilter
   payrolls?: Prisma.PayrollListRelationFilter
   bills?: Prisma.BillListRelationFilter
@@ -444,6 +447,7 @@ export type CompanyCreateInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
@@ -472,6 +476,7 @@ export type CompanyUncheckedCreateInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeUncheckedCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupUncheckedCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
@@ -499,6 +504,7 @@ export type CompanyUpdateInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
@@ -527,6 +533,7 @@ export type CompanyUncheckedUpdateInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUncheckedUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUncheckedUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
@@ -706,6 +713,20 @@ export type CompanyUpdateOneRequiredWithoutContactsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CompanyUpdateToOneWithWhereWithoutContactsInput, Prisma.CompanyUpdateWithoutContactsInput>, Prisma.CompanyUncheckedUpdateWithoutContactsInput>
 }
 
+export type CompanyCreateNestedOneWithoutClientsInput = {
+  create?: Prisma.XOR<Prisma.CompanyCreateWithoutClientsInput, Prisma.CompanyUncheckedCreateWithoutClientsInput>
+  connectOrCreate?: Prisma.CompanyCreateOrConnectWithoutClientsInput
+  connect?: Prisma.CompanyWhereUniqueInput
+}
+
+export type CompanyUpdateOneRequiredWithoutClientsNestedInput = {
+  create?: Prisma.XOR<Prisma.CompanyCreateWithoutClientsInput, Prisma.CompanyUncheckedCreateWithoutClientsInput>
+  connectOrCreate?: Prisma.CompanyCreateOrConnectWithoutClientsInput
+  upsert?: Prisma.CompanyUpsertWithoutClientsInput
+  connect?: Prisma.CompanyWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CompanyUpdateToOneWithWhereWithoutClientsInput, Prisma.CompanyUpdateWithoutClientsInput>, Prisma.CompanyUncheckedUpdateWithoutClientsInput>
+}
+
 export type CompanyCreateNestedOneWithoutGroupsInput = {
   create?: Prisma.XOR<Prisma.CompanyCreateWithoutGroupsInput, Prisma.CompanyUncheckedCreateWithoutGroupsInput>
   connectOrCreate?: Prisma.CompanyCreateOrConnectWithoutGroupsInput
@@ -812,6 +833,7 @@ export type CompanyCreateWithoutTeamMembersInput = {
   isActive?: boolean
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   contacts?: Prisma.EmployeeCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
@@ -839,6 +861,7 @@ export type CompanyUncheckedCreateWithoutTeamMembersInput = {
   isActive?: boolean
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   contacts?: Prisma.EmployeeUncheckedCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupUncheckedCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
@@ -881,6 +904,7 @@ export type CompanyUpdateWithoutTeamMembersInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   contacts?: Prisma.EmployeeUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
@@ -908,6 +932,7 @@ export type CompanyUncheckedUpdateWithoutTeamMembersInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   contacts?: Prisma.EmployeeUncheckedUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUncheckedUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
@@ -934,6 +959,7 @@ export type CompanyCreateWithoutContactsInput = {
   isActive?: boolean
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
@@ -961,6 +987,7 @@ export type CompanyUncheckedCreateWithoutContactsInput = {
   isActive?: boolean
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupUncheckedCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
@@ -1003,6 +1030,7 @@ export type CompanyUpdateWithoutContactsInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
@@ -1030,6 +1058,133 @@ export type CompanyUncheckedUpdateWithoutContactsInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutCompanyNestedInput
+  groups?: Prisma.EmployeeGroupUncheckedUpdateManyWithoutCompanyNestedInput
+  payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
+  bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
+  invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
+  invoicesTo?: Prisma.InvoiceUncheckedUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedUpdateManyWithoutCompanyNestedInput
+}
+
+export type CompanyCreateWithoutClientsInput = {
+  uuid?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  companyName: string
+  registrationNumber: string
+  companyType: $Enums.CompanyTypeEnum
+  taxId?: string | null
+  notificationEmail?: string | null
+  country: string
+  address1: string
+  address2?: string | null
+  city: string
+  postalCode: string
+  verificationStatus?: $Enums.CompanyVerificationStatusEnum
+  isActive?: boolean
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  teamMembers?: Prisma.TeamMemberCreateNestedManyWithoutCompanyInput
+  contacts?: Prisma.EmployeeCreateNestedManyWithoutCompanyInput
+  groups?: Prisma.EmployeeGroupCreateNestedManyWithoutCompanyInput
+  payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
+  bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
+  invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
+  invoicesTo?: Prisma.InvoiceCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkCreateNestedManyWithoutCompanyInput
+}
+
+export type CompanyUncheckedCreateWithoutClientsInput = {
+  id?: number
+  uuid?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  companyName: string
+  registrationNumber: string
+  companyType: $Enums.CompanyTypeEnum
+  taxId?: string | null
+  notificationEmail?: string | null
+  country: string
+  address1: string
+  address2?: string | null
+  city: string
+  postalCode: string
+  verificationStatus?: $Enums.CompanyVerificationStatusEnum
+  isActive?: boolean
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  teamMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutCompanyInput
+  contacts?: Prisma.EmployeeUncheckedCreateNestedManyWithoutCompanyInput
+  groups?: Prisma.EmployeeGroupUncheckedCreateNestedManyWithoutCompanyInput
+  payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
+  bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
+  invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
+  invoicesTo?: Prisma.InvoiceUncheckedCreateNestedManyWithoutToCompanyInput
+  paymentLinks?: Prisma.PaymentLinkUncheckedCreateNestedManyWithoutCompanyInput
+}
+
+export type CompanyCreateOrConnectWithoutClientsInput = {
+  where: Prisma.CompanyWhereUniqueInput
+  create: Prisma.XOR<Prisma.CompanyCreateWithoutClientsInput, Prisma.CompanyUncheckedCreateWithoutClientsInput>
+}
+
+export type CompanyUpsertWithoutClientsInput = {
+  update: Prisma.XOR<Prisma.CompanyUpdateWithoutClientsInput, Prisma.CompanyUncheckedUpdateWithoutClientsInput>
+  create: Prisma.XOR<Prisma.CompanyCreateWithoutClientsInput, Prisma.CompanyUncheckedCreateWithoutClientsInput>
+  where?: Prisma.CompanyWhereInput
+}
+
+export type CompanyUpdateToOneWithWhereWithoutClientsInput = {
+  where?: Prisma.CompanyWhereInput
+  data: Prisma.XOR<Prisma.CompanyUpdateWithoutClientsInput, Prisma.CompanyUncheckedUpdateWithoutClientsInput>
+}
+
+export type CompanyUpdateWithoutClientsInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  companyName?: Prisma.StringFieldUpdateOperationsInput | string
+  registrationNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
+  taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  country?: Prisma.StringFieldUpdateOperationsInput | string
+  address1?: Prisma.StringFieldUpdateOperationsInput | string
+  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  postalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  verificationStatus?: Prisma.EnumCompanyVerificationStatusEnumFieldUpdateOperationsInput | $Enums.CompanyVerificationStatusEnum
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  teamMembers?: Prisma.TeamMemberUpdateManyWithoutCompanyNestedInput
+  contacts?: Prisma.EmployeeUpdateManyWithoutCompanyNestedInput
+  groups?: Prisma.EmployeeGroupUpdateManyWithoutCompanyNestedInput
+  payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
+  bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
+  invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
+  invoicesTo?: Prisma.InvoiceUpdateManyWithoutToCompanyNestedInput
+  paymentLinks?: Prisma.PaymentLinkUpdateManyWithoutCompanyNestedInput
+}
+
+export type CompanyUncheckedUpdateWithoutClientsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  companyName?: Prisma.StringFieldUpdateOperationsInput | string
+  registrationNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
+  taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  country?: Prisma.StringFieldUpdateOperationsInput | string
+  address1?: Prisma.StringFieldUpdateOperationsInput | string
+  address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  postalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  verificationStatus?: Prisma.EnumCompanyVerificationStatusEnumFieldUpdateOperationsInput | $Enums.CompanyVerificationStatusEnum
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  teamMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutCompanyNestedInput
+  contacts?: Prisma.EmployeeUncheckedUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUncheckedUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
@@ -1057,6 +1212,7 @@ export type CompanyCreateWithoutGroupsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
@@ -1084,6 +1240,7 @@ export type CompanyUncheckedCreateWithoutGroupsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeUncheckedCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
@@ -1126,6 +1283,7 @@ export type CompanyUpdateWithoutGroupsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
@@ -1153,6 +1311,7 @@ export type CompanyUncheckedUpdateWithoutGroupsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUncheckedUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
@@ -1179,6 +1338,7 @@ export type CompanyCreateWithoutPayrollsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
@@ -1206,6 +1366,7 @@ export type CompanyUncheckedCreateWithoutPayrollsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeUncheckedCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupUncheckedCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
@@ -1248,6 +1409,7 @@ export type CompanyUpdateWithoutPayrollsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
@@ -1275,6 +1437,7 @@ export type CompanyUncheckedUpdateWithoutPayrollsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUncheckedUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUncheckedUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
@@ -1301,6 +1464,7 @@ export type CompanyCreateWithoutInvoicesFromInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
@@ -1328,6 +1492,7 @@ export type CompanyUncheckedCreateWithoutInvoicesFromInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeUncheckedCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupUncheckedCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
@@ -1359,6 +1524,7 @@ export type CompanyCreateWithoutInvoicesToInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
@@ -1386,6 +1552,7 @@ export type CompanyUncheckedCreateWithoutInvoicesToInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeUncheckedCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupUncheckedCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
@@ -1428,6 +1595,7 @@ export type CompanyUpdateWithoutInvoicesFromInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
@@ -1455,6 +1623,7 @@ export type CompanyUncheckedUpdateWithoutInvoicesFromInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUncheckedUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUncheckedUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
@@ -1492,6 +1661,7 @@ export type CompanyUpdateWithoutInvoicesToInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
@@ -1519,6 +1689,7 @@ export type CompanyUncheckedUpdateWithoutInvoicesToInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUncheckedUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUncheckedUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
@@ -1545,6 +1716,7 @@ export type CompanyCreateWithoutBillsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceCreateNestedManyWithoutFromCompanyInput
@@ -1572,6 +1744,7 @@ export type CompanyUncheckedCreateWithoutBillsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeUncheckedCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupUncheckedCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   invoicesFrom?: Prisma.InvoiceUncheckedCreateNestedManyWithoutFromCompanyInput
@@ -1614,6 +1787,7 @@ export type CompanyUpdateWithoutBillsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUpdateManyWithoutFromCompanyNestedInput
@@ -1641,6 +1815,7 @@ export type CompanyUncheckedUpdateWithoutBillsInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUncheckedUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUncheckedUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   invoicesFrom?: Prisma.InvoiceUncheckedUpdateManyWithoutFromCompanyNestedInput
@@ -1667,6 +1842,7 @@ export type CompanyCreateWithoutPaymentLinksInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillCreateNestedManyWithoutCompanyInput
@@ -1694,6 +1870,7 @@ export type CompanyUncheckedCreateWithoutPaymentLinksInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutCompanyInput
   contacts?: Prisma.EmployeeUncheckedCreateNestedManyWithoutCompanyInput
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutCompanyInput
   groups?: Prisma.EmployeeGroupUncheckedCreateNestedManyWithoutCompanyInput
   payrolls?: Prisma.PayrollUncheckedCreateNestedManyWithoutCompanyInput
   bills?: Prisma.BillUncheckedCreateNestedManyWithoutCompanyInput
@@ -1736,6 +1913,7 @@ export type CompanyUpdateWithoutPaymentLinksInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUpdateManyWithoutCompanyNestedInput
@@ -1763,6 +1941,7 @@ export type CompanyUncheckedUpdateWithoutPaymentLinksInput = {
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   teamMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutCompanyNestedInput
   contacts?: Prisma.EmployeeUncheckedUpdateManyWithoutCompanyNestedInput
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutCompanyNestedInput
   groups?: Prisma.EmployeeGroupUncheckedUpdateManyWithoutCompanyNestedInput
   payrolls?: Prisma.PayrollUncheckedUpdateManyWithoutCompanyNestedInput
   bills?: Prisma.BillUncheckedUpdateManyWithoutCompanyNestedInput
@@ -1778,6 +1957,7 @@ export type CompanyUncheckedUpdateWithoutPaymentLinksInput = {
 export type CompanyCountOutputType = {
   teamMembers: number
   contacts: number
+  clients: number
   groups: number
   payrolls: number
   bills: number
@@ -1789,6 +1969,7 @@ export type CompanyCountOutputType = {
 export type CompanyCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   teamMembers?: boolean | CompanyCountOutputTypeCountTeamMembersArgs
   contacts?: boolean | CompanyCountOutputTypeCountContactsArgs
+  clients?: boolean | CompanyCountOutputTypeCountClientsArgs
   groups?: boolean | CompanyCountOutputTypeCountGroupsArgs
   payrolls?: boolean | CompanyCountOutputTypeCountPayrollsArgs
   bills?: boolean | CompanyCountOutputTypeCountBillsArgs
@@ -1819,6 +2000,13 @@ export type CompanyCountOutputTypeCountTeamMembersArgs<ExtArgs extends runtime.T
  */
 export type CompanyCountOutputTypeCountContactsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.EmployeeWhereInput
+}
+
+/**
+ * CompanyCountOutputType without action
+ */
+export type CompanyCountOutputTypeCountClientsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ClientWhereInput
 }
 
 /**
@@ -1884,6 +2072,7 @@ export type CompanySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   metadata?: boolean
   teamMembers?: boolean | Prisma.Company$teamMembersArgs<ExtArgs>
   contacts?: boolean | Prisma.Company$contactsArgs<ExtArgs>
+  clients?: boolean | Prisma.Company$clientsArgs<ExtArgs>
   groups?: boolean | Prisma.Company$groupsArgs<ExtArgs>
   payrolls?: boolean | Prisma.Company$payrollsArgs<ExtArgs>
   bills?: boolean | Prisma.Company$billsArgs<ExtArgs>
@@ -1957,6 +2146,7 @@ export type CompanyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type CompanyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   teamMembers?: boolean | Prisma.Company$teamMembersArgs<ExtArgs>
   contacts?: boolean | Prisma.Company$contactsArgs<ExtArgs>
+  clients?: boolean | Prisma.Company$clientsArgs<ExtArgs>
   groups?: boolean | Prisma.Company$groupsArgs<ExtArgs>
   payrolls?: boolean | Prisma.Company$payrollsArgs<ExtArgs>
   bills?: boolean | Prisma.Company$billsArgs<ExtArgs>
@@ -1973,6 +2163,7 @@ export type $CompanyPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   objects: {
     teamMembers: Prisma.$TeamMemberPayload<ExtArgs>[]
     contacts: Prisma.$EmployeePayload<ExtArgs>[]
+    clients: Prisma.$ClientPayload<ExtArgs>[]
     groups: Prisma.$EmployeeGroupPayload<ExtArgs>[]
     payrolls: Prisma.$PayrollPayload<ExtArgs>[]
     bills: Prisma.$BillPayload<ExtArgs>[]
@@ -2394,6 +2585,7 @@ export interface Prisma__CompanyClient<T, Null = never, ExtArgs extends runtime.
   readonly [Symbol.toStringTag]: "PrismaPromise"
   teamMembers<T extends Prisma.Company$teamMembersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Company$teamMembersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TeamMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   contacts<T extends Prisma.Company$contactsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Company$contactsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmployeePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  clients<T extends Prisma.Company$clientsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Company$clientsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ClientPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   groups<T extends Prisma.Company$groupsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Company$groupsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmployeeGroupPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   payrolls<T extends Prisma.Company$payrollsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Company$payrollsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PayrollPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   bills<T extends Prisma.Company$billsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Company$billsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2879,6 +3071,30 @@ export type Company$contactsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.EmployeeScalarFieldEnum | Prisma.EmployeeScalarFieldEnum[]
+}
+
+/**
+ * Company.clients
+ */
+export type Company$clientsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Client
+   */
+  select?: Prisma.ClientSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Client
+   */
+  omit?: Prisma.ClientOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ClientInclude<ExtArgs> | null
+  where?: Prisma.ClientWhereInput
+  orderBy?: Prisma.ClientOrderByWithRelationInput | Prisma.ClientOrderByWithRelationInput[]
+  cursor?: Prisma.ClientWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ClientScalarFieldEnum | Prisma.ClientScalarFieldEnum[]
 }
 
 /**

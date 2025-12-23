@@ -48,6 +48,11 @@ export type Company = Prisma.CompanyModel
  */
 export type Employee = Prisma.EmployeeModel
 /**
+ * Model Client
+ * 
+ */
+export type Client = Prisma.ClientModel
+/**
  * Model EmployeeGroup
  * 
  */

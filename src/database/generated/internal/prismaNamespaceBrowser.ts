@@ -57,6 +57,7 @@ export const ModelName = {
   TeamMember: 'TeamMember',
   Company: 'Company',
   Employee: 'Employee',
+  Client: 'Client',
   EmployeeGroup: 'EmployeeGroup',
   Payroll: 'Payroll',
   Invoice: 'Invoice',
@@ -199,6 +200,28 @@ export const EmployeeScalarFieldEnum = {
 } as const
 
 export type EmployeeScalarFieldEnum = (typeof EmployeeScalarFieldEnum)[keyof typeof EmployeeScalarFieldEnum]
+
+
+export const ClientScalarFieldEnum = {
+  id: 'id',
+  uuid: 'uuid',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  companyId: 'companyId',
+  email: 'email',
+  companyName: 'companyName',
+  companyType: 'companyType',
+  country: 'country',
+  state: 'state',
+  city: 'city',
+  address1: 'address1',
+  address2: 'address2',
+  taxId: 'taxId',
+  postalCode: 'postalCode',
+  registrationNumber: 'registrationNumber'
+} as const
+
+export type ClientScalarFieldEnum = (typeof ClientScalarFieldEnum)[keyof typeof ClientScalarFieldEnum]
 
 
 export const EmployeeGroupScalarFieldEnum = {
