@@ -22,7 +22,7 @@ export class InvoiceSchedulerService {
   /**
    * Run every hour to check for invoices that need to be generated
    */
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_HOUR)
   async generateScheduledInvoices() {
     try {
       const now = new Date();
