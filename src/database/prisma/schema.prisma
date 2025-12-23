@@ -1,97 +1,475 @@
 generator client {
-  provider = "prisma-client-js"
+  provider     = "prisma-client"
+  output       = "../generated"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-model AddressBook {
-  id          Int        @id() @default(autoincrement())
-  createdAt   DateTime   @map("created_at") @db.Timestamp(6)
-  updatedAt   DateTime   @map("updated_at") @db.Timestamp(6)
-  userAddress String     @map("user_address") @db.VarChar
-  name        String     @db.VarChar
-  address     String     @db.VarChar
-  token       String?    @db.VarChar
-  categoryId  Int        @map("categoryId")
-  categories  Categories @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+model OtpCode {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
 
-  @@map("address_book")
+  userId    Int         @map("user_id")
+  code      String      @db.VarChar(6)
+  type      OtpTypeEnum @default(LOGIN)
+  expiresAt DateTime    @map("expires_at") @db.Timestamp(6)
+  isUsed    Boolean     @default(false) @map("is_used")
+  attempts  Int         @default(0)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime    @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@index([expiresAt])
+  @@map("otp_codes")
 }
 
-model Categories {
-  id          Int           @id() @default(autoincrement())
-  createdAt   DateTime      @map("created_at") @db.Timestamp(6)
-  updatedAt   DateTime      @map("updated_at") @db.Timestamp(6)
-  name        String        @unique() @db.VarChar
-  addressBook AddressBook[]
+model UserSession {
+  id   String @id @default(cuid())
+  uuid String @unique @default(cuid()) @map("uuid")
 
-  @@map("categories")
+  userId       Int      @map("user_id")
+  refreshToken String   @unique @map("refresh_token") @db.VarChar(500)
+  userAgent    String?  @map("user_agent") @db.Text
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  isActive     Boolean  @default(true) @map("is_active")
+  expiresAt    DateTime @map("expires_at") @db.Timestamp(6)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+  @@index([expiresAt])
+  @@map("user_sessions")
 }
 
-model Gift {
-  id             Int              @id() @default(autoincrement())
-  createdAt      DateTime         @map("created_at") @db.Timestamp(6)
-  updatedAt      DateTime         @map("updated_at") @db.Timestamp(6)
-  sender         String           @db.VarChar
-  assets         Json
-  private        Boolean          @default(true)
-  recallable     Boolean          @default(true)
-  recallableTime DateTime?        @map("recallable_time") @db.Timestamp(6)
-  serialNumber   Json             @map("serial_number")
-  noteType       GiftNoteTypeEnum @default(GIFT) @map("note_type")
-  status         GiftStatusEnum   @default(PENDING)
-  secretHash     String           @unique() @map("secret_hash") @db.VarChar
-  recalledAt     DateTime?        @map("recalled_at") @db.Timestamp(6)
-  openedAt       DateTime?        @map("opened_at") @db.Timestamp(6)
-  noteId         String?          @map("note_id") @db.VarChar
+model User {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
 
-  @@map("gift")
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamp(6)
+  email     String       @unique @db.VarChar(255)
+  role      UserRoleEnum @default(USER)
+  isActive  Boolean      @default(true) @map("is_active")
+  lastLogin DateTime?    @map("last_login") @db.Timestamp(6)
+
+  otpCodes       OtpCode[]
+  sessions       UserSession[]
+  teamMembership TeamMember? // 1:1 relationship, each user is a company team member
+  invitedMembers TeamMember[]  @relation("TeamMemberInviter")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
 }
 
-model GroupPayment {
-  id                       Int                        @id() @default(autoincrement())
-  createdAt                DateTime                   @map("created_at") @db.Timestamp(6)
-  updatedAt                DateTime                   @map("updated_at") @db.Timestamp(6)
-  ownerAddress             String                     @map("owner_address") @db.VarChar
-  amount                   String                     @db.VarChar
-  perMember                Float                      @map("per_member")
-  linkCode                 String                     @unique() @map("link_code") @db.VarChar
-  status                   GroupPaymentStatusEnum     @default(PENDING)
-  groupId                  Int?                       @map("groupId")
-  tokens                   Json?
-  groupPaymentGroup        GroupPaymentGroup?         @relation(fields: [groupId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  groupPaymentMemberStatus GroupPaymentMemberStatus[]
-  requestPayment           RequestPayment[]
+model TeamMember {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
 
-  @@map("group_payment")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  firstName      String  @map("first_name") @db.VarChar(100)
+  lastName       String  @map("last_name") @db.VarChar(100)
+  position       String? @db.VarChar(100)
+  profilePicture String? @map("profile_picture") @db.Text
+
+  role     TeamMemberRoleEnum
+  isActive Boolean            @default(true) @map("is_active")
+
+  companyId Int     @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  userId Int  @unique @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  invitedBy Int?      @map("invited_by")
+  inviter   User?     @relation("TeamMemberInviter", fields: [invitedBy], references: [id])
+  invitedAt DateTime? @map("invited_at") @db.Timestamp(6)
+  joinedAt  DateTime? @map("joined_at") @db.Timestamp(6)
+
+  metadata Json? @db.Json
+
+  @@index([companyId])
+  @@index([role])
+  @@index([userId])
+  @@map("team_members")
 }
 
-model GroupPaymentGroup {
-  id           Int            @id() @default(autoincrement())
-  createdAt    DateTime       @map("created_at") @db.Timestamp(6)
-  updatedAt    DateTime       @map("updated_at") @db.Timestamp(6)
-  name         String         @db.VarChar
-  ownerAddress String         @map("owner_address") @db.VarChar
-  members      Json
-  groupPayment GroupPayment[]
+model Company {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
 
-  @@map("group_payment_group")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  companyName        String          @map("company_name") @db.VarChar(255)
+  registrationNumber String          @unique @map("registration_number") @db.VarChar(100)
+  companyType        CompanyTypeEnum @map("company_type")
+  taxId              String?         @map("tax_id") @db.VarChar(100)
+  notificationEmail  String?         @map("notification_email") @db.VarChar(255)
+
+  country    String  @db.VarChar(100)
+  address1   String  @map("address_1") @db.VarChar(255)
+  address2   String? @map("address_2") @db.VarChar(255)
+  city       String  @db.VarChar(100)
+  postalCode String  @map("postal_code") @db.VarChar(20)
+
+  verificationStatus CompanyVerificationStatusEnum @default(PENDING) @map("verification_status")
+  isActive           Boolean                       @default(true) @map("is_active")
+
+  metadata Json? @db.Json
+
+  teamMembers  TeamMember[]
+  contacts     Employee[]
+  groups       EmployeeGroup[]
+  payrolls     Payroll[]
+  bills        Bill[]
+  invoicesFrom Invoice[]       @relation("InvoiceFromCompany") // B2B invoices where this company is the sender
+  invoicesTo   Invoice[]       @relation("InvoiceToCompany") // B2B invoices where this company is the recipient
+  paymentLinks PaymentLink[]
+
+  @@index([registrationNumber])
+  @@index([companyName])
+  @@index([verificationStatus])
+  @@map("companies")
 }
 
-model GroupPaymentMemberStatus {
-  id             Int                          @id() @default(autoincrement())
-  createdAt      DateTime                     @map("created_at") @db.Timestamp(6)
-  updatedAt      DateTime                     @map("updated_at") @db.Timestamp(6)
-  memberAddress  String                       @map("member_address") @db.VarChar
-  status         GroupPaymentMemberStatusEnum @default(PENDING)
-  paidAt         DateTime?                    @map("paid_at") @db.Timestamp(6)
-  groupPaymentId Int?                         @map("groupPaymentId")
-  groupPayment   GroupPayment?                @relation(fields: [groupPaymentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model Employee {
+  id   Int    @id() @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
 
-  @@map("group_payment_member_status")
+  createdAt DateTime @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @map("updated_at") @db.Timestamp(6)
+
+  companyId Int     @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name          String      @db.VarChar
+  walletAddress String      @db.VarChar
+  email         String      @db.VarChar
+  token         Json        @db.Json
+  network       Json        @db.Json
+  gender        GenderEnum? @default(PREFER_NOT_TO_SAY) @map("gender")
+  nationality   String?     @map("nationality") @db.VarChar(100)
+  taxId         String?     @map("tax_id")
+
+  address    String? @map("address") @db.VarChar(255)
+  city       String? @db.VarChar(100)
+  country    String? @db.VarChar(100)
+  postalCode String? @map("postal_code") @db.VarChar(20)
+
+  order   Int           @default(autoincrement())
+  groupId Int           @map("groupId")
+  group   EmployeeGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  payrolls Payroll[]
+  invoices Invoice[] @relation("InvoiceEmployee")
+
+  metadata Json? @db.Json
+
+  @@index([companyId])
+  @@index([groupId])
+  @@index([email])
+  @@map("employees")
+}
+
+model EmployeeGroup {
+  id   Int    @id() @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
+  createdAt DateTime @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @map("updated_at") @db.Timestamp(6)
+
+  name  String            @db.VarChar
+  shape CategoryShapeEnum @default(CIRCLE)
+  color String            @db.VarChar
+  order Int               @default(autoincrement())
+
+  companyId Int     @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  employees Employee[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@index([order])
+  @@map("employee_groups")
+}
+
+model Payroll {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  companyId  Int      @map("company_id")
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId Int      @map("employee_id")
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  network Json   @db.Json
+  token   Json   @db.Json
+  amount  String @db.VarChar(50)
+
+  contractTerm ContractTermEnum
+  payrollCycle Int               @map("payroll_cycle")
+  currentCycleNumber Int         @default(0) @map("current_cycle_number")
+  paydayDay    Int               @map("payday_day")
+  joiningDate  DateTime          @map("joining_date") @db.Timestamp(6)
+  payStartDate DateTime          @map("pay_start_date") @db.Timestamp(6)
+  payEndDate   DateTime          @map("pay_end_date") @db.Timestamp(6)
+  description  String            @map("description") @db.Text // the item description
+  status       PayrollStatusEnum @default(ACTIVE)
+
+  note     String? @db.Text
+  metadata Json?   @db.Json
+
+  invoices         Invoice[]
+  invoiceSchedules InvoiceSchedule[]
+
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([status])
+  @@index([payStartDate])
+  @@index([payEndDate])
+  @@map("payrolls")
+}
+
+model Invoice {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Invoice Type and Numbering
+  invoiceType   InvoiceTypeEnum @default(EMPLOYEE) @map("invoice_type")
+  invoiceNumber String          @map("invoice_number") @db.VarChar(50)
+  issueDate     DateTime        @map("issue_date") @db.Timestamp(6)
+  dueDate       DateTime        @map("due_date") @db.Timestamp(6)
+
+  // Auto-generation settings (for scheduled invoices)
+  isAutoGenerated           Boolean   @default(false) @map("is_auto_generated")
+  autoGenerateFromPayrollId Int?      @map("auto_generate_from_payroll_id")
+  nextAutoGenerateDate      DateTime? @map("next_auto_generate_date") @db.Timestamp(6)
+
+  // FROM: Employee or Company (sender)
+  // For EMPLOYEE invoices: from = employee, to = company
+  // For B2B invoices: from = company, to = company
+  payrollId  Int?      @map("payroll_id")
+  payroll    Payroll?  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+  employeeId Int?      @map("employee_id")
+  employee   Employee? @relation("InvoiceEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  fromCompanyId Int?     @map("from_company_id")
+  fromCompany   Company? @relation("InvoiceFromCompany", fields: [fromCompanyId], references: [id], onDelete: Cascade)
+
+  // TO: Company (recipient)
+  // Can be registered company OR unregistered company
+  toCompanyId Int?     @map("to_company_id")
+  toCompany   Company? @relation("InvoiceToCompany", fields: [toCompanyId], references: [id], onDelete: Cascade)
+
+  // Unregistered company details (when toCompanyId is null)
+  toCompanyName        String? @map("to_company_name") @db.VarChar(255)
+  toCompanyEmail       String? @map("to_company_email") @db.VarChar(255)
+  toCompanyAddress     String? @map("to_company_address") @db.Text
+  toCompanyTaxId       String? @map("to_company_tax_id") @db.VarChar(100)
+  toCompanyContactName String? @map("to_company_contact_name") @db.VarChar(255)
+  toCompanyMetadata    Json?   @map("to_company_metadata") @db.Json
+
+  // Email Configuration
+  emailTo      String   @map("email_to") @db.VarChar(255) // Primary recipient
+  emailCc      String[] @map("email_cc") @db.VarChar(255) // CC recipients
+  emailBcc     String[] @map("email_bcc") @db.VarChar(255) // BCC recipients
+  emailSubject String?  @map("email_subject") @db.VarChar(500)
+  emailBody    String?  @map("email_body") @db.Text
+
+  // Invoice Details (flexible JSON for additional sender/recipient info)
+  fromDetails Json? @map("from_details") @db.Json // Sender details (employee or company)
+  toDetails   Json? @map("to_details") @db.Json // Recipient details (company)
+
+  // Financial Details
+  subtotal  String @db.VarChar(50)
+  taxRate   String @db.VarChar(10) // Percentage as string
+  taxAmount String @db.VarChar(50)
+  discount  String @default("0.00") @db.VarChar(50) // Discount amount
+  total     String @db.VarChar(50)
+  currency  String @default("USD") @db.VarChar(10) // Currency code
+
+  paymentNetwork       Json   @map("payment_network") @db.Json
+  paymentToken         Json   @map("payment_token") @db.Json
+  paymentWalletAddress String @map("payment_wallet_address") @db.VarChar(255)
+
+  // Status and Workflow
+  status InvoiceStatusEnum @default(DRAFT)
+
+  // Timeline tracking
+  sentAt      DateTime? @map("sent_at") @db.Timestamp(6)
+  reviewedAt  DateTime? @map("reviewed_at") @db.Timestamp(6)
+  confirmedAt DateTime? @map("confirmed_at") @db.Timestamp(6)
+  paidAt      DateTime? @map("paid_at") @db.Timestamp(6)
+
+  // Relations
+  items InvoiceItem[]
+  bill  Bill?
+
+  // Additional metadata
+  metadata Json? @db.Json
+  memo     Json? @map("memo") @db.Json
+  footer   Json? @map("footer") @db.Json
+  terms    Json? @map("terms") @db.Json // Payment terms, conditions, etc.
+
+  @@index([payrollId])
+  @@index([employeeId])
+  @@index([fromCompanyId])
+  @@index([toCompanyId])
+  @@index([invoiceType])
+  @@index([status])
+  @@index([invoiceNumber])
+  @@index([dueDate])
+  @@index([isAutoGenerated])
+  @@index([autoGenerateFromPayrollId])
+  @@index([nextAutoGenerateDate])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  invoiceId Int     @map("invoice_id")
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  // Item details
+  description String  @db.Text
+  quantity    String  @db.VarChar(50) // Store as string for precision
+  unitPrice   String  @db.VarChar(50) // Price per unit
+  unit        String? @db.VarChar(50) // Unit of measurement (e.g., "hours", "items", "months")
+  taxRate     String  @default("0.00") @db.VarChar(10) // Tax rate for this item
+  discount    String  @default("0.00") @db.VarChar(50) // Discount amount for this item
+  total       String  @db.VarChar(50) // Total for this line item (quantity * unitPrice - discount + tax)
+
+  // Ordering
+  order Int @default(0) // Display order
+
+  // Additional metadata
+  metadata Json? @db.Json
+
+  @@index([invoiceId])
+  @@index([order])
+  @@map("invoice_items")
+}
+
+model InvoiceSchedule {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Link to payroll (for employee invoices)
+  payrollId Int     @map("payroll_id")
+  payroll   Payroll @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+
+  // Schedule configuration
+  isActive           Boolean @default(true) @map("is_active")
+  frequency          String  @db.VarChar(50) // "MONTHLY", "WEEKLY", "BIWEEKLY", "QUARTERLY", etc.
+  dayOfMonth         Int?    @map("day_of_month") // For monthly: day of month (1-31)
+  dayOfWeek          Int?    @map("day_of_week") // For weekly: day of week (0-6, Sunday=0)
+  generateDaysBefore Int     @default(0) @map("generate_days_before") // Generate X days before due date
+
+  // Next generation date
+  nextGenerateDate DateTime? @map("next_generate_date") @db.Timestamp(6)
+  lastGeneratedAt  DateTime? @map("last_generated_at") @db.Timestamp(6)
+
+  // Invoice template settings
+  invoiceTemplate Json? @map("invoice_template") @db.Json // Template for auto-generated invoices
+
+  // Metadata
+  metadata Json? @db.Json
+
+  @@index([payrollId])
+  @@index([isActive])
+  @@index([nextGenerateDate])
+  @@map("invoice_schedules")
+}
+
+model Bill {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(cuid()) @map("uuid")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  companyId Int     @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoiceId Int     @unique @map("invoice_id")
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  status BillStatusEnum @default(PENDING)
+
+  paidAt          DateTime? @map("paid_at") @db.Timestamp(6)
+  transactionHash String?   @map("transaction_hash") @db.VarChar(100)
+
+  metadata Json? @db.Json
+
+  @@index([companyId])
+  @@index([status])
+  @@index([invoiceId])
+  @@map("bills")
+}
+
+model PaymentLink {
+  id                   Int                   @id() @default(autoincrement())
+  uuid                 String                @unique @default(cuid()) @map("uuid")
+  code                 String                @unique() @map("code") @db.VarChar
+  createdAt            DateTime              @map("created_at") @db.Timestamp(6)
+  updatedAt            DateTime              @map("updated_at") @db.Timestamp(6)
+  title                String                @db.VarChar
+  description          String                @db.VarChar
+  amount               String                @db.VarChar
+  status               PaymentLinkStatusEnum @default(ACTIVE)
+  order                Int                   @default(autoincrement())
+  companyId            Int                   @map("company_id")
+  company              Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  records              PaymentLinkRecord[]
+  paymentWalletAddress String                @map("payment_wallet_address") @db.VarChar
+  acceptedTokens       Json                  @map("accepted_tokens")
+  acceptedChains       Json?                 @map("accepted_chains")
+
+  @@index([code])
+  @@index([companyId])
+  @@index([order])
+  @@map("payment_link")
+}
+
+model PaymentLinkRecord {
+  id            Int         @id() @default(autoincrement())
+  uuid          String      @unique @default(cuid()) @map("uuid")
+  createdAt     DateTime    @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime    @map("updated_at") @db.Timestamp(6)
+  payer         String      @db.VarChar
+  txid          String?     @map("txid") @db.VarChar
+  paymentLinkId Int         @map("payment_link_id")
+  PaymentLink   PaymentLink @relation(fields: [paymentLinkId], references: [id])
+  token         Json?
+  chain         Json?
+
+  @@map("payment_link_record")
 }
 
 model Notifications {
@@ -115,185 +493,52 @@ model Notifications {
   @@map("notifications")
 }
 
-model RequestPayment {
-  id              Int                      @id() @default(autoincrement())
-  createdAt       DateTime                 @map("created_at") @db.Timestamp(6)
-  updatedAt       DateTime                 @map("updated_at") @db.Timestamp(6)
-  amount          String                   @db.VarChar
-  message         String                   @db.VarChar
-  status          RequestPaymentStatusEnum @default(PENDING)
-  payer           String                   @db.VarChar
-  payee           String                   @db.VarChar
-  isGroupPayment  Boolean                  @default(false) @map("is_group_payment")
-  groupPaymentId  Int?                     @map("group_payment_id")
-  groupPaymentId2 Int?                     @map("groupPaymentId")
-  txid            String?                  @map("txid") @db.VarChar
-  tokens          Json?
-  groupPayment    GroupPayment?            @relation(fields: [groupPaymentId2], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  transactions    Transactions[]
-
-  @@map("request_payment")
+enum ContractTermEnum {
+  PERMANENT
+  CONTRACTOR
 }
 
-model Transactions {
-  id               Int                       @id() @default(autoincrement())
-  createdAt        DateTime                  @db.Timestamp(6)
-  updatedAt        DateTime                  @map("updated_at") @db.Timestamp(6)
-  sender           String                    @db.VarChar
-  recipient        String                    @db.VarChar
-  assets           Json
-  private          Boolean                   @default(true)
-  recallable       Boolean                   @default(true)
-  recallableTime   DateTime?                 @map("recallable_time") @db.Timestamp(6)
-  serialNumber     Json                      @map("serial_number")
-  noteType         TransactionsNoteTypeEnum? @map("note_type")
-  status           TransactionsStatusEnum    @default(PENDING)
-  recallableHeight Int?                      @map("recallable_height")
-  timelockHeight   Int?                      @map("timelock_height")
-  noteId           String?                   @map("note_id") @db.VarChar
-  requestPaymentId Int?                      @map("request_payment_id")
-  requestPayment   RequestPayment?           @relation(fields: [requestPaymentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  schedulePayment   SchedulePayment? @relation(fields: [schedulePaymentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  schedulePaymentId Int?             @map("schedule_payment_id")
-
-  @@map("transactions")
-}
-
-model WalletAuthChallenges {
-  id               Int      @id() @default(autoincrement())
-  createdAt        DateTime @map("created_at") @db.Timestamp(6)
-  updatedAt        DateTime @map("updated_at") @db.Timestamp(6)
-  walletAddress    String   @map("wallet_address") @db.VarChar
-  challengeCode    String   @unique() @map("challenge_code") @db.VarChar
-  expectedResponse String   @map("expected_response") @db.VarChar
-  expiresAt        DateTime @map("expires_at") @db.Timestamp(6)
-  isUsed           Boolean  @default(false) @map("is_used")
-  ipAddress        String?  @map("ip_address") @db.VarChar
-  userAgent        String?  @map("user_agent") @db.VarChar
-  challengeData    Json?    @map("challenge_data")
-
-  @@index([challengeCode])
-  @@index([createdAt])
-  @@index([walletAddress, isUsed])
-  @@map("wallet_auth_challenges")
-}
-
-model WalletAuthKeys {
-  id                Int                          @id() @default(autoincrement())
-  createdAt         DateTime                     @map("created_at") @db.Timestamp(6)
-  updatedAt         DateTime                     @map("updated_at") @db.Timestamp(6)
-  walletAddress     String                       @unique() @map("wallet_address") @db.VarChar
-  publicKey         String                       @unique() @map("public_key") @db.VarChar
-  hashedSecretKey   String                       @map("hashed_secret_key") @db.VarChar
-  keyDerivationSalt String?                      @map("key_derivation_salt") @db.VarChar
-  status            WalletAuthKeysStatusEnum     @default(ACTIVE)
-  lastUsedAt        DateTime?                    @map("last_used_at") @db.Timestamp(6)
-  expiresAt         DateTime                     @map("expires_at") @db.Timestamp(6)
-  deviceFingerprint String?                      @map("device_fingerprint") @db.VarChar
-  deviceType        WalletAuthKeysDeviceTypeEnum @default(UNKNOWN) @map("device_type")
-  userAgent         String?                      @map("user_agent") @db.VarChar
-  ipAddress         String?                      @map("ip_address") @db.VarChar
-  metadata          Json?
-
-  @@index([walletAddress])
-  @@index([walletAddress, status])
-  @@index([publicKey])
-  @@index([createdAt])
-  @@map("wallet_auth_keys")
-}
-
-model WalletAuthSessions {
-  id             Int       @id() @default(autoincrement())
-  createdAt      DateTime  @map("created_at") @db.Timestamp(6)
-  updatedAt      DateTime  @map("updated_at") @db.Timestamp(6)
-  sessionToken   String    @unique() @map("session_token") @db.VarChar
-  walletAddress  String    @map("wallet_address") @db.VarChar
-  authKeyId      Int       @map("auth_key_id")
-  expiresAt      DateTime  @map("expires_at") @db.Timestamp(6)
-  isActive       Boolean   @default(true) @map("is_active")
-  lastActivityAt DateTime? @map("last_activity_at") @db.Timestamp(6)
-  ipAddress      String?   @map("ip_address") @db.VarChar
-  userAgent      String?   @map("user_agent") @db.VarChar
-  sessionData    Json?     @map("session_data")
-
-  @@index([walletAddress, isActive])
-  @@index([authKeyId])
-  @@index([sessionToken])
-  @@map("wallet_auth_sessions")
-}
-
-model SchedulePayment {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamp(6)
-
-  // Payment details
-  amount  String  @db.VarChar
-  tokens  Json? // Following your pattern for multi-token support
-  message String? @db.VarChar
-
-  // Scheduling info
-  frequency         SchedulePaymentFrequencyEnum? @map("frequency")
-  endDate           DateTime?                     @map("end_date") @db.Timestamp(6)
-  nextExecutionDate DateTime?                     @map("next_execution") @db.Timestamp(6)
-
-  // Participants
-  // We keep here for easier query/analysis later
-  payer String @db.VarChar
-  payee String @db.VarChar
-
-  // Status and execution tracking
-  status         SchedulePaymentStatusEnum @default(ACTIVE)
-  executionCount Int                       @default(0) // Number of times the payment has been executed
-  maxExecutions  Int?
-
-  // Relations to executed transactions
-  transactions Transactions[]
-
-  @@index([status, nextExecutionDate])
-  @@index([payer])
-  @@index([payee])
-  @@index([status])
-  @@map("schedule_payment")
-}
-
-enum SchedulePaymentFrequencyEnum {
-  DAILY
-  WEEKLY
-  MONTHLY
-}
-
-enum SchedulePaymentStatusEnum {
+enum PayrollStatusEnum {
   ACTIVE
   PAUSED
   COMPLETED
   CANCELLED
-  FAILED
+  DELETED
 }
 
-enum GiftNoteTypeEnum {
-  P2ID
-  P2IDR
-  GIFT
+enum InvoiceTypeEnum {
+  EMPLOYEE // Employee <> Employer invoice (linked to payroll)
+  B2B // Business to Business invoice (company <> company)
 }
 
-enum GiftStatusEnum {
-  PENDING
-  RECALLED
-  CONSUMED
+enum InvoiceStatusEnum {
+  DRAFT
+  SENT
+  REVIEWED
+  CONFIRMED
+  CANCELLED
+  PAID
+  OVERDUE
+  DELETED
 }
 
-enum GroupPaymentMemberStatusEnum {
+enum BillStatusEnum {
   PENDING
   PAID
-  DENIED
+  OVERDUE
+  CANCELLED
 }
 
-enum GroupPaymentStatusEnum {
-  PENDING
-  COMPLETED
-  EXPIRED
+enum OtpTypeEnum {
+  LOGIN
+  EMAIL_VERIFICATION
+}
+
+enum CategoryShapeEnum {
+  CIRCLE
+  DIAMOND
+  SQUARE
+  TRIANGLE
 }
 
 enum NotificationsStatusEnum {
@@ -302,46 +547,48 @@ enum NotificationsStatusEnum {
 }
 
 enum NotificationsTypeEnum {
-  SEND
-  CLAIM
-  REFUND
-  BATCH_SEND
-  WALLET_CREATE
-  REQUEST_PAYMENT
-  RECEIVED_PAYMENT
-  ADD_TO_BATCH
-  GIFT_SEND
-  GIFT_OPEN
-  GIFT_CLAIM
+  NOP
 }
 
-enum RequestPaymentStatusEnum {
-  PENDING
-  ACCEPTED
-  DENIED
-}
-
-enum TransactionsNoteTypeEnum {
-  P2ID
-  P2IDR
-  GIFT
-}
-
-enum TransactionsStatusEnum {
-  PENDING
-  RECALLED
-  CONSUMED
-}
-
-enum WalletAuthKeysDeviceTypeEnum {
-  DESKTOP
-  MOBILE
-  TABLET
-  UNKNOWN
-}
-
-enum WalletAuthKeysStatusEnum {
+enum PaymentLinkStatusEnum {
   ACTIVE
-  REVOKED
-  EXPIRED
+  DEACTIVATED
+}
+
+enum CompanyTypeEnum {
+  SOLE_PROPRIETORSHIP
+  PARTNERSHIP
+  LLP
+  LLC
+  PRIVATE_LIMITED_COMPANY
+  CORPORATION
+  PUBLIC_LIMITED_COMPANY
+  NON_PROFIT
+  OTHER
+}
+
+enum CompanyVerificationStatusEnum {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum TeamMemberRoleEnum {
+  OWNER
+  ADMIN
+  VIEWER
+}
+
+enum UserRoleEnum {
+  USER
+  ADMIN
+}
+
+enum GenderEnum {
+  MALE
+  FEMALE
+  PREFER_NOT_TO_SAY
+  OTHER
 }

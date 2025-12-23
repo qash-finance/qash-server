@@ -1,4 +1,4 @@
-export const APP = 'App_Name';
+export const APP = 'Qash';
 export const SERVICE_NAME = `${APP} Server`;
 export const MAIL_TEMPLATES = {
   verification: (link: string) => {

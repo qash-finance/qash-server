@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   InternalServerErrorException,
   Logger,
@@ -11,7 +12,8 @@ export const handleError = (error: any, logger: Logger) => {
     error instanceof BadRequestException ||
     error instanceof InternalServerErrorException ||
     error instanceof NotFoundException ||
-    error instanceof ForbiddenException
+    error instanceof ForbiddenException ||
+    error instanceof ConflictException
   ) {
     throw error;
   }

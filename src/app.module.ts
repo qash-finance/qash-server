@@ -3,27 +3,30 @@ import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
 import { HealthModule } from './modules/health/health.module';
 import { APP_PIPE } from '@nestjs/core';
-import { HttpValidationPipe } from './common/pipes';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppService } from './app.service';
 import {
-  envValidator,
   mailConfig,
   authConfig,
   databaseConfig,
   othersConfig,
   serverConfig,
-} from './common/config';
-import { TransactionsModule } from './modules/transactions/transactions.module';
-import { AddressBookModule } from './modules/address-book/address-book.module';
-import { RequestPaymentModule } from './modules/request-payment/request-payment.module';
-import { GiftModule } from './modules/gift/gift.module';
-import { GroupPaymentModule } from './modules/group-payment/group-payment.module';
-import { WalletAuthModule } from './modules/wallet-auth/wallet-auth.module';
-import { AppConfigServiceModule } from './common/config/services/config.module';
+} from './modules/shared/config/registration';
+import { EmployeeModule } from './modules/employee/employee.module';
+import { AppConfigServiceModule } from './modules/shared/config/config.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PrismaModule } from './database/prisma.module';
-import { SchedulePaymentModule } from './modules/schedule-payment/schedule-payment.module';
+import { PaymentLinkModule } from './modules/payment-link/payment-link.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { CompanyModule } from './modules/company/company.module';
+import { TeamMemberModule } from './modules/team-member/team-member.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { SharedModule } from './modules/shared/shared.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
+import { InvoiceModule } from './modules/invoice/invoice.module';
+import { BillModule } from './modules/bill/bill.module';
+import { envValidator } from './common/validators/env.validation';
+import { HttpValidationPipe } from './modules/shared/pipes/http-validation';
 
 @Module({
   imports: [
@@ -45,14 +48,17 @@ import { SchedulePaymentModule } from './modules/schedule-payment/schedule-payme
     PrismaModule,
     ScheduleModule.forRoot(),
     HealthModule,
-    TransactionsModule,
-    AddressBookModule,
-    RequestPaymentModule,
-    GiftModule,
-    GroupPaymentModule,
-    WalletAuthModule,
+    AuthModule,
+    EmployeeModule,
     NotificationModule,
-    SchedulePaymentModule,
+    PaymentLinkModule,
+    CompanyModule,
+    TeamMemberModule,
+    AdminModule,
+    SharedModule,
+    PayrollModule,
+    InvoiceModule,
+    BillModule,
   ],
   controllers: [AppController],
   providers: [

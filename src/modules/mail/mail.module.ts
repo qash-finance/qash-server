@@ -2,7 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailService } from './mail.service';
 import { MailgunModule } from 'nestjs-mailgun';
-import { AppConfigService } from '../../common/config/services/config.service';
+import { AppConfigService } from '../shared/config/config.service';
 
 @Global()
 @Module({

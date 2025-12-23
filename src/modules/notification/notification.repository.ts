@@ -3,10 +3,14 @@ import { PrismaService } from '../../database/prisma.service';
 import {
   Notifications,
   Prisma,
+  PrismaClient,
   NotificationsStatusEnum,
   NotificationsTypeEnum,
-} from '@prisma/client';
-import { BaseRepository } from '../../database/base.repository';
+} from 'src/database/generated/client';
+import {
+  BaseRepository,
+  PrismaTransactionClient,
+} from '../../database/base.repository';
 
 @Injectable()
 export class NotificationRepository extends BaseRepository<
@@ -19,8 +23,14 @@ export class NotificationRepository extends BaseRepository<
     super(prisma);
   }
 
-  protected getModel() {
-    return this.prisma.notifications;
+  protected getModel(
+    tx?: PrismaTransactionClient,
+  ): PrismaClient['notifications'] {
+    return tx ? tx.notifications : this.prisma.notifications;
+  }
+
+  protected getModelName(): string {
+    return 'Notifications';
   }
 
   /**
@@ -179,15 +189,19 @@ export class NotificationRepository extends BaseRepository<
   /**
    * Get notification statistics for a wallet
    */
-  async getWalletStats(walletAddress: string): Promise<{
+  async getWalletStats(
+    walletAddress: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<{
     total: number;
     unread: number;
     byType: Record<string, number>;
   }> {
+    const model = this.getModel(tx);
     const [total, unread, byTypeResults] = await Promise.all([
-      this.count({ walletAddress }),
-      this.count({ walletAddress, status: NotificationsStatusEnum.UNREAD }),
-      this.prisma.notifications.groupBy({
+      this.count({ walletAddress }, tx),
+      this.count({ walletAddress, status: NotificationsStatusEnum.UNREAD }, tx),
+      model.groupBy({
         by: ['type'],
         where: { walletAddress },
         _count: { type: true },

@@ -2,6 +2,9 @@
 /dist
 /node_modules
 
+# prisma generated files
+/src/database/generated/*
+
 # Logs
 logs
 *.log
@@ -41,3 +44,6 @@ lerna-debug.log*
 .env.test
 .vscode
 /generated/prisma
+
+# Cursor
+.cursor/

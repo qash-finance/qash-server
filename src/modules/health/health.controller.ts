@@ -7,8 +7,8 @@ import {
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 
-import { Public } from '../../common/decorators';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Public } from '../shared/decorators/public';
 
 @Public()
 @ApiTags('Health')
