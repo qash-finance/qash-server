@@ -56,7 +56,7 @@ export class CreatePaymentLinkDto {
   @IsString()
   @Matches(/^mtst1[a-z0-9_]+$/i, {
     message:
-      'Address must start with \'mtst1\' and contain only letters, numbers, and underscores',
+      "Address must start with 'mtst1' and contain only letters, numbers, and underscores",
   })
   @MinLength(3, { message: 'paymentWalletAddress is too short' })
   paymentWalletAddress: string;

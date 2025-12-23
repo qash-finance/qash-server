@@ -1,6 +1,6 @@
-# Miden server implementation
+# Qash server implementation
 
-This server implementation serves as a Qash (The end-to-end private crypto payroll management platform) that uses the following tech stack:
+This server implementation that uses the following tech stack:
 
 - [NestJS](https://nestjs.com/)
 - [PostgreSQL](https://www.postgresql.org/)
@@ -10,7 +10,7 @@ This server implementation serves as a Qash (The end-to-end private crypto payro
 
 Before you begin, you need to install the following tools:
 
-- [Node (v18.18.1)](https://nodejs.org/en/download/package-manager)
+- [Node (v22.15.0)](https://nodejs.org/en/download/package-manager)
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
@@ -18,47 +18,50 @@ Before you begin, you need to install the following tools:
 
 1. Clone the repository:
    ```sh
-    git clone https://github.com/q3x-finance/qash-ui.git
+    git clone https://github.com/qash-finance/qash-server.git
     cd qash-ui
    ```
 2. Make sure to install all dependencies by running `pnpm install`
 3. Run `cp .env.example .env`
 4. Before spinning up a local database, make sure you don't have a running container with the same port that will be used by server, these ports are `6500`, `5050` and `3001`
-5. Make sure you have docker installed and running, then run `pnpm run docker:db:up`, it will spin up a local database
-6. Finally, run `pnpm run start:dev` to start the dev server
-7. Visit `http://localhost:3001/api-v1` to view a list of available endpoints
+5. Run `pnpm run prisma:generate` to generate prima client file
+6. Make sure you have docker installed and running, then run `pnpm run docker:db:up`, it will spin up a local database and run the migration files under `./src/database/prisma/migrations`
+7. Finally, run `pnpm run start:dev` to start the dev server
 
-## Environment Variables
+# [Production]
 
-Make sure your `.env` files include:
+## 1. Build the server
 
 ```bash
-DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
+pnpm run build
 ```
 
-# Running the app
+## 2. Run the server
+
+```bash
+pnpm run start:prod
+```
+
+# [Development] Running the app
 
 ```bash
 # development, make sure you have a local database running
 pnpm run start:dev
-
-# production mode
-pnpm run start:prod
 ```
 
-# [Development] Starting a local database
+## Starting a local database
 
 ```bash
 pnpm run docker:db:up
 ```
 
-# [Development] Stopping a local database
+## Stopping a local database
 
 ```bash
 pnpm run docker:db:down
 ```
 
-# [Development] Database Management
+# Database Management
 
 ## Complete Database Reset & Migration Process
 
@@ -91,14 +94,7 @@ pnpm run prisma:generate
 pnpm run docker:db:up
 ```
 
-### Step 5: Apply Migrations
-
-```bash
-# Deploy all migrations to the fresh database
-pnpm run prisma:migrate:deploy
-```
-
-### Step 6: Verify Setup
+### Step 5: Verify Setup
 
 ```bash
 # Start your development server
@@ -121,24 +117,16 @@ pnpm run prisma:migrate:dev --schema ./src/database/prisma/schema.prisma
 ### 3. Update Prisma Client
 
 ```bash
-# Generate updated Prisma client
-pnpm run prisma:generate --schema ./src/database/prisma/schema.prisma
+pnpm run prisma:generate
 ```
 
-## Important Notes
+### 4. Run New Migration File
 
-⚠️ **Environment Configuration**:
+```bash
+pnpm run prisma:migrate:deploy
+```
 
-- Prisma uses the `.env` file for database configuration
-- **DO NOT** use `.env.development` for Prisma - it will not be recognized
-- Always ensure your `.env` file contains the correct `DATABASE_URL`
-
-⚠️ **Schema Path**:
-
-- All Prisma commands must include `--schema ./src/database/prisma/schema.prisma`
-- This is required due to our project structure
-
-# [Development] Prisma Studio
+# Prisma Studio
 
 Access your database through a web interface:
 

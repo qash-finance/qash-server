@@ -222,15 +222,15 @@ model Payroll {
   token   Json   @db.Json
   amount  String @db.VarChar(50)
 
-  contractTerm ContractTermEnum
-  payrollCycle Int               @map("payroll_cycle")
-  currentCycleNumber Int         @default(0) @map("current_cycle_number")
-  paydayDay    Int               @map("payday_day")
-  joiningDate  DateTime          @map("joining_date") @db.Timestamp(6)
-  payStartDate DateTime          @map("pay_start_date") @db.Timestamp(6)
-  payEndDate   DateTime          @map("pay_end_date") @db.Timestamp(6)
-  description  String            @map("description") @db.Text // the item description
-  status       PayrollStatusEnum @default(ACTIVE)
+  contractTerm       ContractTermEnum
+  payrollCycle       Int               @map("payroll_cycle")
+  currentCycleNumber Int               @default(0) @map("current_cycle_number")
+  paydayDay          Int               @map("payday_day")
+  joiningDate        DateTime          @map("joining_date") @db.Timestamp(6)
+  payStartDate       DateTime          @map("pay_start_date") @db.Timestamp(6)
+  payEndDate         DateTime          @map("pay_end_date") @db.Timestamp(6)
+  description        String            @map("description") @db.Text // the item description
+  status             PayrollStatusEnum @default(ACTIVE)
 
   note     String? @db.Text
   metadata Json?   @db.Json
