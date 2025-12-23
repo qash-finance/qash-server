@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Delete,
   Patch,
   Body,
   Param,
@@ -144,31 +143,4 @@ export class BillController {
     return this.billService.updateBillStatus(id, user.company.id, status);
   }
   //#endregion POST METHODS
-
-  //#region DELETE METHODS
-  // *************************************************
-  // **************** DELETE METHODS ****************
-  // *************************************************
-  @Delete(':uuid')
-  @ApiOperation({ summary: 'Delete bill' })
-  @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
-    description: 'Bill deleted successfully',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Bill not found',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Cannot delete paid bills',
-  })
-  @ApiParam({ name: 'uuid', type: 'string', description: 'Bill UUID' })
-  async deleteBill(
-    @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('uuid') uuid: string,
-  ): Promise<void> {
-    return this.billService.deleteBill(uuid, user.company.id);
-  }
-  //#endregion DELETE METHODS
 }

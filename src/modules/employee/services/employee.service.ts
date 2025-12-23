@@ -13,7 +13,6 @@ import { handleError } from '../../../common/utils/errors';
 import {
   validateAddress,
   validateName,
-  normalizeAddress,
   sanitizeString,
 } from '../../../common/utils/validation.util';
 import {
@@ -246,18 +245,27 @@ export class EmployeeService {
 
   /**
    * Check if contact address is duplicate in group
+   * @param excludeEmployeeId - Optional employee ID to exclude from duplicate check (useful when updating)
    */
   async isEmployeeAddressDuplicate(
     companyId: number,
     address: string,
     groupId: number,
+    excludeEmployeeId?: number,
   ): Promise<{ isDuplicate: boolean }> {
     try {
-      const existing = await this.employeeRepository.findOne({
+      const whereClause: any = {
         companyId,
         groupId,
         walletAddress: address,
-      });
+      };
+
+      // Exclude current employee from duplicate check when updating
+      if (excludeEmployeeId !== undefined) {
+        whereClause.id = { not: excludeEmployeeId };
+      }
+
+      const existing = await this.employeeRepository.findOne(whereClause);
 
       return {
         isDuplicate: !!existing,
@@ -383,7 +391,6 @@ export class EmployeeService {
         }
 
         const updateData: any = {};
-
         if (dto.name !== undefined) {
           validateName(dto.name, 'name');
           updateData.name = sanitizeString(dto.name);
@@ -402,17 +409,20 @@ export class EmployeeService {
           }
         }
 
-        if (dto.address !== undefined) {
-          validateAddress(dto.address, 'address');
-          const normalizedAddress = normalizeAddress(dto.address);
-          updateData.walletAddress = normalizedAddress;
+        // Handle walletAddress (preferred) or address (backwards compatibility)
+        const walletAddress = dto.walletAddress ?? dto.address;
+        if (walletAddress !== undefined) {
+          validateAddress(walletAddress, 'address');
+          updateData.walletAddress = walletAddress;
 
           // Check address duplicate if address is being changed
+          // Exclude current employee from duplicate check
           if (updateData.walletAddress !== existingContact.walletAddress) {
-            const isDuplicate = await this.isEmployeeAddressDuplicate(
+            const { isDuplicate } = await this.isEmployeeAddressDuplicate(
               companyId,
               updateData.walletAddress,
               existingContact.groupId,
+              contactId, // Exclude current employee from duplicate check
             );
 
             if (isDuplicate) {
@@ -427,6 +437,10 @@ export class EmployeeService {
 
         if (dto.token !== undefined) {
           updateData.token = JSON.parse(JSON.stringify(dto.token));
+        }
+
+        if (dto.network !== undefined) {
+          updateData.network = JSON.parse(JSON.stringify(dto.network));
         }
 
         if (dto.groupId !== undefined) {

@@ -2,13 +2,13 @@
 CREATE TYPE "ContractTermEnum" AS ENUM ('PERMANENT', 'CONTRACTOR');
 
 -- CreateEnum
-CREATE TYPE "PayrollStatusEnum" AS ENUM ('ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED');
+CREATE TYPE "PayrollStatusEnum" AS ENUM ('ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED', 'DELETED');
 
 -- CreateEnum
 CREATE TYPE "InvoiceTypeEnum" AS ENUM ('EMPLOYEE', 'B2B');
 
 -- CreateEnum
-CREATE TYPE "InvoiceStatusEnum" AS ENUM ('DRAFT', 'SENT', 'REVIEWED', 'CONFIRMED', 'CANCELLED', 'PAID', 'OVERDUE');
+CREATE TYPE "InvoiceStatusEnum" AS ENUM ('DRAFT', 'SENT', 'REVIEWED', 'CONFIRMED', 'CANCELLED', 'PAID', 'OVERDUE', 'DELETED');
 
 -- CreateEnum
 CREATE TYPE "BillStatusEnum" AS ENUM ('PENDING', 'PAID', 'OVERDUE', 'CANCELLED');
@@ -153,6 +153,8 @@ CREATE TABLE "payrolls" (
     "amount" VARCHAR(50) NOT NULL,
     "contractTerm" "ContractTermEnum" NOT NULL,
     "payroll_cycle" INTEGER NOT NULL,
+    "current_cycle_number" INTEGER NOT NULL DEFAULT 0,
+    "payday_day" INTEGER NOT NULL,
     "joining_date" TIMESTAMP(6) NOT NULL,
     "pay_start_date" TIMESTAMP(6) NOT NULL,
     "pay_end_date" TIMESTAMP(6) NOT NULL,

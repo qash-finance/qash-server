@@ -695,6 +695,10 @@ export type TeamMemberUncheckedUpdateManyWithoutInviterNestedInput = {
   deleteMany?: Prisma.TeamMemberScalarWhereInput | Prisma.TeamMemberScalarWhereInput[]
 }
 
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
 export type EnumTeamMemberRoleEnumFieldUpdateOperationsInput = {
   set?: $Enums.TeamMemberRoleEnum
 }

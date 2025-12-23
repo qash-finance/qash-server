@@ -51,8 +51,6 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  OtpCode: 'OtpCode',
-  UserSession: 'UserSession',
   User: 'User',
   TeamMember: 'TeamMember',
   Company: 'Company',
@@ -82,38 +80,6 @@ export const TransactionIsolationLevel = {
 } as const
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
-
-
-export const OtpCodeScalarFieldEnum = {
-  id: 'id',
-  uuid: 'uuid',
-  userId: 'userId',
-  code: 'code',
-  type: 'type',
-  expiresAt: 'expiresAt',
-  isUsed: 'isUsed',
-  attempts: 'attempts',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type OtpCodeScalarFieldEnum = (typeof OtpCodeScalarFieldEnum)[keyof typeof OtpCodeScalarFieldEnum]
-
-
-export const UserSessionScalarFieldEnum = {
-  id: 'id',
-  uuid: 'uuid',
-  userId: 'userId',
-  refreshToken: 'refreshToken',
-  userAgent: 'userAgent',
-  ipAddress: 'ipAddress',
-  isActive: 'isActive',
-  expiresAt: 'expiresAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type UserSessionScalarFieldEnum = (typeof UserSessionScalarFieldEnum)[keyof typeof UserSessionScalarFieldEnum]
 
 
 export const UserScalarFieldEnum = {
@@ -228,6 +194,8 @@ export const PayrollScalarFieldEnum = {
   amount: 'amount',
   contractTerm: 'contractTerm',
   payrollCycle: 'payrollCycle',
+  currentCycleNumber: 'currentCycleNumber',
+  paydayDay: 'paydayDay',
   joiningDate: 'joiningDate',
   payStartDate: 'payStartDate',
   payEndDate: 'payEndDate',

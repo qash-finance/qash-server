@@ -3,7 +3,6 @@ import {
   Logger,
   NotFoundException,
   ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { PayrollRepository, PayrollWithInvoices } from './payroll.repository';
 import { EmployeeRepository } from '../employee/repositories/employee.repository';
@@ -12,6 +11,7 @@ import {
   UpdatePayrollDto,
   PayrollQueryDto,
   PayrollStatsDto,
+  CreatePayroll,
 } from './payroll.dto';
 import {
   InvoiceScheduleUpdateInput,
@@ -21,6 +21,7 @@ import {
 } from 'src/database/generated/models';
 import {
   ContractTermEnum,
+  InvoiceStatusEnum,
   Payroll,
   PayrollStatusEnum,
 } from 'src/database/generated/client';
@@ -63,16 +64,68 @@ export class PayrollService {
     };
   }> {
     try {
-      const filters = {
+      // Build Prisma where clause
+      const whereClause: any = {
         companyId,
-        employeeId: query.employeeId,
-        contractTerm: query.contractTerm,
-        search: query.search,
+        // Exclude deleted payrolls by default
+        status: {
+          not: PayrollStatusEnum.DELETED,
+        },
       };
+
+      if (query.employeeId) {
+        whereClause.employeeId = query.employeeId;
+      }
+
+      if (query.contractTerm) {
+        whereClause.contractTerm = query.contractTerm;
+      }
+
+      // Convert search parameter to Prisma filters
+      if (query.search) {
+        whereClause.OR = [
+          {
+            description: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            note: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            amount: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            employee: {
+              OR: [
+                {
+                  name: {
+                    contains: query.search,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  email: {
+                    contains: query.search,
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            },
+          },
+        ];
+      }
 
       const result: PaginatedResult<Payroll> =
         await this.payrollRepository.findManyPaginated(
-          filters,
+          whereClause,
           {
             page: query.page || 1,
             limit: query.limit || 10,
@@ -148,6 +201,54 @@ export class PayrollService {
     }
   }
 
+  /**
+   * Check if payroll has pending invoice reviews from employee
+   * Returns information about invoices that are SENT and waiting for employee review
+   */
+  async checkPendingInvoiceReviews(
+    id: number,
+    companyId: number,
+  ): Promise<{
+    hasPendingReviews: boolean;
+    pendingCount: number;
+    pendingInvoiceUuids: string[];
+  }> {
+    try {
+      // First verify payroll exists and belongs to company
+      const payroll = await this.payrollRepository.findById(id, companyId);
+
+      if (!payroll) {
+        throw new NotFoundException(ErrorPayroll.PayrollNotFound);
+      }
+
+      // Query invoices with SENT status for this payroll
+      const pendingInvoices = await this.prisma.invoice.findMany({
+        where: {
+          payrollId: id,
+          status: InvoiceStatusEnum.SENT,
+        },
+        select: {
+          uuid: true,
+        },
+      });
+
+      const pendingCount = pendingInvoices.length;
+      const pendingInvoiceUuids = pendingInvoices.map((inv) => inv.uuid);
+
+      return {
+        hasPendingReviews: pendingCount > 0,
+        pendingCount,
+        pendingInvoiceUuids,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error checking pending invoice reviews for payroll ${id}:`,
+        error,
+      );
+      handleError(error, this.logger);
+    }
+  }
+
   //#endregion GET METHODS
 
   //#region POST METHODS
@@ -206,12 +307,13 @@ export class PayrollService {
         const payEndDate = new Date(payStartDate);
         payEndDate.setMonth(payEndDate.getMonth() + dto.payrollCycle);
 
+        // TODO: Uncomment this when we have a way to handle this
         // Pay start date must be after joining date
-        if (payStartDate < joiningDate) {
-          throw new BadRequestException(
-            ErrorPayroll.PayStartDateBeforeJoiningDate,
-          );
-        }
+        // if (payStartDate < joiningDate) {
+        //   throw new BadRequestException(
+        //     ErrorPayroll.PayStartDateBeforeJoiningDate,
+        //   );
+        // }
 
         const payrollData: PayrollCreateInput = {
           company: {
@@ -235,6 +337,7 @@ export class PayrollService {
           description: dto.description,
           note: dto.note,
           metadata: dto.metadata,
+          paydayDay: paydayDay,
         };
 
         const payroll = await this.payrollRepository.create(payrollData, tx);
@@ -288,7 +391,7 @@ export class PayrollService {
     const payEndDate = new Date(payStartDate);
     payEndDate.setMonth(payEndDate.getMonth() + 1);
 
-    const dto: CreatePayrollDto = {
+    const dto: CreatePayroll = {
       employeeId,
       network: {
         name: 'Miden Testnet',
@@ -340,6 +443,8 @@ export class PayrollService {
             tx,
           );
 
+          console.log('DID WE HIT HERE');
+
           if (!existingPayroll) {
             throw new NotFoundException(ErrorPayroll.PayrollNotFound);
           }
@@ -348,8 +453,8 @@ export class PayrollService {
           let payEndDate = existingPayroll.payEndDate;
 
           // If payday updated, recompute next pay start date starting next month
-          if (dto.payday) {
-            const paydayDay = dto.payday;
+          if (dto.paydayDay) {
+            const paydayDay = dto.paydayDay;
             const now = new Date();
             payStartDate = new Date(
               now.getFullYear(),
@@ -369,7 +474,7 @@ export class PayrollService {
             network: dto.network as unknown as JsonValue,
             token: dto.token as unknown as JsonValue,
             ...(dto.payrollCycle && { payEndDate }),
-            ...(dto.payday && { payStartDate }),
+            ...(dto.paydayDay && { payStartDate }),
           };
 
           const updatedPayroll = await this.payrollRepository.update(
@@ -387,7 +492,7 @@ export class PayrollService {
             const scheduleUpdates: InvoiceScheduleUpdateInput = {};
 
             // If payday changed, update dayOfMonth and recalculate nextGenerateDate
-            if (dto.payday) {
+            if (dto.paydayDay) {
               scheduleUpdates.dayOfMonth = payStartDate.getDate();
               // Recalculate nextGenerateDate based on new payday
               const generateDaysBefore = schedule.generateDaysBefore ?? 5;
@@ -450,7 +555,10 @@ export class PayrollService {
   }
 
   /**
-   * Delete payroll
+   * Delete payroll (soft delete)
+   * - Marks all SENT invoices as DELETED
+   * - Stops the invoice scheduler (sets isActive to false)
+   * - Soft deletes the payroll (sets status to DELETED)
    */
   async deletePayroll(id: number, companyId: number): Promise<void> {
     try {
@@ -462,19 +570,42 @@ export class PayrollService {
           throw new NotFoundException(ErrorPayroll.PayrollNotFound);
         }
 
-        // Only allow deletion if no invoices have been generated
-        if (payroll.invoices && payroll.invoices.length > 0) {
-          throw new ConflictException(
-            ErrorPayroll.CannotDeletePayrollWithExistingInvoices,
-          );
+        // Check if payroll is already deleted
+        if (payroll.status === PayrollStatusEnum.DELETED) {
+          throw new ConflictException(ErrorPayroll.PayrollAlreadyDeleted);
         }
 
-        await this.payrollRepository.delete({ id, companyId }, tx);
+        // Mark all SENT invoices (pending review) as DELETED
+        if (payroll.invoices && payroll.invoices.length > 0) {
+          const sentInvoices = payroll.invoices.filter(
+            (invoice) => invoice.status === InvoiceStatusEnum.SENT,
+          );
 
-        // Remove invoice schedules for this payroll
-        await tx.invoiceSchedule.deleteMany({
+          if (sentInvoices.length > 0) {
+            await tx.invoice.updateMany({
+              where: {
+                id: { in: sentInvoices.map((inv) => inv.id) },
+                status: InvoiceStatusEnum.SENT,
+              },
+              data: {
+                status: InvoiceStatusEnum.DELETED,
+              },
+            });
+          }
+        }
+
+        // Stop the invoice scheduler (set isActive to false)
+        await tx.invoiceSchedule.updateMany({
           where: { payrollId: id },
+          data: { isActive: false },
         });
+
+        // Soft delete the payroll (set status to DELETED)
+        await this.payrollRepository.update(
+          { id, companyId },
+          { status: PayrollStatusEnum.DELETED },
+          tx,
+        );
       });
     } catch (error) {
       this.logger.error(`Error deleting payroll ${id}:`, error);

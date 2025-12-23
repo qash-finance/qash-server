@@ -379,25 +379,31 @@ export class BillService {
   /**
    * Delete bill
    */
-  async deleteBill(uuid: string, companyId: number): Promise<void> {
-    try {
-      await this.prisma.$transaction(async (_tx: PrismaTransactionClient) => {
-        const bill = await this.billRepository.findOne({ uuid, companyId });
+  async deleteBill(
+    uuid: string,
+    companyId: number,
+    tx: PrismaTransactionClient,
+  ): Promise<void> {
+    const bill = await this.billRepository.findByUUIDWithInvoice(
+      uuid,
+      companyId,
+      tx,
+    );
 
-        if (!bill) {
-          throw new NotFoundException(ErrorBill.BillNotFound);
-        }
-
-        if (bill.status === BillStatusEnum.PAID) {
-          throw new BadRequestException(ErrorBill.CannotDeletePaidBills);
-        }
-
-        await this.billRepository.delete({ uuid, companyId });
-      });
-    } catch (error) {
-      this.logger.error(`Error deleting bill ${uuid}:`, error);
-      handleError(error, this.logger);
+    if (!bill) {
+      throw new NotFoundException(ErrorBill.BillNotFound);
     }
+
+    if (bill.status === BillStatusEnum.PAID) {
+      throw new BadRequestException(ErrorBill.CannotDeletePaidBills);
+    }
+
+    // update bill sattus to cancelled
+    await this.billRepository.update(
+      { uuid, companyId },
+      { status: BillStatusEnum.CANCELLED },
+      tx,
+    );
   }
   //#endregion DELETE METHODS
 }

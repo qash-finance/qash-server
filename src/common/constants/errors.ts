@@ -90,6 +90,7 @@ export enum ErrorPayroll {
   PayrollNotFound = 'Payroll not found',
   PayEndDateBeforePayStartDate = 'Pay end date must be after pay start date',
   CannotDeletePayrollWithExistingInvoices = 'Cannot delete payroll with existing invoices. Please cancel instead.',
+  PayrollAlreadyDeleted = 'Payroll has already been deleted',
 }
 
 export enum ErrorInvoice {

@@ -170,6 +170,119 @@ export class CreatePayrollDto {
   @IsDateString()
   joiningDate: string;
 
+  @ApiPropertyOptional({
+    description: 'Item description of the payroll',
+    example: 'Consultant service',
+  })
+  @IsString()
+  description: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional notes about the payroll',
+    example: 'Monthly salary for software engineer position',
+  })
+  @IsOptional()
+  @IsString()
+  note?: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata',
+    example: { department: 'Engineering', level: 'Senior' },
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description:
+      'Number of days before pay date to generate invoice (default: 5)',
+    example: 5,
+    minimum: 0,
+    maximum: 30,
+    default: 5,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(30)
+  generateDaysBefore?: number;
+}
+
+export class CreatePayroll {
+  @ApiProperty({
+    description: 'The ID of the employee (company contact)',
+    example: 1,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  employeeId: number;
+
+  @ApiProperty({
+    description: 'Payment network details',
+    type: NetworkDto,
+  })
+  @ValidateNested()
+  @Type(() => NetworkDto)
+  network: NetworkDto;
+
+  @ApiProperty({
+    description: 'Payment token details',
+    type: TokenDto,
+  })
+  @ValidateNested()
+  @Type(() => TokenDto)
+  token: TokenDto;
+
+  @ApiProperty({
+    description: 'Contract term type',
+    enum: ContractTermEnum,
+    example: ContractTermEnum.PERMANENT,
+  })
+  @IsEnum(ContractTermEnum)
+  contractTerm: ContractTermEnum;
+
+  @ApiProperty({
+    description: 'Payroll cycle in months',
+    example: 12,
+    minimum: 1,
+    maximum: 120,
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(120)
+  payrollCycle: number;
+
+  @ApiProperty({
+    description: 'Salary amount (as string for precision)',
+    example: '5000.00',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d+(\.\d{1,8})?$/, {
+    message:
+      'Amount must be a valid positive number with up to 8 decimal places',
+  })
+  amount: string;
+
+  @ApiProperty({
+    description:
+      'Payday day-of-month (1-31). First pay starts next month on this day',
+    example: 5,
+    minimum: 1,
+    maximum: 31,
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(31)
+  payday: number;
+
+  @ApiProperty({
+    description: 'Joining date',
+    example: '2024-01-01T00:00:00Z',
+  })
+  @IsDateString()
+  joiningDate: string;
+
   @ApiProperty({
     description: 'Payment end date (will be set to next month)',
     example: '2024-01-01T00:00:00Z',
@@ -266,6 +379,14 @@ export class UpdatePayrollDto {
   amount?: string;
 
   @ApiPropertyOptional({
+    description: 'Item description of the payroll',
+    example: 'Consultant service',
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({
     description:
       'Payday day-of-month (1-31). If provided, next pay starts next month on this day',
     example: 10,
@@ -276,7 +397,7 @@ export class UpdatePayrollDto {
   @IsNumber()
   @Min(1)
   @Max(31)
-  payday?: number;
+  paydayDay?: number;
 
   @ApiPropertyOptional({
     description: 'Additional notes about the payroll',
@@ -374,4 +495,25 @@ export class PayrollStatsDto {
     example: 20,
   })
   dueThisMonth: number;
+}
+
+export class PendingInvoiceReviewsDto {
+  @ApiProperty({
+    description: 'Whether the payroll has pending invoice reviews',
+    example: true,
+  })
+  hasPendingReviews: boolean;
+
+  @ApiProperty({
+    description: 'Number of invoices pending review (status: SENT)',
+    example: 3,
+  })
+  pendingCount: number;
+
+  @ApiProperty({
+    description: 'List of invoice UUIDs pending review',
+    example: ['clx123abc', 'clx456def'],
+    type: [String],
+  })
+  pendingInvoiceUuids: string[];
 }

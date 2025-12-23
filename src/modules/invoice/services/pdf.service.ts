@@ -1,28 +1,104 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InvoiceModel } from 'src/database/generated/models';
+import puppeteer from 'puppeteer';
+import { execSync } from 'child_process';
+import { existsSync } from 'fs';
 
 @Injectable()
 export class PdfService {
   private readonly logger = new Logger(PdfService.name);
 
   /**
+   * Get Chrome/Chromium executable path
+   * Checks environment variable first, then common system paths
+   */
+  private getChromeExecutablePath(): string | undefined {
+    // Check environment variable first
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      return process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
+    // Common Chrome/Chromium paths for different platforms
+    const commonPaths = [
+      // macOS
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      // Linux
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      // Windows (if running on Windows)
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    ];
+
+    // Check if any common path exists
+    for (const path of commonPaths) {
+      if (existsSync(path)) {
+        this.logger.debug(`Found Chrome/Chromium at: ${path}`);
+        return path;
+      }
+    }
+
+    // Try to find Chrome via which command (Unix-like systems)
+    try {
+      const chromePath = execSync(
+        'which google-chrome || which chromium || which chromium-browser',
+        {
+          encoding: 'utf-8',
+        },
+      ).trim();
+      if (chromePath) {
+        this.logger.debug(`Found Chrome/Chromium via which: ${chromePath}`);
+        return chromePath;
+      }
+    } catch (_error) {
+      // which command failed, continue
+    }
+
+    // If no path found, return undefined to let Puppeteer use its bundled Chrome
+    // (requires: npx puppeteer browsers install chrome)
+    return undefined;
+  }
+
+  /**
    * Generate PDF buffer from invoice data
-   * TODO: Implement actual PDF generation using puppeteer or similar library
    */
   async generateInvoicePdf(invoice: InvoiceModel): Promise<Buffer> {
     try {
-      // For now, return a placeholder PDF content
-      // In production, you would use a library like puppeteer, jsPDF, or PDFKit
-
       const htmlContent = this.generateInvoiceHtml(invoice);
 
-      // Placeholder: Return HTML as buffer for now
-      // TODO: Convert HTML to PDF using puppeteer
-      const pdfBuffer = Buffer.from(htmlContent, 'utf-8');
+      const executablePath = this.getChromeExecutablePath();
+      const launchOptions: any = {
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      };
+
+      if (executablePath) {
+        launchOptions.executablePath = executablePath;
+      }
+
+      const browser = await puppeteer.launch(launchOptions);
+      const page = await browser.newPage();
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        margin: {
+          top: '0.5cm',
+          bottom: '0.5cm',
+          left: '0.5cm',
+          right: '0.5cm',
+        },
+        printBackground: true,
+      });
+
+      await browser.close();
 
       this.logger.log(`Generated PDF for invoice ${invoice.invoiceNumber}`);
 
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
     } catch (error) {
       this.logger.error(
         `Error generating PDF for invoice ${invoice.invoiceNumber}:`,
@@ -39,6 +115,12 @@ export class PdfService {
     const fromDetails = (invoice as any).fromDetails || {};
     const toDetails = (invoice as any).toDetails || {};
     const items = (invoice as any).items || [];
+
+    // Use payment details from the invoice model if available, otherwise fallback to fromDetails
+    const paymentNetwork = (invoice as any).paymentNetwork || {};
+    const paymentToken = (invoice as any).paymentToken || {};
+    const walletAddress =
+      invoice.paymentWalletAddress || fromDetails.walletAddress || 'N/A';
 
     return `
     <!DOCTYPE html>
@@ -170,30 +252,30 @@ export class PdfService {
             <div class="from-section">
                 <div class="section-title">FROM</div>
                 <div class="address-block">
-                    <div><strong>${fromDetails.name}</strong></div>
+                    <div><strong>${fromDetails.name || 'N/A'}</strong></div>
                     ${fromDetails.companyName ? `<div>${fromDetails.companyName}</div>` : ''}
-                    <div>${fromDetails.email}</div>
+                    <div>${fromDetails.email || 'N/A'}</div>
                     ${fromDetails.address1 ? `<div>${fromDetails.address1}</div>` : ''}
                     ${fromDetails.address2 ? `<div>${fromDetails.address2}</div>` : ''}
                     ${fromDetails.city && fromDetails.country ? `<div>${fromDetails.city}, ${fromDetails.country} ${fromDetails.postalCode || ''}</div>` : ''}
                 </div>
                 <div class="network-info">
                     <div><strong>Payment Details:</strong></div>
-                    <div>Network: ${fromDetails.network?.name || 'N/A'}</div>
-                    <div>Token: ${fromDetails.token?.symbol || 'N/A'}</div>
-                    <div>Address: ${fromDetails.walletAddress}</div>
+                    <div>Network: ${paymentNetwork.name || fromDetails.network?.name || 'N/A'}</div>
+                    <div>Token: ${paymentToken.symbol || fromDetails.token?.symbol || 'N/A'}</div>
+                    <div>Address: ${walletAddress}</div>
                 </div>
             </div>
 
             <div class="bill-to-section">
                 <div class="section-title">BILL TO</div>
                 <div class="address-block">
-                    <div><strong>${toDetails.companyName || ''}</strong></div>
-                    <div>${toDetails.contactName ? `Attn: ${toDetails.contactName}` : ''}</div>
-                    <div>${toDetails.email || ''}</div>
-                    <div>${toDetails.address1 || ''}</div>
+                    <div><strong>${toDetails.companyName || invoice.toCompanyName || 'N/A'}</strong></div>
+                    <div>${toDetails.contactName ? `Attn: ${toDetails.contactName}` : invoice.toCompanyContactName ? `Attn: ${invoice.toCompanyContactName}` : ''}</div>
+                    <div>${toDetails.email || invoice.toCompanyEmail || ''}</div>
+                    <div>${toDetails.address1 || invoice.toCompanyAddress || ''}</div>
                     ${toDetails.address2 ? `<div>${toDetails.address2}</div>` : ''}
-                    <div>${[toDetails.city, toDetails.country, toDetails.postalCode].filter(Boolean).join(' ')}</div>
+                    <div>${[toDetails.city, toDetails.country, toDetails.postalCode].filter(Boolean).join(' ') || ''}</div>
                 </div>
             </div>
         </div>
@@ -214,7 +296,7 @@ export class PdfService {
                     <tr>
                         <td>${item.description}</td>
                         <td>${item.quantity}</td>
-                        <td class="amount-column">$${item.pricePerUnit}</td>
+                        <td class="amount-column">$${item.unitPrice || item.pricePerUnit || '0.00'}</td>
                         <td class="amount-column">$${item.total}</td>
                     </tr>
                 `,

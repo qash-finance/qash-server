@@ -213,7 +213,8 @@ export class UpdateAddressBookDto {
   @IsString()
   @MaxLength(100, { message: 'name cannot be longer than 100 characters' })
   @Matches(/^[a-zA-Z0-9\s\-_]+$/, {
-    message: 'name can only contain letters, numbers, spaces, hyphens, and underscores',
+    message:
+      'name can only contain letters, numbers, spaces, hyphens, and underscores',
   })
   name?: string;
 
@@ -227,7 +228,8 @@ export class UpdateAddressBookDto {
   @IsString()
   @MinLength(10, { message: 'address is too short' })
   @Matches(/^mtst1[a-z0-9_]+$/i, {
-    message: "Address must start with 'mtst1' and contain only letters, numbers, and underscores",
+    message:
+      "Address must start with 'mtst1' and contain only letters, numbers, and underscores",
   })
   walletAddress?: string;
 

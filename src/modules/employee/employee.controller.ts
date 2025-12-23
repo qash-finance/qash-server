@@ -10,7 +10,6 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,7 +17,6 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
-  ApiBody,
 } from '@nestjs/swagger';
 import {
   CreateContactDto,
@@ -28,7 +26,6 @@ import {
   PaginatedContactsResponseDto,
   CompanyContactResponseDto,
   CompanyGroupResponseDto,
-  BulkDeleteEmployeesDto,
 } from './employee.dto';
 import { PaginationOptions } from '../../database/base.repository';
 import {

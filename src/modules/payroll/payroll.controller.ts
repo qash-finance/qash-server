@@ -26,6 +26,7 @@ import {
   UpdatePayrollDto,
   PayrollQueryDto,
   PayrollStatsDto,
+  PendingInvoiceReviewsDto,
 } from './payroll.dto';
 import { PayrollModel } from 'src/database/generated/models';
 import { CompanyAuth } from '../auth/decorators/company-auth.decorator';
@@ -86,6 +87,29 @@ export class PayrollController {
     @CurrentUser('withCompany') user: UserWithCompany,
   ): Promise<PayrollStatsDto> {
     return this.payrollService.getPayrollStats(user.company.id);
+  }
+
+  @Get(':id/pending-reviews')
+  @ApiOperation({
+    summary: 'Check if payroll has pending invoice reviews from employee',
+    description:
+      'Returns information about invoices that are SENT and waiting for employee review',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pending invoice reviews status retrieved successfully',
+    type: PendingInvoiceReviewsDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Payroll not found',
+  })
+  @ApiParam({ name: 'id', type: 'number', description: 'Payroll ID' })
+  async checkPendingInvoiceReviews(
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<PendingInvoiceReviewsDto> {
+    return this.payrollService.checkPendingInvoiceReviews(id, user.company.id);
   }
 
   @Get(':id')

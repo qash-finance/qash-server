@@ -21,7 +21,8 @@ export const PayrollStatusEnum = {
   ACTIVE: 'ACTIVE',
   PAUSED: 'PAUSED',
   COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED'
+  CANCELLED: 'CANCELLED',
+  DELETED: 'DELETED'
 } as const
 
 export type PayrollStatusEnum = (typeof PayrollStatusEnum)[keyof typeof PayrollStatusEnum]
@@ -42,7 +43,8 @@ export const InvoiceStatusEnum = {
   CONFIRMED: 'CONFIRMED',
   CANCELLED: 'CANCELLED',
   PAID: 'PAID',
-  OVERDUE: 'OVERDUE'
+  OVERDUE: 'OVERDUE',
+  DELETED: 'DELETED'
 } as const
 
 export type InvoiceStatusEnum = (typeof InvoiceStatusEnum)[keyof typeof InvoiceStatusEnum]
@@ -56,14 +58,6 @@ export const BillStatusEnum = {
 } as const
 
 export type BillStatusEnum = (typeof BillStatusEnum)[keyof typeof BillStatusEnum]
-
-
-export const OtpTypeEnum = {
-  LOGIN: 'LOGIN',
-  EMAIL_VERIFICATION: 'EMAIL_VERIFICATION'
-} as const
-
-export type OtpTypeEnum = (typeof OtpTypeEnum)[keyof typeof OtpTypeEnum]
 
 
 export const CategoryShapeEnum = {
