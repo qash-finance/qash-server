@@ -138,7 +138,7 @@ export class AuthController {
         );
 
         // Sync user to database
-        const user = await this.authService.syncUserFromParaToken(paraPayload);
+        await this.authService.syncUserFromParaToken(paraPayload);
 
         // Set HTTP-only cookie
         const isProduction = this.authService.isProduction();

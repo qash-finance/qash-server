@@ -3,7 +3,6 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AppConfigService } from '../shared/config/config.service';
@@ -87,7 +86,7 @@ export class AuthService {
       });
 
       const key = await jwksClient.getSigningKey(kid);
-      const signingKey = key.getPublicKey();
+      const _signingKey = key.getPublicKey();
 
       // Decode payload for basic validation
       // Note: Full signature verification happens in ParaJwtStrategy
