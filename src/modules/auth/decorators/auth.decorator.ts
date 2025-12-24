@@ -2,19 +2,6 @@ import { applyDecorators, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { ParaJwtAuthGuard } from '../guards/para-jwt-auth.guard';
 
-/**
- * Combined decorator for authentication
- * Applies JWT guard and Swagger documentation
- *
- * @example
- * ```typescript
- * @Auth()
- * @Get('protected')
- * getProtectedResource(@CurrentUser() user: JwtPayload) {
- *   return { message: 'This is protected', user };
- * }
- * ```
- */
 export function Auth() {
   return applyDecorators(
     UseGuards(ParaJwtAuthGuard),

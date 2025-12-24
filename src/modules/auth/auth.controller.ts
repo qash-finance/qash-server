@@ -8,8 +8,6 @@ import {
   Req,
   Res,
   Logger,
-  BadRequestException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -30,7 +28,6 @@ import {
   SetJwtCookieDto,
   SetJwtCookieResponseDto,
 } from './dto/auth.dto';
-import { ErrorAuth } from 'src/common/constants/errors';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -127,39 +124,17 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<SetJwtCookieResponseDto> {
+    const originalAuth = request.headers.authorization;
+    request.headers.authorization = `Bearer ${setJwtCookieDto.token}`;
+
     try {
-      const originalAuth = request.headers.authorization;
-      request.headers.authorization = `Bearer ${setJwtCookieDto.token}`;
-
-      try {
-        // Validate the JWT token using Passport strategy
-        const paraPayload = await this.authService.validateParaJwt(
-          setJwtCookieDto.token,
-        );
-
-        // Sync user to database
-        await this.authService.syncUserFromParaToken(paraPayload);
-
-        // Set HTTP-only cookie
-        const isProduction = this.authService.isProduction();
-        response.cookie('para-jwt', setJwtCookieDto.token, {
-          httpOnly: true,
-          secure: isProduction,
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 1000,
-          path: '/',
-        });
-
-        return { message: 'Cookie set successfully' };
-      } finally {
-        // Restore original authorization header
-        request.headers.authorization = originalAuth;
-      }
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      throw new BadRequestException(ErrorAuth.JwtValidationFailed);
+      return await this.authService.validateAndSetJwtCookie(
+        setJwtCookieDto.token,
+        response,
+      );
+    } finally {
+      // Restore original authorization header
+      request.headers.authorization = originalAuth;
     }
   }
 

@@ -5,6 +5,7 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { AppConfigService } from '../shared/config/config.service';
 import { UserRepository } from './repositories/user.repository';
 import { handleError } from 'src/common/utils/errors';
@@ -174,6 +175,42 @@ export class AuthService {
       this.logger.error('Failed to sync user from Para token:', error);
       handleError(error, this.logger);
       throw error;
+    }
+  }
+
+  /**
+   * Validate Para JWT token, sync user, and set HTTP-only cookie
+   * @param token - JWT token from Para
+   * @param response - Express Response object to set cookie
+   * @returns Success message
+   */
+  async validateAndSetJwtCookie(
+    token: string,
+    response: Response,
+  ): Promise<{ message: string }> {
+    try {
+      // Validate the JWT token using Passport strategy
+      const paraPayload = await this.validateParaJwt(token);
+
+      // Sync user to database
+      await this.syncUserFromParaToken(paraPayload);
+
+      // Set HTTP-only cookie
+      const isProduction = this.isProduction();
+      response.cookie('para-jwt', token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 3, // 3 hours
+        path: '/',
+      });
+
+      return { message: 'Cookie set successfully' };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new BadRequestException(ErrorAuth.JwtValidationFailed);
     }
   }
 }

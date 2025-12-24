@@ -21,11 +21,4 @@ export const envValidator = Joi.object({
 
   // Admin
   ADMIN_EMAIL: Joi.string().email().required(),
-
-  // Para
-  PARA_API_KEY: Joi.string().optional(),
-  PARA_SECRET_API_KEY: Joi.string().optional(),
-  PARA_VERIFY_URL: Joi.string().uri().optional(),
-  PARA_JWKS_URL: Joi.string().uri().optional(),
-  PARA_ENVIRONMENT: Joi.string().valid('beta', 'sandbox', 'prod').optional(),
 });
