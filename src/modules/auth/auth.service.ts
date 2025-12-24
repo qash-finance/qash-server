@@ -189,13 +189,26 @@ export class AuthService {
       await this.syncUserFromParaToken(paraPayload);
 
       // Set HTTP-only cookie
-      response.cookie('para-jwt', token, {
+      // Note: secure: false for localhost dev, true for production (requires HTTPS)
+      const isProduction = process.env.NODE_ENV === 'production';
+      const cookieOptions = {
         httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 3, // 3 hours
+        secure: isProduction, // Only true with HTTPS
+        sameSite: 'lax' as const, // Allow cross-site requests for local dev
+        maxAge: 30 * 60 * 1000, // 30 minutes
         path: '/',
-      });
+      };
+      
+      response.cookie('para-jwt', token, cookieOptions);
+      
+      this.logger.log(
+        `✅ Para JWT cookie set successfully | ` +
+        `Env: ${process.env.NODE_ENV} | ` +
+        `Secure: ${isProduction} | ` +
+        `SameSite: lax | ` +
+        `MaxAge: 30min | ` +
+        `User: ${paraPayload.data?.email || paraPayload.data?.identifier}`,
+      );
 
       return { message: 'Cookie set successfully' };
     } catch (error) {

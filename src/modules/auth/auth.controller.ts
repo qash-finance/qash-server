@@ -88,7 +88,7 @@ export class AuthController {
       // Clear the JWT cookie
       response.clearCookie('para-jwt', {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
       });

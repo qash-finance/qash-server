@@ -5,6 +5,7 @@ export const envValidator = Joi.object({
   NODE_ENV: Joi.string().default('development'),
   HOST: Joi.string().default('localhost'),
   PORT: Joi.string().default(3001),
+  FRONTEND_URL: Joi.string().default('http://localhost:3000'), // For CORS and cookie settings
   SESSION_SECRET: Joi.string().default('session_key'),
   POSTGRES_HOST: Joi.string().default('0.0.0.0'),
   POSTGRES_USER: Joi.string().default('app_user'),

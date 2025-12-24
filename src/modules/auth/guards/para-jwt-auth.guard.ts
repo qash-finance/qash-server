@@ -38,6 +38,9 @@ export class ParaJwtAuthGuard extends AuthGuard('para-jwt') {
     // Use Passport's built-in authentication
     const canActivate = await super.canActivate(context);
     if (!canActivate) {
+      this.logger.warn(
+        'Passport authentication failed - no valid JWT token found',
+      );
       return false;
     }
 
@@ -45,6 +48,7 @@ export class ParaJwtAuthGuard extends AuthGuard('para-jwt') {
     const paraPayload: ParaJwtPayload = request.user;
 
     if (!paraPayload || !paraPayload.email) {
+      this.logger.error('No valid Para JWT payload found in request');
       throw new UnauthorizedException(ErrorAuth.InvalidToken);
     }
 
@@ -66,11 +70,24 @@ export class ParaJwtAuthGuard extends AuthGuard('para-jwt') {
     }
   }
 
-  handleRequest(err: any, user: any, info: any, _context: ExecutionContext) {
+  handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
     if (err || !user) {
+      const request = context.switchToHttp().getRequest();
+      const hasCookie = !!request?.cookies?.['para-jwt'];
+      const hasAuthHeader = !!request?.headers?.authorization;
+      const method = request?.method;
+      const path = request?.path || request?.url;
+      
       const errorMessage =
-        info?.message || err?.message || 'Unauthorized access';
-      this.logger.error(`Para JWT authentication failed: ${errorMessage}`);
+        info?.message || err?.message || 'No auth token';
+      
+      this.logger.error(
+        `Para JWT authentication failed: ${errorMessage} | ` +
+        `Route: ${method} ${path} | ` +
+        `Cookie present: ${hasCookie} | ` +
+        `Auth header present: ${hasAuthHeader}`,
+      );
+      
       throw new UnauthorizedException(errorMessage);
     }
     return user;

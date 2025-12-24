@@ -18,10 +18,14 @@ export class ParaJwtStrategy extends PassportStrategy(Strategy, 'para-jwt') {
       jwtFromRequest: ExtractJwt.fromExtractors([
         // First, try to extract from HTTP-only cookie
         (request: Request) => {
-          return request?.cookies?.['para-jwt'] || null;
+          const token = request?.cookies?.['para-jwt'];
+          return token || null;
         },
         // Fallback to Authorization header (for initial token exchange)
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (request: Request) => {
+          const token = ExtractJwt.fromAuthHeaderAsBearerToken()(request);
+          return token || null;
+        },
       ]),
       ignoreExpiration: false,
       secretOrKeyProvider: passportJwtSecret({
@@ -38,15 +42,16 @@ export class ParaJwtStrategy extends PassportStrategy(Strategy, 'para-jwt') {
     try {
       // Validate that the token has the required Para structure
       if (!payload.data || !payload.sub) {
+        this.logger.error('Invalid token payload structure - missing data or sub');
         throw new UnauthorizedException(ErrorAuth.InvalidToken);
       }
 
       // Extract email from the payload
       const email = payload.data.email || payload.data.identifier;
       if (!email) {
+        this.logger.error('Invalid token payload - missing email or identifier');
         throw new UnauthorizedException(ErrorAuth.InvalidToken);
       }
-
       // Return the validated payload with normalized structure
       return {
         ...payload,
@@ -57,6 +62,7 @@ export class ParaJwtStrategy extends PassportStrategy(Strategy, 'para-jwt') {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
+      this.logger.error(`JWT validation error: ${error.message}`);
       throw new UnauthorizedException(ErrorAuth.InvalidToken);
     }
   }
