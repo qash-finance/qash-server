@@ -5,6 +5,7 @@ CREATE TABLE "clients" (
     "created_at" TIMESTAMP(6) NOT NULL,
     "updated_at" TIMESTAMP(6) NOT NULL,
     "company_id" INTEGER NOT NULL,
+    "cc_emails" VARCHAR(255)[],
     "email" VARCHAR(255) NOT NULL,
     "company_name" VARCHAR(255) NOT NULL,
     "company_type" VARCHAR(100),
@@ -21,7 +22,7 @@ CREATE TABLE "clients" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "clients_company_id_email_key" ON "clients"("company_id", "email");
+CREATE UNIQUE INDEX "clients_uuid_key" ON "clients"("uuid");
 
 -- CreateIndex
 CREATE INDEX "clients_company_id_idx" ON "clients"("company_id");
@@ -29,6 +30,8 @@ CREATE INDEX "clients_company_id_idx" ON "clients"("company_id");
 -- CreateIndex
 CREATE INDEX "clients_email_idx" ON "clients"("email");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "clients_company_id_email_key" ON "clients"("company_id", "email");
+
 -- AddForeignKey
 ALTER TABLE "clients" ADD CONSTRAINT "clients_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-

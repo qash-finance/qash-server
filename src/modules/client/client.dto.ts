@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateClientDto {
   @ApiProperty({
@@ -10,6 +17,16 @@ export class CreateClientDto {
   @IsNotEmpty()
   @MaxLength(255)
   email: string;
+
+  @ApiPropertyOptional({
+    description: 'CC emails',
+    example: ['cc1@example.com', 'cc2@example.com'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(255, { each: true })
+  ccEmails?: string[];
 
   @ApiProperty({
     description: 'Client company name',
@@ -178,4 +195,3 @@ export class PaginatedClientsResponseDto {
   @ApiProperty({ type: PaginationMetaDto })
   pagination: PaginationMetaDto;
 }
-

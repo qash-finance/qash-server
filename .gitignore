@@ -40,6 +40,7 @@ lerna-debug.log*
 # Environment variables
 .env
 .env.production
+.env.prod
 .env.development
 .env.test
 .vscode

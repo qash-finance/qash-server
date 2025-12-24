@@ -1765,6 +1765,7 @@ export const ClientScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   companyId: 'companyId',
+  ccEmails: 'ccEmails',
   email: 'email',
   companyName: 'companyName',
   companyType: 'companyType',

@@ -5,8 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { handleError } from '../../../common/utils/errors';
-import { PaginatedResult } from '../../../database/base.repository';
+import { ErrorClient } from '../../../common/constants/errors';
+import {
+  PaginatedResult,
+  PrismaTransactionClient,
+} from '../../../database/base.repository';
 import { Client, Prisma } from 'src/database/generated/client';
+import { PrismaService } from '../../../database/prisma.service';
 import { ClientRepository } from '../repositories/client.repository';
 import { CreateClientDto, UpdateClientDto } from '../client.dto';
 
@@ -14,7 +19,10 @@ import { CreateClientDto, UpdateClientDto } from '../client.dto';
 export class ClientService {
   private readonly logger = new Logger(ClientService.name);
 
-  constructor(private readonly clientRepository: ClientRepository) {}
+  constructor(
+    private readonly clientRepository: ClientRepository,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async getClients(
     companyId: number,
@@ -55,7 +63,7 @@ export class ClientService {
       });
 
       if (!client) {
-        throw new NotFoundException('Client not found');
+        throw new NotFoundException(ErrorClient.NotFound);
       }
 
       return client;
@@ -70,31 +78,41 @@ export class ClientService {
     payload: CreateClientDto,
   ): Promise<Client> {
     try {
-      const exists = await this.clientRepository.exists({
-        companyId,
-        email: payload.email,
-      });
+      return await this.prisma.$transaction(
+        async (tx: PrismaTransactionClient) => {
+          const exists = await this.clientRepository.exists(
+            {
+              companyId,
+              email: payload.email,
+            },
+            tx,
+          );
 
-      if (exists) {
-        throw new BadRequestException('Client with this email already exists');
-      }
+          if (exists) {
+            throw new BadRequestException(ErrorClient.EmailAlreadyExists);
+          }
 
-      return this.clientRepository.create({
-        company: { connect: { id: companyId } },
-        email: payload.email,
-        companyName: payload.companyName,
-        companyType: payload.companyType,
-        country: payload.country,
-        state: payload.state,
-        city: payload.city,
-        address1: payload.address1,
-        address2: payload.address2,
-        taxId: payload.taxId,
-        postalCode: payload.postalCode,
-        registrationNumber: payload.registrationNumber,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+          return this.clientRepository.create(
+            {
+              company: { connect: { id: companyId } },
+              email: payload.email,
+              companyName: payload.companyName,
+              companyType: payload.companyType,
+              country: payload.country,
+              state: payload.state,
+              city: payload.city,
+              address1: payload.address1,
+              address2: payload.address2,
+              taxId: payload.taxId,
+              postalCode: payload.postalCode,
+              registrationNumber: payload.registrationNumber,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+            tx,
+          );
+        },
+      );
     } catch (error) {
       this.logger.error('Failed to create client', error);
       handleError(error, this.logger);
@@ -107,42 +125,51 @@ export class ClientService {
     payload: UpdateClientDto,
   ): Promise<Client> {
     try {
-      const existing = await this.clientRepository.findOne({
-        uuid,
-        companyId,
-      });
-
-      if (!existing) {
-        throw new NotFoundException('Client not found');
-      }
-
-      if (payload.email && payload.email !== existing.email) {
-        const emailInUse = await this.clientRepository.findOne({
-          companyId,
-          email: payload.email,
-        });
-
-        if (emailInUse && emailInUse.uuid !== uuid) {
-          throw new BadRequestException(
-            'Client with this email already exists',
+      return await this.prisma.$transaction(
+        async (tx: PrismaTransactionClient) => {
+          const existing = await this.clientRepository.findOne(
+            {
+              uuid,
+              companyId,
+            },
+            tx,
           );
-        }
-      }
 
-      return this.clientRepository.update(
-        { uuid, companyId },
-        {
-          email: payload.email,
-          companyName: payload.companyName,
-          companyType: payload.companyType,
-          country: payload.country,
-          state: payload.state,
-          city: payload.city,
-          address1: payload.address1,
-          address2: payload.address2,
-          taxId: payload.taxId,
-          postalCode: payload.postalCode,
-          registrationNumber: payload.registrationNumber,
+          if (!existing) {
+            throw new NotFoundException(ErrorClient.NotFound);
+          }
+
+          if (payload.email && payload.email !== existing.email) {
+            const emailInUse = await this.clientRepository.findOne(
+              {
+                companyId,
+                email: payload.email,
+              },
+              tx,
+            );
+
+            if (emailInUse && emailInUse.uuid !== uuid) {
+              throw new BadRequestException(ErrorClient.EmailAlreadyExists);
+            }
+          }
+
+          return this.clientRepository.update(
+            { uuid, companyId },
+            {
+              email: payload.email,
+              companyName: payload.companyName,
+              companyType: payload.companyType,
+              country: payload.country,
+              state: payload.state,
+              city: payload.city,
+              address1: payload.address1,
+              address2: payload.address2,
+              taxId: payload.taxId,
+              postalCode: payload.postalCode,
+              registrationNumber: payload.registrationNumber,
+            },
+            tx,
+          );
         },
       );
     } catch (error) {
@@ -153,9 +180,14 @@ export class ClientService {
 
   async deleteClient(companyId: number, uuid: string): Promise<void> {
     try {
-      await this.clientRepository.delete({
-        uuid,
-        companyId,
+      await this.prisma.$transaction(async (tx: PrismaTransactionClient) => {
+        await this.clientRepository.delete(
+          {
+            uuid,
+            companyId,
+          },
+          tx,
+        );
       });
     } catch (error) {
       this.logger.error('Failed to delete client', error);

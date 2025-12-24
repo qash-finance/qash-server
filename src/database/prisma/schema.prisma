@@ -193,6 +193,7 @@ model Client {
 
   companyId Int     @map("company_id")
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ccEmails  String[] @map("cc_emails") @db.VarChar(255)
 
   email     String @db.VarChar(255)
   companyName String @map("company_name") @db.VarChar(255)
