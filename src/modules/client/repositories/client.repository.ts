@@ -25,4 +25,3 @@ export class ClientRepository extends BaseRepository<
     return 'Client';
   }
 }
-

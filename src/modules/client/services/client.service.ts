@@ -47,10 +47,10 @@ export class ClientService {
     }
   }
 
-  async getClientById(companyId: number, clientId: number): Promise<Client> {
+  async getClientById(companyId: number, uuid: string): Promise<Client> {
     try {
       const client = await this.clientRepository.findOne({
-        id: clientId,
+        uuid,
         companyId,
       });
 
@@ -60,7 +60,7 @@ export class ClientService {
 
       return client;
     } catch (error) {
-      this.logger.error('Failed to get client by id', error);
+      this.logger.error('Failed to get client by uuid', error);
       handleError(error, this.logger);
     }
   }
@@ -103,12 +103,12 @@ export class ClientService {
 
   async updateClient(
     companyId: number,
-    clientId: number,
+    uuid: string,
     payload: UpdateClientDto,
   ): Promise<Client> {
     try {
       const existing = await this.clientRepository.findOne({
-        id: clientId,
+        uuid,
         companyId,
       });
 
@@ -122,7 +122,7 @@ export class ClientService {
           email: payload.email,
         });
 
-        if (emailInUse && emailInUse.id !== clientId) {
+        if (emailInUse && emailInUse.uuid !== uuid) {
           throw new BadRequestException(
             'Client with this email already exists',
           );
@@ -130,7 +130,7 @@ export class ClientService {
       }
 
       return this.clientRepository.update(
-        { id: clientId, companyId },
+        { uuid, companyId },
         {
           email: payload.email,
           companyName: payload.companyName,
@@ -151,10 +151,10 @@ export class ClientService {
     }
   }
 
-  async deleteClient(companyId: number, clientId: number): Promise<void> {
+  async deleteClient(companyId: number, uuid: string): Promise<void> {
     try {
       await this.clientRepository.delete({
-        id: clientId,
+        uuid,
         companyId,
       });
     } catch (error) {

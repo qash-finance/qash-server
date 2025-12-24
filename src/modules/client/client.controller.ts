@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
@@ -76,9 +77,14 @@ export class ClientController {
     });
   }
 
-  @Get(':id')
+  @Get(':uuid')
   @ApiOperation({
-    summary: 'Get a single client by id',
+    summary: 'Get a single client by uuid',
+  })
+  @ApiParam({
+    name: 'uuid',
+    type: 'string',
+    description: 'Client UUID',
   })
   @ApiResponse({
     status: 200,
@@ -87,9 +93,9 @@ export class ClientController {
   })
   async getClientById(
     @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid') uuid: string,
   ) {
-    return this.clientService.getClientById(user.company.id, id);
+    return this.clientService.getClientById(user.company.id, uuid);
   }
 
   @Post()
@@ -108,9 +114,14 @@ export class ClientController {
     return this.clientService.createClient(user.company.id, payload);
   }
 
-  @Put(':id')
+  @Put(':uuid')
   @ApiOperation({
     summary: 'Update a client',
+  })
+  @ApiParam({
+    name: 'uuid',
+    type: 'string',
+    description: 'Client UUID',
   })
   @ApiResponse({
     status: 200,
@@ -119,16 +130,21 @@ export class ClientController {
   })
   async updateClient(
     @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid') uuid: string,
     @Body() payload: UpdateClientDto,
   ) {
-    return this.clientService.updateClient(user.company.id, id, payload);
+    return this.clientService.updateClient(user.company.id, uuid, payload);
   }
 
-  @Delete(':id')
+  @Delete(':uuid')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete a client',
+  })
+  @ApiParam({
+    name: 'uuid',
+    type: 'string',
+    description: 'Client UUID',
   })
   @ApiResponse({
     status: 204,
@@ -136,9 +152,8 @@ export class ClientController {
   })
   async deleteClient(
     @CurrentUser('withCompany') user: UserWithCompany,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid') uuid: string,
   ) {
-    await this.clientService.deleteClient(user.company.id, id);
+    await this.clientService.deleteClient(user.company.id, uuid);
   }
 }
-
