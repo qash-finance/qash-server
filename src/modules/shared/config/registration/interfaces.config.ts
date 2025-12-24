@@ -38,11 +38,7 @@ export interface AuthConfig {
     callbackUrl: string;
   };
   para: {
-    apiKey: string;
-    secretApiKey: string;
-    verifyUrl: string;
     jwksUrl: string;
-    environment: 'beta' | 'sandbox' | 'prod';
   };
 }
 

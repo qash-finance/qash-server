@@ -16,11 +16,8 @@ export default registerAs('auth', () => ({
     callbackUrl: process.env.GOOGLE_CALLBACK_URL,
   },
   para: {
-    apiKey: process.env.PARA_API_KEY || '',
-    secretApiKey: process.env.PARA_SECRET_API_KEY || '',
     jwksUrl:
       process.env.PARA_JWKS_URL ||
       'https://api.beta.getpara.com/.well-known/jwks.json',
-    environment: process.env.PARA_ENVIRONMENT || 'beta', // beta, sandbox, or prod
   },
 }));

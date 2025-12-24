@@ -132,13 +132,6 @@ export class AuthService {
   }
 
   /**
-   * Check if running in production
-   */
-  isProduction(): boolean {
-    return this.appConfigService.nodeEnv === 'production';
-  }
-
-  /**
    * Sync user from Para JWT token to our database
    * Creates user if doesn't exist, updates last login if exists
    */
@@ -196,10 +189,9 @@ export class AuthService {
       await this.syncUserFromParaToken(paraPayload);
 
       // Set HTTP-only cookie
-      const isProduction = this.isProduction();
       response.cookie('para-jwt', token, {
         httpOnly: true,
-        secure: isProduction,
+        secure: true,
         sameSite: 'lax',
         maxAge: 1000 * 60 * 60 * 3, // 3 hours
         path: '/',
