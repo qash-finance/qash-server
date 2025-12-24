@@ -73,6 +73,7 @@ model Company {
   companyType        CompanyTypeEnum @map("company_type")
   taxId              String?         @map("tax_id") @db.VarChar(100)
   notificationEmail  String?         @map("notification_email") @db.VarChar(255)
+  ccNotifications    String[]        @map("cc_notifications") @db.VarChar(255)
 
   country    String  @db.VarChar(100)
   address1   String  @map("address_1") @db.VarChar(255)

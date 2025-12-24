@@ -128,6 +128,7 @@ export const CompanyScalarFieldEnum = {
   companyType: 'companyType',
   taxId: 'taxId',
   notificationEmail: 'notificationEmail',
+  ccNotifications: 'ccNotifications',
   country: 'country',
   address1: 'address1',
   address2: 'address2',

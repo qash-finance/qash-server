@@ -87,6 +87,7 @@ CREATE TABLE "companies" (
     "company_type" "CompanyTypeEnum" NOT NULL,
     "tax_id" VARCHAR(100),
     "notification_email" VARCHAR(255),
+    "cc_notifications" VARCHAR(255)[],
     "country" VARCHAR(100) NOT NULL,
     "address_1" VARCHAR(255) NOT NULL,
     "address_2" VARCHAR(255),
