@@ -32,14 +32,13 @@ export class AdminGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-
-    if (!user || !user.sub) {
+    if (!user || !user.internalUserId) {
       throw new ForbiddenException('Authentication required');
     }
 
     try {
       // Get the full user details from database to check role
-      const fullUser = await this.userRepository.findById(user.sub);
+      const fullUser = await this.userRepository.findById(user.internalUserId);
 
       if (!fullUser) {
         throw new ForbiddenException('User not found');

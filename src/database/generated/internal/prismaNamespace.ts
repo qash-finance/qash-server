@@ -384,8 +384,6 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
-  OtpCode: 'OtpCode',
-  UserSession: 'UserSession',
   User: 'User',
   TeamMember: 'TeamMember',
   Company: 'Company',
@@ -414,158 +412,10 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "otpCode" | "userSession" | "user" | "teamMember" | "company" | "employee" | "employeeGroup" | "payroll" | "invoice" | "invoiceItem" | "invoiceSchedule" | "bill" | "paymentLink" | "paymentLinkRecord" | "notifications"
+    modelProps: "user" | "teamMember" | "company" | "employee" | "employeeGroup" | "payroll" | "invoice" | "invoiceItem" | "invoiceSchedule" | "bill" | "paymentLink" | "paymentLinkRecord" | "notifications"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
-    OtpCode: {
-      payload: Prisma.$OtpCodePayload<ExtArgs>
-      fields: Prisma.OtpCodeFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.OtpCodeFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.OtpCodeFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload>
-        }
-        findFirst: {
-          args: Prisma.OtpCodeFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.OtpCodeFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload>
-        }
-        findMany: {
-          args: Prisma.OtpCodeFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload>[]
-        }
-        create: {
-          args: Prisma.OtpCodeCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload>
-        }
-        createMany: {
-          args: Prisma.OtpCodeCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.OtpCodeCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload>[]
-        }
-        delete: {
-          args: Prisma.OtpCodeDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload>
-        }
-        update: {
-          args: Prisma.OtpCodeUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload>
-        }
-        deleteMany: {
-          args: Prisma.OtpCodeDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.OtpCodeUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.OtpCodeUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload>[]
-        }
-        upsert: {
-          args: Prisma.OtpCodeUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$OtpCodePayload>
-        }
-        aggregate: {
-          args: Prisma.OtpCodeAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateOtpCode>
-        }
-        groupBy: {
-          args: Prisma.OtpCodeGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.OtpCodeGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.OtpCodeCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.OtpCodeCountAggregateOutputType> | number
-        }
-      }
-    }
-    UserSession: {
-      payload: Prisma.$UserSessionPayload<ExtArgs>
-      fields: Prisma.UserSessionFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.UserSessionFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.UserSessionFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
-        }
-        findFirst: {
-          args: Prisma.UserSessionFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.UserSessionFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
-        }
-        findMany: {
-          args: Prisma.UserSessionFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>[]
-        }
-        create: {
-          args: Prisma.UserSessionCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
-        }
-        createMany: {
-          args: Prisma.UserSessionCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.UserSessionCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>[]
-        }
-        delete: {
-          args: Prisma.UserSessionDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
-        }
-        update: {
-          args: Prisma.UserSessionUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
-        }
-        deleteMany: {
-          args: Prisma.UserSessionDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.UserSessionUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.UserSessionUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>[]
-        }
-        upsert: {
-          args: Prisma.UserSessionUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
-        }
-        aggregate: {
-          args: Prisma.UserSessionAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateUserSession>
-        }
-        groupBy: {
-          args: Prisma.UserSessionGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.UserSessionGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.UserSessionCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.UserSessionCountAggregateOutputType> | number
-        }
-      }
-    }
     User: {
       payload: Prisma.$UserPayload<ExtArgs>
       fields: Prisma.UserFieldRefs
@@ -1567,38 +1417,6 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const OtpCodeScalarFieldEnum = {
-  id: 'id',
-  uuid: 'uuid',
-  userId: 'userId',
-  code: 'code',
-  type: 'type',
-  expiresAt: 'expiresAt',
-  isUsed: 'isUsed',
-  attempts: 'attempts',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type OtpCodeScalarFieldEnum = (typeof OtpCodeScalarFieldEnum)[keyof typeof OtpCodeScalarFieldEnum]
-
-
-export const UserSessionScalarFieldEnum = {
-  id: 'id',
-  uuid: 'uuid',
-  userId: 'userId',
-  refreshToken: 'refreshToken',
-  userAgent: 'userAgent',
-  ipAddress: 'ipAddress',
-  isActive: 'isActive',
-  expiresAt: 'expiresAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type UserSessionScalarFieldEnum = (typeof UserSessionScalarFieldEnum)[keyof typeof UserSessionScalarFieldEnum]
-
-
 export const UserScalarFieldEnum = {
   id: 'id',
   uuid: 'uuid',
@@ -1645,6 +1463,7 @@ export const CompanyScalarFieldEnum = {
   companyType: 'companyType',
   taxId: 'taxId',
   notificationEmail: 'notificationEmail',
+  ccNotifications: 'ccNotifications',
   country: 'country',
   address1: 'address1',
   address2: 'address2',
@@ -1968,20 +1787,6 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
- * Reference to a field of type 'OtpTypeEnum'
- */
-export type EnumOtpTypeEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OtpTypeEnum'>
-    
-
-
-/**
- * Reference to a field of type 'OtpTypeEnum[]'
- */
-export type ListEnumOtpTypeEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OtpTypeEnum[]'>
-    
-
-
-/**
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -1996,13 +1801,6 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-/**
  * Reference to a field of type 'UserRoleEnum'
  */
 export type EnumUserRoleEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserRoleEnum'>
@@ -2013,6 +1811,13 @@ export type EnumUserRoleEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'UserRoleEnum[]'
  */
 export type ListEnumUserRoleEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserRoleEnum[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -2304,8 +2109,6 @@ export type PrismaClientOptions = ({
   omit?: GlobalOmitConfig
 }
 export type GlobalOmitConfig = {
-  otpCode?: Prisma.OtpCodeOmit
-  userSession?: Prisma.UserSessionOmit
   user?: Prisma.UserOmit
   teamMember?: Prisma.TeamMemberOmit
   company?: Prisma.CompanyOmit

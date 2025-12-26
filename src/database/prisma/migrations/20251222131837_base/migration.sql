@@ -14,9 +14,6 @@ CREATE TYPE "InvoiceStatusEnum" AS ENUM ('DRAFT', 'SENT', 'REVIEWED', 'CONFIRMED
 CREATE TYPE "BillStatusEnum" AS ENUM ('PENDING', 'PAID', 'OVERDUE', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "OtpTypeEnum" AS ENUM ('LOGIN', 'EMAIL_VERIFICATION');
-
--- CreateEnum
 CREATE TYPE "CategoryShapeEnum" AS ENUM ('CIRCLE', 'DIAMOND', 'SQUARE', 'TRIANGLE');
 
 -- CreateEnum
@@ -42,38 +39,6 @@ CREATE TYPE "UserRoleEnum" AS ENUM ('USER', 'ADMIN');
 
 -- CreateEnum
 CREATE TYPE "GenderEnum" AS ENUM ('MALE', 'FEMALE', 'PREFER_NOT_TO_SAY', 'OTHER');
-
--- CreateTable
-CREATE TABLE "otp_codes" (
-    "id" SERIAL NOT NULL,
-    "uuid" TEXT NOT NULL,
-    "user_id" INTEGER NOT NULL,
-    "code" VARCHAR(6) NOT NULL,
-    "type" "OtpTypeEnum" NOT NULL DEFAULT 'LOGIN',
-    "expires_at" TIMESTAMP(6) NOT NULL,
-    "is_used" BOOLEAN NOT NULL DEFAULT false,
-    "attempts" INTEGER NOT NULL DEFAULT 0,
-    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(6) NOT NULL,
-
-    CONSTRAINT "otp_codes_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "user_sessions" (
-    "id" TEXT NOT NULL,
-    "uuid" TEXT NOT NULL,
-    "user_id" INTEGER NOT NULL,
-    "refresh_token" VARCHAR(500) NOT NULL,
-    "user_agent" TEXT,
-    "ip_address" VARCHAR(45),
-    "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "expires_at" TIMESTAMP(6) NOT NULL,
-    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(6) NOT NULL,
-
-    CONSTRAINT "user_sessions_pkey" PRIMARY KEY ("id")
-);
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -122,6 +87,7 @@ CREATE TABLE "companies" (
     "company_type" "CompanyTypeEnum" NOT NULL,
     "tax_id" VARCHAR(100),
     "notification_email" VARCHAR(255),
+    "cc_notifications" VARCHAR(255)[],
     "country" VARCHAR(100) NOT NULL,
     "address_1" VARCHAR(255) NOT NULL,
     "address_2" VARCHAR(255),
@@ -362,33 +328,6 @@ CREATE TABLE "notifications" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "otp_codes_uuid_key" ON "otp_codes"("uuid");
-
--- CreateIndex
-CREATE INDEX "otp_codes_user_id_idx" ON "otp_codes"("user_id");
-
--- CreateIndex
-CREATE INDEX "otp_codes_code_idx" ON "otp_codes"("code");
-
--- CreateIndex
-CREATE INDEX "otp_codes_expires_at_idx" ON "otp_codes"("expires_at");
-
--- CreateIndex
-CREATE UNIQUE INDEX "user_sessions_uuid_key" ON "user_sessions"("uuid");
-
--- CreateIndex
-CREATE UNIQUE INDEX "user_sessions_refresh_token_key" ON "user_sessions"("refresh_token");
-
--- CreateIndex
-CREATE INDEX "user_sessions_user_id_idx" ON "user_sessions"("user_id");
-
--- CreateIndex
-CREATE INDEX "user_sessions_refresh_token_idx" ON "user_sessions"("refresh_token");
-
--- CreateIndex
-CREATE INDEX "user_sessions_expires_at_idx" ON "user_sessions"("expires_at");
-
--- CreateIndex
 CREATE UNIQUE INDEX "users_uuid_key" ON "users"("uuid");
 
 -- CreateIndex
@@ -576,12 +515,6 @@ CREATE INDEX "notifications_wallet_address_created_at_idx" ON "notifications"("w
 
 -- CreateIndex
 CREATE INDEX "notifications_wallet_address_status_idx" ON "notifications"("wallet_address", "status");
-
--- AddForeignKey
-ALTER TABLE "otp_codes" ADD CONSTRAINT "otp_codes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "user_sessions" ADD CONSTRAINT "user_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "team_members" ADD CONSTRAINT "team_members_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;

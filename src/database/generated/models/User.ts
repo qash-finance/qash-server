@@ -240,8 +240,6 @@ export type UserWhereInput = {
   role?: Prisma.EnumUserRoleEnumFilter<"User"> | $Enums.UserRoleEnum
   isActive?: Prisma.BoolFilter<"User"> | boolean
   lastLogin?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
-  otpCodes?: Prisma.OtpCodeListRelationFilter
-  sessions?: Prisma.UserSessionListRelationFilter
   teamMembership?: Prisma.XOR<Prisma.TeamMemberNullableScalarRelationFilter, Prisma.TeamMemberWhereInput> | null
   invitedMembers?: Prisma.TeamMemberListRelationFilter
 }
@@ -255,8 +253,6 @@ export type UserOrderByWithRelationInput = {
   role?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   lastLogin?: Prisma.SortOrderInput | Prisma.SortOrder
-  otpCodes?: Prisma.OtpCodeOrderByRelationAggregateInput
-  sessions?: Prisma.UserSessionOrderByRelationAggregateInput
   teamMembership?: Prisma.TeamMemberOrderByWithRelationInput
   invitedMembers?: Prisma.TeamMemberOrderByRelationAggregateInput
 }
@@ -273,8 +269,6 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   role?: Prisma.EnumUserRoleEnumFilter<"User"> | $Enums.UserRoleEnum
   isActive?: Prisma.BoolFilter<"User"> | boolean
   lastLogin?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
-  otpCodes?: Prisma.OtpCodeListRelationFilter
-  sessions?: Prisma.UserSessionListRelationFilter
   teamMembership?: Prisma.XOR<Prisma.TeamMemberNullableScalarRelationFilter, Prisma.TeamMemberWhereInput> | null
   invitedMembers?: Prisma.TeamMemberListRelationFilter
 }, "id" | "uuid" | "email">
@@ -317,8 +311,6 @@ export type UserCreateInput = {
   role?: $Enums.UserRoleEnum
   isActive?: boolean
   lastLogin?: Date | string | null
-  otpCodes?: Prisma.OtpCodeCreateNestedManyWithoutUserInput
-  sessions?: Prisma.UserSessionCreateNestedManyWithoutUserInput
   teamMembership?: Prisma.TeamMemberCreateNestedOneWithoutUserInput
   invitedMembers?: Prisma.TeamMemberCreateNestedManyWithoutInviterInput
 }
@@ -332,8 +324,6 @@ export type UserUncheckedCreateInput = {
   role?: $Enums.UserRoleEnum
   isActive?: boolean
   lastLogin?: Date | string | null
-  otpCodes?: Prisma.OtpCodeUncheckedCreateNestedManyWithoutUserInput
-  sessions?: Prisma.UserSessionUncheckedCreateNestedManyWithoutUserInput
   teamMembership?: Prisma.TeamMemberUncheckedCreateNestedOneWithoutUserInput
   invitedMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutInviterInput
 }
@@ -346,8 +336,6 @@ export type UserUpdateInput = {
   role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  otpCodes?: Prisma.OtpCodeUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.UserSessionUpdateManyWithoutUserNestedInput
   teamMembership?: Prisma.TeamMemberUpdateOneWithoutUserNestedInput
   invitedMembers?: Prisma.TeamMemberUpdateManyWithoutInviterNestedInput
 }
@@ -361,8 +349,6 @@ export type UserUncheckedUpdateInput = {
   role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  otpCodes?: Prisma.OtpCodeUncheckedUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.UserSessionUncheckedUpdateManyWithoutUserNestedInput
   teamMembership?: Prisma.TeamMemberUncheckedUpdateOneWithoutUserNestedInput
   invitedMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutInviterNestedInput
 }
@@ -397,11 +383,6 @@ export type UserUncheckedUpdateManyInput = {
   role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-export type UserScalarRelationFilter = {
-  is?: Prisma.UserWhereInput
-  isNot?: Prisma.UserWhereInput
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -445,45 +426,42 @@ export type UserSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
 }
 
+export type UserScalarRelationFilter = {
+  is?: Prisma.UserWhereInput
+  isNot?: Prisma.UserWhereInput
+}
+
 export type UserNullableScalarRelationFilter = {
   is?: Prisma.UserWhereInput | null
   isNot?: Prisma.UserWhereInput | null
 }
 
-export type UserCreateNestedOneWithoutOtpCodesInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutOtpCodesInput, Prisma.UserUncheckedCreateWithoutOtpCodesInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutOtpCodesInput
-  connect?: Prisma.UserWhereUniqueInput
+export type StringFieldUpdateOperationsInput = {
+  set?: string
 }
 
-export type UserUpdateOneRequiredWithoutOtpCodesNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutOtpCodesInput, Prisma.UserUncheckedCreateWithoutOtpCodesInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutOtpCodesInput
-  upsert?: Prisma.UserUpsertWithoutOtpCodesInput
-  connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutOtpCodesInput, Prisma.UserUpdateWithoutOtpCodesInput>, Prisma.UserUncheckedUpdateWithoutOtpCodesInput>
-}
-
-export type UserCreateNestedOneWithoutSessionsInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSessionsInput
-  connect?: Prisma.UserWhereUniqueInput
-}
-
-export type UserUpdateOneRequiredWithoutSessionsNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSessionsInput
-  upsert?: Prisma.UserUpsertWithoutSessionsInput
-  connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSessionsInput, Prisma.UserUpdateWithoutSessionsInput>, Prisma.UserUncheckedUpdateWithoutSessionsInput>
+export type DateTimeFieldUpdateOperationsInput = {
+  set?: Date | string
 }
 
 export type EnumUserRoleEnumFieldUpdateOperationsInput = {
   set?: $Enums.UserRoleEnum
 }
 
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
+}
+
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type UserCreateNestedOneWithoutTeamMembershipInput = {
@@ -516,146 +494,6 @@ export type UserUpdateOneWithoutInvitedMembersNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutInvitedMembersInput, Prisma.UserUpdateWithoutInvitedMembersInput>, Prisma.UserUncheckedUpdateWithoutInvitedMembersInput>
 }
 
-export type UserCreateWithoutOtpCodesInput = {
-  uuid?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  email: string
-  role?: $Enums.UserRoleEnum
-  isActive?: boolean
-  lastLogin?: Date | string | null
-  sessions?: Prisma.UserSessionCreateNestedManyWithoutUserInput
-  teamMembership?: Prisma.TeamMemberCreateNestedOneWithoutUserInput
-  invitedMembers?: Prisma.TeamMemberCreateNestedManyWithoutInviterInput
-}
-
-export type UserUncheckedCreateWithoutOtpCodesInput = {
-  id?: number
-  uuid?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  email: string
-  role?: $Enums.UserRoleEnum
-  isActive?: boolean
-  lastLogin?: Date | string | null
-  sessions?: Prisma.UserSessionUncheckedCreateNestedManyWithoutUserInput
-  teamMembership?: Prisma.TeamMemberUncheckedCreateNestedOneWithoutUserInput
-  invitedMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutInviterInput
-}
-
-export type UserCreateOrConnectWithoutOtpCodesInput = {
-  where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutOtpCodesInput, Prisma.UserUncheckedCreateWithoutOtpCodesInput>
-}
-
-export type UserUpsertWithoutOtpCodesInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutOtpCodesInput, Prisma.UserUncheckedUpdateWithoutOtpCodesInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutOtpCodesInput, Prisma.UserUncheckedCreateWithoutOtpCodesInput>
-  where?: Prisma.UserWhereInput
-}
-
-export type UserUpdateToOneWithWhereWithoutOtpCodesInput = {
-  where?: Prisma.UserWhereInput
-  data: Prisma.XOR<Prisma.UserUpdateWithoutOtpCodesInput, Prisma.UserUncheckedUpdateWithoutOtpCodesInput>
-}
-
-export type UserUpdateWithoutOtpCodesInput = {
-  uuid?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  sessions?: Prisma.UserSessionUpdateManyWithoutUserNestedInput
-  teamMembership?: Prisma.TeamMemberUpdateOneWithoutUserNestedInput
-  invitedMembers?: Prisma.TeamMemberUpdateManyWithoutInviterNestedInput
-}
-
-export type UserUncheckedUpdateWithoutOtpCodesInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  uuid?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  sessions?: Prisma.UserSessionUncheckedUpdateManyWithoutUserNestedInput
-  teamMembership?: Prisma.TeamMemberUncheckedUpdateOneWithoutUserNestedInput
-  invitedMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutInviterNestedInput
-}
-
-export type UserCreateWithoutSessionsInput = {
-  uuid?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  email: string
-  role?: $Enums.UserRoleEnum
-  isActive?: boolean
-  lastLogin?: Date | string | null
-  otpCodes?: Prisma.OtpCodeCreateNestedManyWithoutUserInput
-  teamMembership?: Prisma.TeamMemberCreateNestedOneWithoutUserInput
-  invitedMembers?: Prisma.TeamMemberCreateNestedManyWithoutInviterInput
-}
-
-export type UserUncheckedCreateWithoutSessionsInput = {
-  id?: number
-  uuid?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  email: string
-  role?: $Enums.UserRoleEnum
-  isActive?: boolean
-  lastLogin?: Date | string | null
-  otpCodes?: Prisma.OtpCodeUncheckedCreateNestedManyWithoutUserInput
-  teamMembership?: Prisma.TeamMemberUncheckedCreateNestedOneWithoutUserInput
-  invitedMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutInviterInput
-}
-
-export type UserCreateOrConnectWithoutSessionsInput = {
-  where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
-}
-
-export type UserUpsertWithoutSessionsInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutSessionsInput, Prisma.UserUncheckedUpdateWithoutSessionsInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
-  where?: Prisma.UserWhereInput
-}
-
-export type UserUpdateToOneWithWhereWithoutSessionsInput = {
-  where?: Prisma.UserWhereInput
-  data: Prisma.XOR<Prisma.UserUpdateWithoutSessionsInput, Prisma.UserUncheckedUpdateWithoutSessionsInput>
-}
-
-export type UserUpdateWithoutSessionsInput = {
-  uuid?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  otpCodes?: Prisma.OtpCodeUpdateManyWithoutUserNestedInput
-  teamMembership?: Prisma.TeamMemberUpdateOneWithoutUserNestedInput
-  invitedMembers?: Prisma.TeamMemberUpdateManyWithoutInviterNestedInput
-}
-
-export type UserUncheckedUpdateWithoutSessionsInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  uuid?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  otpCodes?: Prisma.OtpCodeUncheckedUpdateManyWithoutUserNestedInput
-  teamMembership?: Prisma.TeamMemberUncheckedUpdateOneWithoutUserNestedInput
-  invitedMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutInviterNestedInput
-}
-
 export type UserCreateWithoutTeamMembershipInput = {
   uuid?: string
   createdAt?: Date | string
@@ -664,8 +502,6 @@ export type UserCreateWithoutTeamMembershipInput = {
   role?: $Enums.UserRoleEnum
   isActive?: boolean
   lastLogin?: Date | string | null
-  otpCodes?: Prisma.OtpCodeCreateNestedManyWithoutUserInput
-  sessions?: Prisma.UserSessionCreateNestedManyWithoutUserInput
   invitedMembers?: Prisma.TeamMemberCreateNestedManyWithoutInviterInput
 }
 
@@ -678,8 +514,6 @@ export type UserUncheckedCreateWithoutTeamMembershipInput = {
   role?: $Enums.UserRoleEnum
   isActive?: boolean
   lastLogin?: Date | string | null
-  otpCodes?: Prisma.OtpCodeUncheckedCreateNestedManyWithoutUserInput
-  sessions?: Prisma.UserSessionUncheckedCreateNestedManyWithoutUserInput
   invitedMembers?: Prisma.TeamMemberUncheckedCreateNestedManyWithoutInviterInput
 }
 
@@ -696,8 +530,6 @@ export type UserCreateWithoutInvitedMembersInput = {
   role?: $Enums.UserRoleEnum
   isActive?: boolean
   lastLogin?: Date | string | null
-  otpCodes?: Prisma.OtpCodeCreateNestedManyWithoutUserInput
-  sessions?: Prisma.UserSessionCreateNestedManyWithoutUserInput
   teamMembership?: Prisma.TeamMemberCreateNestedOneWithoutUserInput
 }
 
@@ -710,8 +542,6 @@ export type UserUncheckedCreateWithoutInvitedMembersInput = {
   role?: $Enums.UserRoleEnum
   isActive?: boolean
   lastLogin?: Date | string | null
-  otpCodes?: Prisma.OtpCodeUncheckedCreateNestedManyWithoutUserInput
-  sessions?: Prisma.UserSessionUncheckedCreateNestedManyWithoutUserInput
   teamMembership?: Prisma.TeamMemberUncheckedCreateNestedOneWithoutUserInput
 }
 
@@ -739,8 +569,6 @@ export type UserUpdateWithoutTeamMembershipInput = {
   role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  otpCodes?: Prisma.OtpCodeUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.UserSessionUpdateManyWithoutUserNestedInput
   invitedMembers?: Prisma.TeamMemberUpdateManyWithoutInviterNestedInput
 }
 
@@ -753,8 +581,6 @@ export type UserUncheckedUpdateWithoutTeamMembershipInput = {
   role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  otpCodes?: Prisma.OtpCodeUncheckedUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.UserSessionUncheckedUpdateManyWithoutUserNestedInput
   invitedMembers?: Prisma.TeamMemberUncheckedUpdateManyWithoutInviterNestedInput
 }
 
@@ -777,8 +603,6 @@ export type UserUpdateWithoutInvitedMembersInput = {
   role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  otpCodes?: Prisma.OtpCodeUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.UserSessionUpdateManyWithoutUserNestedInput
   teamMembership?: Prisma.TeamMemberUpdateOneWithoutUserNestedInput
 }
 
@@ -791,8 +615,6 @@ export type UserUncheckedUpdateWithoutInvitedMembersInput = {
   role?: Prisma.EnumUserRoleEnumFieldUpdateOperationsInput | $Enums.UserRoleEnum
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLogin?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  otpCodes?: Prisma.OtpCodeUncheckedUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.UserSessionUncheckedUpdateManyWithoutUserNestedInput
   teamMembership?: Prisma.TeamMemberUncheckedUpdateOneWithoutUserNestedInput
 }
 
@@ -802,14 +624,10 @@ export type UserUncheckedUpdateWithoutInvitedMembersInput = {
  */
 
 export type UserCountOutputType = {
-  otpCodes: number
-  sessions: number
   invitedMembers: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  otpCodes?: boolean | UserCountOutputTypeCountOtpCodesArgs
-  sessions?: boolean | UserCountOutputTypeCountSessionsArgs
   invitedMembers?: boolean | UserCountOutputTypeCountInvitedMembersArgs
 }
 
@@ -821,20 +639,6 @@ export type UserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
    * Select specific fields to fetch from the UserCountOutputType
    */
   select?: Prisma.UserCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * UserCountOutputType without action
- */
-export type UserCountOutputTypeCountOtpCodesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.OtpCodeWhereInput
-}
-
-/**
- * UserCountOutputType without action
- */
-export type UserCountOutputTypeCountSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.UserSessionWhereInput
 }
 
 /**
@@ -854,8 +658,6 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   role?: boolean
   isActive?: boolean
   lastLogin?: boolean
-  otpCodes?: boolean | Prisma.User$otpCodesArgs<ExtArgs>
-  sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
   teamMembership?: boolean | Prisma.User$teamMembershipArgs<ExtArgs>
   invitedMembers?: boolean | Prisma.User$invitedMembersArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -896,8 +698,6 @@ export type UserSelectScalar = {
 
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "createdAt" | "updatedAt" | "email" | "role" | "isActive" | "lastLogin", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  otpCodes?: boolean | Prisma.User$otpCodesArgs<ExtArgs>
-  sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
   teamMembership?: boolean | Prisma.User$teamMembershipArgs<ExtArgs>
   invitedMembers?: boolean | Prisma.User$invitedMembersArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -908,8 +708,6 @@ export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
   objects: {
-    otpCodes: Prisma.$OtpCodePayload<ExtArgs>[]
-    sessions: Prisma.$UserSessionPayload<ExtArgs>[]
     teamMembership: Prisma.$TeamMemberPayload<ExtArgs> | null
     invitedMembers: Prisma.$TeamMemberPayload<ExtArgs>[]
   }
@@ -1316,8 +1114,6 @@ readonly fields: UserFieldRefs;
  */
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  otpCodes<T extends Prisma.User$otpCodesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$otpCodesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OtpCodePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  sessions<T extends Prisma.User$sessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   teamMembership<T extends Prisma.User$teamMembershipArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$teamMembershipArgs<ExtArgs>>): Prisma.Prisma__TeamMemberClient<runtime.Types.Result.GetResult<Prisma.$TeamMemberPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   invitedMembers<T extends Prisma.User$invitedMembersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$invitedMembersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TeamMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1742,54 +1538,6 @@ export type UserDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Users to delete.
    */
   limit?: number
-}
-
-/**
- * User.otpCodes
- */
-export type User$otpCodesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the OtpCode
-   */
-  select?: Prisma.OtpCodeSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the OtpCode
-   */
-  omit?: Prisma.OtpCodeOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.OtpCodeInclude<ExtArgs> | null
-  where?: Prisma.OtpCodeWhereInput
-  orderBy?: Prisma.OtpCodeOrderByWithRelationInput | Prisma.OtpCodeOrderByWithRelationInput[]
-  cursor?: Prisma.OtpCodeWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.OtpCodeScalarFieldEnum | Prisma.OtpCodeScalarFieldEnum[]
-}
-
-/**
- * User.sessions
- */
-export type User$sessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the UserSession
-   */
-  select?: Prisma.UserSessionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the UserSession
-   */
-  omit?: Prisma.UserSessionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.UserSessionInclude<ExtArgs> | null
-  where?: Prisma.UserSessionWhereInput
-  orderBy?: Prisma.UserSessionOrderByWithRelationInput | Prisma.UserSessionOrderByWithRelationInput[]
-  cursor?: Prisma.UserSessionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.UserSessionScalarFieldEnum | Prisma.UserSessionScalarFieldEnum[]
 }
 
 /**

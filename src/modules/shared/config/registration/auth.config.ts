@@ -15,4 +15,9 @@ export default registerAs('auth', () => ({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackUrl: process.env.GOOGLE_CALLBACK_URL,
   },
+  para: {
+    jwksUrl:
+      process.env.PARA_JWKS_URL ||
+      'https://api.beta.getpara.com/.well-known/jwks.json',
+  },
 }));

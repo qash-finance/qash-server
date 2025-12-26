@@ -20,7 +20,7 @@ import {
   CurrentUser,
   UserWithCompany,
 } from '../auth/decorators/current-user.decorator';
-import { JwtPayload } from '../../common/interfaces/jwt-payload';
+import { AuthenticatedUser } from '../../common/interfaces/para-jwt-payload';
 import { CompanyService } from './company.service';
 import {
   CreateCompanyDto,
@@ -72,7 +72,7 @@ export class CompanyController {
     type: IsEmployeeResponseDto,
   })
   async checkIfEmployee(
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<IsEmployeeResponseDto> {
     const isEmployee = await this.companyService.isUserEmployee(user.email);
     return { isEmployee };
@@ -100,10 +100,13 @@ export class CompanyController {
     description: 'Invalid company data or registration number already exists',
   })
   async createCompany(
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() createCompanyDto: CreateCompanyDto,
   ): Promise<CompanyModel> {
-    return this.companyService.createCompany(user.sub, createCompanyDto);
+    return this.companyService.createCompany(
+      user.internalUserId,
+      createCompanyDto,
+    );
   }
 
   @Put()
@@ -127,7 +130,7 @@ export class CompanyController {
   ): Promise<CompanyModel> {
     return this.companyService.updateCompany(
       user.company.id,
-      user.sub,
+      user.internalUserId,
       updateCompanyDto,
     );
   }

@@ -37,6 +37,9 @@ export interface AuthConfig {
     clientSecret: string;
     callbackUrl: string;
   };
+  para: {
+    jwksUrl: string;
+  };
 }
 
 export interface OthersConfig {
