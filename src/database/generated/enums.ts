@@ -60,14 +60,6 @@ export const BillStatusEnum = {
 export type BillStatusEnum = (typeof BillStatusEnum)[keyof typeof BillStatusEnum]
 
 
-export const OtpTypeEnum = {
-  LOGIN: 'LOGIN',
-  EMAIL_VERIFICATION: 'EMAIL_VERIFICATION'
-} as const
-
-export type OtpTypeEnum = (typeof OtpTypeEnum)[keyof typeof OtpTypeEnum]
-
-
 export const CategoryShapeEnum = {
   CIRCLE: 'CIRCLE',
   DIAMOND: 'DIAMOND',

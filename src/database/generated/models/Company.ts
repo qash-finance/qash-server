@@ -82,6 +82,7 @@ export type CompanyCountAggregateOutputType = {
   companyType: number
   taxId: number
   notificationEmail: number
+  ccNotifications: number
   country: number
   address1: number
   address2: number
@@ -150,6 +151,7 @@ export type CompanyCountAggregateInputType = {
   companyType?: true
   taxId?: true
   notificationEmail?: true
+  ccNotifications?: true
   country?: true
   address1?: true
   address2?: true
@@ -257,6 +259,7 @@ export type CompanyGroupByOutputType = {
   companyType: $Enums.CompanyTypeEnum
   taxId: string | null
   notificationEmail: string | null
+  ccNotifications: string[]
   country: string
   address1: string
   address2: string | null
@@ -300,6 +303,7 @@ export type CompanyWhereInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFilter<"Company"> | $Enums.CompanyTypeEnum
   taxId?: Prisma.StringNullableFilter<"Company"> | string | null
   notificationEmail?: Prisma.StringNullableFilter<"Company"> | string | null
+  ccNotifications?: Prisma.StringNullableListFilter<"Company">
   country?: Prisma.StringFilter<"Company"> | string
   address1?: Prisma.StringFilter<"Company"> | string
   address2?: Prisma.StringNullableFilter<"Company"> | string | null
@@ -329,6 +333,7 @@ export type CompanyOrderByWithRelationInput = {
   companyType?: Prisma.SortOrder
   taxId?: Prisma.SortOrderInput | Prisma.SortOrder
   notificationEmail?: Prisma.SortOrderInput | Prisma.SortOrder
+  ccNotifications?: Prisma.SortOrder
   country?: Prisma.SortOrder
   address1?: Prisma.SortOrder
   address2?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -361,6 +366,7 @@ export type CompanyWhereUniqueInput = Prisma.AtLeast<{
   companyType?: Prisma.EnumCompanyTypeEnumFilter<"Company"> | $Enums.CompanyTypeEnum
   taxId?: Prisma.StringNullableFilter<"Company"> | string | null
   notificationEmail?: Prisma.StringNullableFilter<"Company"> | string | null
+  ccNotifications?: Prisma.StringNullableListFilter<"Company">
   country?: Prisma.StringFilter<"Company"> | string
   address1?: Prisma.StringFilter<"Company"> | string
   address2?: Prisma.StringNullableFilter<"Company"> | string | null
@@ -390,6 +396,7 @@ export type CompanyOrderByWithAggregationInput = {
   companyType?: Prisma.SortOrder
   taxId?: Prisma.SortOrderInput | Prisma.SortOrder
   notificationEmail?: Prisma.SortOrderInput | Prisma.SortOrder
+  ccNotifications?: Prisma.SortOrder
   country?: Prisma.SortOrder
   address1?: Prisma.SortOrder
   address2?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -418,6 +425,7 @@ export type CompanyScalarWhereWithAggregatesInput = {
   companyType?: Prisma.EnumCompanyTypeEnumWithAggregatesFilter<"Company"> | $Enums.CompanyTypeEnum
   taxId?: Prisma.StringNullableWithAggregatesFilter<"Company"> | string | null
   notificationEmail?: Prisma.StringNullableWithAggregatesFilter<"Company"> | string | null
+  ccNotifications?: Prisma.StringNullableListFilter<"Company">
   country?: Prisma.StringWithAggregatesFilter<"Company"> | string
   address1?: Prisma.StringWithAggregatesFilter<"Company"> | string
   address2?: Prisma.StringNullableWithAggregatesFilter<"Company"> | string | null
@@ -437,6 +445,7 @@ export type CompanyCreateInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -466,6 +475,7 @@ export type CompanyUncheckedCreateInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -494,6 +504,7 @@ export type CompanyUpdateInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -523,6 +534,7 @@ export type CompanyUncheckedUpdateInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -552,6 +564,7 @@ export type CompanyCreateManyInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -571,6 +584,7 @@ export type CompanyUpdateManyMutationInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -591,6 +605,7 @@ export type CompanyUncheckedUpdateManyInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -606,6 +621,14 @@ export type CompanyScalarRelationFilter = {
   isNot?: Prisma.CompanyWhereInput
 }
 
+export type StringNullableListFilter<$PrismaModel = never> = {
+  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
+  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
+  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
+}
+
 export type CompanyCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   uuid?: Prisma.SortOrder
@@ -616,6 +639,7 @@ export type CompanyCountOrderByAggregateInput = {
   companyType?: Prisma.SortOrder
   taxId?: Prisma.SortOrder
   notificationEmail?: Prisma.SortOrder
+  ccNotifications?: Prisma.SortOrder
   country?: Prisma.SortOrder
   address1?: Prisma.SortOrder
   address2?: Prisma.SortOrder
@@ -691,8 +715,17 @@ export type CompanyUpdateOneRequiredWithoutTeamMembersNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CompanyUpdateToOneWithWhereWithoutTeamMembersInput, Prisma.CompanyUpdateWithoutTeamMembersInput>, Prisma.CompanyUncheckedUpdateWithoutTeamMembersInput>
 }
 
+export type CompanyCreateccNotificationsInput = {
+  set: string[]
+}
+
 export type EnumCompanyTypeEnumFieldUpdateOperationsInput = {
   set?: $Enums.CompanyTypeEnum
+}
+
+export type CompanyUpdateccNotificationsInput = {
+  set?: string[]
+  push?: string | string[]
 }
 
 export type EnumCompanyVerificationStatusEnumFieldUpdateOperationsInput = {
@@ -824,6 +857,7 @@ export type CompanyCreateWithoutTeamMembersInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -852,6 +886,7 @@ export type CompanyUncheckedCreateWithoutTeamMembersInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -895,6 +930,7 @@ export type CompanyUpdateWithoutTeamMembersInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -923,6 +959,7 @@ export type CompanyUncheckedUpdateWithoutTeamMembersInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -950,6 +987,7 @@ export type CompanyCreateWithoutContactsInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -978,6 +1016,7 @@ export type CompanyUncheckedCreateWithoutContactsInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1021,6 +1060,7 @@ export type CompanyUpdateWithoutContactsInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1049,6 +1089,7 @@ export type CompanyUncheckedUpdateWithoutContactsInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1202,6 +1243,7 @@ export type CompanyCreateWithoutGroupsInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1230,6 +1272,7 @@ export type CompanyUncheckedCreateWithoutGroupsInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1273,6 +1316,7 @@ export type CompanyUpdateWithoutGroupsInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1301,6 +1345,7 @@ export type CompanyUncheckedUpdateWithoutGroupsInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1328,6 +1373,7 @@ export type CompanyCreateWithoutPayrollsInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1356,6 +1402,7 @@ export type CompanyUncheckedCreateWithoutPayrollsInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1399,6 +1446,7 @@ export type CompanyUpdateWithoutPayrollsInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1427,6 +1475,7 @@ export type CompanyUncheckedUpdateWithoutPayrollsInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1454,6 +1503,7 @@ export type CompanyCreateWithoutInvoicesFromInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1482,6 +1532,7 @@ export type CompanyUncheckedCreateWithoutInvoicesFromInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1514,6 +1565,7 @@ export type CompanyCreateWithoutInvoicesToInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1542,6 +1594,7 @@ export type CompanyUncheckedCreateWithoutInvoicesToInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1585,6 +1638,7 @@ export type CompanyUpdateWithoutInvoicesFromInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1613,6 +1667,7 @@ export type CompanyUncheckedUpdateWithoutInvoicesFromInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1651,6 +1706,7 @@ export type CompanyUpdateWithoutInvoicesToInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1679,6 +1735,7 @@ export type CompanyUncheckedUpdateWithoutInvoicesToInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1706,6 +1763,7 @@ export type CompanyCreateWithoutBillsInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1734,6 +1792,7 @@ export type CompanyUncheckedCreateWithoutBillsInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1777,6 +1836,7 @@ export type CompanyUpdateWithoutBillsInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1805,6 +1865,7 @@ export type CompanyUncheckedUpdateWithoutBillsInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1832,6 +1893,7 @@ export type CompanyCreateWithoutPaymentLinksInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1860,6 +1922,7 @@ export type CompanyUncheckedCreateWithoutPaymentLinksInput = {
   companyType: $Enums.CompanyTypeEnum
   taxId?: string | null
   notificationEmail?: string | null
+  ccNotifications?: Prisma.CompanyCreateccNotificationsInput | string[]
   country: string
   address1: string
   address2?: string | null
@@ -1903,6 +1966,7 @@ export type CompanyUpdateWithoutPaymentLinksInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1931,6 +1995,7 @@ export type CompanyUncheckedUpdateWithoutPaymentLinksInput = {
   companyType?: Prisma.EnumCompanyTypeEnumFieldUpdateOperationsInput | $Enums.CompanyTypeEnum
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ccNotifications?: Prisma.CompanyUpdateccNotificationsInput | string[]
   country?: Prisma.StringFieldUpdateOperationsInput | string
   address1?: Prisma.StringFieldUpdateOperationsInput | string
   address2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2062,6 +2127,7 @@ export type CompanySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   companyType?: boolean
   taxId?: boolean
   notificationEmail?: boolean
+  ccNotifications?: boolean
   country?: boolean
   address1?: boolean
   address2?: boolean
@@ -2092,6 +2158,7 @@ export type CompanySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   companyType?: boolean
   taxId?: boolean
   notificationEmail?: boolean
+  ccNotifications?: boolean
   country?: boolean
   address1?: boolean
   address2?: boolean
@@ -2112,6 +2179,7 @@ export type CompanySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   companyType?: boolean
   taxId?: boolean
   notificationEmail?: boolean
+  ccNotifications?: boolean
   country?: boolean
   address1?: boolean
   address2?: boolean
@@ -2132,6 +2200,7 @@ export type CompanySelectScalar = {
   companyType?: boolean
   taxId?: boolean
   notificationEmail?: boolean
+  ccNotifications?: boolean
   country?: boolean
   address1?: boolean
   address2?: boolean
@@ -2142,7 +2211,7 @@ export type CompanySelectScalar = {
   metadata?: boolean
 }
 
-export type CompanyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "createdAt" | "updatedAt" | "companyName" | "registrationNumber" | "companyType" | "taxId" | "notificationEmail" | "country" | "address1" | "address2" | "city" | "postalCode" | "verificationStatus" | "isActive" | "metadata", ExtArgs["result"]["company"]>
+export type CompanyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "uuid" | "createdAt" | "updatedAt" | "companyName" | "registrationNumber" | "companyType" | "taxId" | "notificationEmail" | "ccNotifications" | "country" | "address1" | "address2" | "city" | "postalCode" | "verificationStatus" | "isActive" | "metadata", ExtArgs["result"]["company"]>
 export type CompanyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   teamMembers?: boolean | Prisma.Company$teamMembersArgs<ExtArgs>
   contacts?: boolean | Prisma.Company$contactsArgs<ExtArgs>
@@ -2181,6 +2250,7 @@ export type $CompanyPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     companyType: $Enums.CompanyTypeEnum
     taxId: string | null
     notificationEmail: string | null
+    ccNotifications: string[]
     country: string
     address1: string
     address2: string | null
@@ -2630,6 +2700,7 @@ export interface CompanyFieldRefs {
   readonly companyType: Prisma.FieldRef<"Company", 'CompanyTypeEnum'>
   readonly taxId: Prisma.FieldRef<"Company", 'String'>
   readonly notificationEmail: Prisma.FieldRef<"Company", 'String'>
+  readonly ccNotifications: Prisma.FieldRef<"Company", 'String[]'>
   readonly country: Prisma.FieldRef<"Company", 'String'>
   readonly address1: Prisma.FieldRef<"Company", 'String'>
   readonly address2: Prisma.FieldRef<"Company", 'String'>

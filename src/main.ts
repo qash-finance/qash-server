@@ -19,27 +19,32 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const appConfigService = new AppConfigService(configService);
 
-  app.enableCors({
-    origin:
-      appConfigService.nodeEnv == 'production'
-        ? (origin, callback) => {
-            if (!origin) {
-              return callback(null, true);
-            }
-            if (
-              appConfigService.otherConfig.allowedDomains &&
-              appConfigService.otherConfig.allowedDomains
-                .split(',')
-                .includes(origin)
-            ) {
-              return callback(null, true);
-            } else {
-              return callback(new Error('Not allowed by CORS'));
-            }
+  // CORS configuration with proper credentials support for cookies
+  const corsOrigin =
+    appConfigService.nodeEnv === 'production'
+      ? (origin, callback) => {
+          if (!origin) {
+            return callback(null, true);
           }
-        : true,
-    credentials: true,
+          if (
+            appConfigService.otherConfig.allowedDomains &&
+            appConfigService.otherConfig.allowedDomains
+              .split(',')
+              .includes(origin)
+          ) {
+            return callback(null, true);
+          } else {
+            return callback(new Error('Not allowed by CORS'));
+          }
+        }
+      : true; // Allow all origins in development
+
+  app.enableCors({
+    origin: corsOrigin,
+    credentials: true, // ⚠️ CRITICAL: Allows cookies to be sent/received
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Set-Cookie'],
   });
 
   useContainer(app.select(AppModule), { fallbackOnErrors: true });

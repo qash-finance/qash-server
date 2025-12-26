@@ -33,7 +33,8 @@ import {
   CurrentUser,
   UserWithCompany,
 } from '../auth/decorators/current-user.decorator';
-import { JwtPayload } from 'src/common/interfaces/jwt-payload';
+import { AuthenticatedUser } from 'src/common/interfaces/para-jwt-payload';
+import { Auth } from '../auth/decorators/auth.decorator';
 
 @ApiTags('Invoice')
 @ApiBearerAuth()
@@ -184,6 +185,7 @@ export class InvoiceController {
   // **************** PUT METHODS ********************
   // *************************************************
   @Put(':invoiceUUID')
+  @Auth()
   @ApiOperation({
     summary: 'Update invoice (employee can update their details)',
   })
@@ -197,7 +199,7 @@ export class InvoiceController {
     description: 'Invoice UUID',
   })
   async updateInvoice(
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('invoiceUUID') invoiceUUID: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
   ): Promise<void> {
@@ -232,25 +234,8 @@ export class InvoiceController {
     return this.invoiceService.sendInvoice(invoiceUUID, user.company.id);
   }
 
-  // @Patch(':invoiceUUID/review')
-  // @ApiOperation({ summary: 'Employee reviews invoice' })
-  // @ApiResponse({
-  //   status: HttpStatus.OK,
-  //   description: 'Invoice reviewed successfully',
-  // })
-  // @ApiParam({
-  //   name: 'invoiceUUID',
-  //   type: 'string',
-  //   description: 'Invoice UUID',
-  // })
-  // async reviewInvoice(
-  //   @CurrentUser() user: JwtPayload,
-  //   @Param('invoiceUUID') invoiceUUID: string,
-  // ): Promise<InvoiceModel> {
-  //   return this.invoiceService.reviewInvoice(invoiceUUID, user.email);
-  // }
-
   @Patch(':invoiceUUID/confirm')
+  @Auth()
   @ApiOperation({ summary: 'Employee confirms invoice' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -262,7 +247,7 @@ export class InvoiceController {
     description: 'Invoice UUID',
   })
   async confirmInvoice(
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('invoiceUUID') invoiceUUID: string,
   ): Promise<InvoiceModel> {
     return this.invoiceService.confirmInvoice(invoiceUUID, user.email);

@@ -18,16 +18,6 @@ export { Prisma }
 export * as $Enums from './enums.js'
 export * from './enums.js';
 /**
- * Model OtpCode
- * 
- */
-export type OtpCode = Prisma.OtpCodeModel
-/**
- * Model UserSession
- * 
- */
-export type UserSession = Prisma.UserSessionModel
-/**
  * Model User
  * 
  */

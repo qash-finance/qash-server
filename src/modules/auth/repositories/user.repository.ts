@@ -17,11 +17,6 @@ export interface UpdateUserData {
   lastLogin?: Date;
 }
 
-export interface UserWithRelations extends UserModel {
-  otpCodes?: any[];
-  sessions?: any[];
-}
-
 @Injectable()
 export class UserRepository extends BaseRepository<
   UserModel,
@@ -59,41 +54,6 @@ export class UserRepository extends BaseRepository<
     tx?: PrismaTransactionClient,
   ): Promise<UserModel | null> {
     return this.findOne({ id }, tx);
-  }
-
-  /**
-   * Find user by email with OTP codes
-   */
-  async findByEmailWithOtpCodes(
-    email: string,
-    otpType?: string,
-    tx?: PrismaTransactionClient,
-  ): Promise<UserWithRelations | null> {
-    const model = this.getModel(tx);
-    const whereClause: any = {
-      type: otpType,
-      isUsed: false,
-      expiresAt: {
-        gt: new Date(),
-      },
-    };
-
-    if (!otpType) {
-      delete whereClause.type;
-    }
-
-    return model.findUnique({
-      where: { email },
-      include: {
-        otpCodes: {
-          where: whereClause,
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 1,
-        },
-      },
-    });
   }
 
   /**

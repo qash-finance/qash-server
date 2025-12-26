@@ -8,48 +8,6 @@ datasource db {
   provider = "postgresql"
 }
 
-model OtpCode {
-  id   Int    @id @default(autoincrement())
-  uuid String @unique @default(cuid()) @map("uuid")
-
-  userId    Int         @map("user_id")
-  code      String      @db.VarChar(6)
-  type      OtpTypeEnum @default(LOGIN)
-  expiresAt DateTime    @map("expires_at") @db.Timestamp(6)
-  isUsed    Boolean     @default(false) @map("is_used")
-  attempts  Int         @default(0)
-  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt DateTime    @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([code])
-  @@index([expiresAt])
-  @@map("otp_codes")
-}
-
-model UserSession {
-  id   String @id @default(cuid())
-  uuid String @unique @default(cuid()) @map("uuid")
-
-  userId       Int      @map("user_id")
-  refreshToken String   @unique @map("refresh_token") @db.VarChar(500)
-  userAgent    String?  @map("user_agent") @db.Text
-  ipAddress    String?  @map("ip_address") @db.VarChar(45)
-  isActive     Boolean  @default(true) @map("is_active")
-  expiresAt    DateTime @map("expires_at") @db.Timestamp(6)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([refreshToken])
-  @@index([expiresAt])
-  @@map("user_sessions")
-}
-
 model User {
   id   Int    @id @default(autoincrement())
   uuid String @unique @default(cuid()) @map("uuid")
@@ -61,8 +19,6 @@ model User {
   isActive  Boolean      @default(true) @map("is_active")
   lastLogin DateTime?    @map("last_login") @db.Timestamp(6)
 
-  otpCodes       OtpCode[]
-  sessions       UserSession[]
   teamMembership TeamMember? // 1:1 relationship, each user is a company team member
   invitedMembers TeamMember[]  @relation("TeamMemberInviter")
 
@@ -117,6 +73,7 @@ model Company {
   companyType        CompanyTypeEnum @map("company_type")
   taxId              String?         @map("tax_id") @db.VarChar(100)
   notificationEmail  String?         @map("notification_email") @db.VarChar(255)
+  ccNotifications    String[]        @map("cc_notifications") @db.VarChar(255)
 
   country    String  @db.VarChar(100)
   address1   String  @map("address_1") @db.VarChar(255)
@@ -558,11 +515,6 @@ enum BillStatusEnum {
   PAID
   OVERDUE
   CANCELLED
-}
-
-enum OtpTypeEnum {
-  LOGIN
-  EMAIL_VERIFICATION
 }
 
 enum CategoryShapeEnum {

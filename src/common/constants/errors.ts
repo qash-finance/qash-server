@@ -31,6 +31,13 @@ export enum ErrorAuth {
   TooManyFailedAttempts = 'Too many failed attempts. Please request a new OTP.',
   InvalidOtp = 'Invalid OTP',
   RateLimitExceeded = 'Rate limit exceeded. Please wait a minute before requesting another OTP.',
+  MissingJwtToken = 'Missing JWT token',
+  JwtTokenMissingKeyId = 'JWT token missing key ID (kid)',
+  JwtTokenExpired = 'JWT token expired',
+  InvalidParaJwtPayloadStructure = 'Invalid Para JWT payload structure',
+  NoEmailOrIdentifierInParaJwt = 'No email or identifier found in Para JWT',
+  JwtValidationFailed = 'JWT validation failed',
+  NoEmailOrIdentifierInParaToken = 'No email or identifier found in Para token',
 }
 
 export enum ErrorUser {

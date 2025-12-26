@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Get,
   Req,
+  Res,
   Logger,
 } from '@nestjs/common';
 import {
@@ -15,19 +16,17 @@ import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { Auth } from './decorators/auth.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { JwtPayload } from '../../common/interfaces/jwt-payload';
+import { AuthenticatedUser } from '../../common/interfaces/para-jwt-payload';
 import {
-  SendOtpDto,
-  VerifyOtpDto,
-  RefreshTokenDto,
-  AuthResponseDto,
   MessageResponseDto,
   UserMeResponseDto,
+  SetJwtCookieDto,
+  SetJwtCookieResponseDto,
 } from './dto/auth.dto';
 
 @ApiTags('Authentication')
@@ -58,9 +57,9 @@ export class AuthController {
     description: 'Unauthorized - Invalid or missing token',
   })
   async getCurrentUser(
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<UserMeResponseDto> {
-    return this.authService.getCurrentUserWithCompany(user.sub || user.userId);
+    return this.authService.getCurrentUserWithCompany(user.internalUserId);
   }
 
   //#endregion GET METHODS
@@ -71,108 +70,11 @@ export class AuthController {
   // *************************************************
 
   @Public()
-  @Post('send-otp')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Send OTP to email',
-    description:
-      'Sends a 6-digit OTP code to the provided email address for authentication',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'OTP sent successfully',
-    type: MessageResponseDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid email or rate limit exceeded',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'Invalid email address' },
-        error: { type: 'string', example: 'Bad Request' },
-      },
-    },
-  })
-  async sendOtp(@Body() sendOtpDto: SendOtpDto): Promise<MessageResponseDto> {
-    return this.authService.sendOtp(sendOtpDto.email);
-  }
-
-  @Public()
-  @Post('verify-otp')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Verify OTP and authenticate',
-    description:
-      'Verifies the OTP code and returns JWT tokens for authentication',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'OTP verified successfully, user authenticated',
-    type: AuthResponseDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid OTP or email',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid or expired OTP',
-  })
-  async verifyOtp(
-    @Body() verifyOtpDto: VerifyOtpDto,
-    @Req() request: Request,
-  ): Promise<AuthResponseDto> {
-    const userAgent = request.headers['user-agent'];
-    const ipAddress = request.ip || request.connection.remoteAddress;
-
-    return this.authService.verifyOtpAndAuthenticate(
-      verifyOtpDto.email,
-      verifyOtpDto.otp,
-      { userAgent, ipAddress },
-    );
-  }
-
-  @Public()
-  @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Refresh access token',
-    description:
-      'Generates new access and refresh tokens using a valid refresh token',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Tokens refreshed successfully',
-    type: AuthResponseDto,
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid or expired refresh token',
-  })
-  async refreshToken(
-    @Body() refreshTokenDto: RefreshTokenDto,
-    @Req() request: Request,
-  ): Promise<Omit<AuthResponseDto, 'user'>> {
-    try {
-      const userAgent = request.headers['user-agent'];
-      const ipAddress = request.ip || request.connection.remoteAddress;
-
-      const tokens = await this.authService.refreshTokens(
-        refreshTokenDto.refreshToken,
-        { userAgent, ipAddress },
-      );
-
-      return tokens;
-    } catch (error) {
-      this.logger.error('Refresh token failed:', error);
-      throw error;
-    }
-  }
-
-  @Auth()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Logout from current session',
-    description: 'Invalidates the current refresh token and logs out the user',
+    description: 'Clears the HTTP-only JWT cookie and logs out the user',
   })
   @ApiResponse({
     status: 200,
@@ -180,15 +82,59 @@ export class AuthController {
     type: MessageResponseDto,
   })
   async logout(
-    @Body() refreshTokenDto: RefreshTokenDto,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<MessageResponseDto> {
     try {
-      await this.authService.logout(refreshTokenDto.refreshToken);
+      // Clear the JWT cookie
+      response.clearCookie('para-jwt', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+      });
+
       return { message: 'Logged out successfully' };
     } catch (error) {
       this.logger.error('Logout failed:', error);
-      // Don't throw error for logout - always return success
       return { message: 'Logged out successfully' };
+    }
+  }
+
+  @Public()
+  @Post('set-cookie')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Set Para JWT cookie',
+    description:
+      'Validates Para JWT token and sets it as an HTTP-only cookie. Client should call this after getting JWT from Para.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Cookie set successfully',
+    type: SetJwtCookieResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid or missing JWT token',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or expired JWT token',
+  })
+  async setJwtCookie(
+    @Body() setJwtCookieDto: SetJwtCookieDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<SetJwtCookieResponseDto> {
+    const originalAuth = request.headers.authorization;
+    request.headers.authorization = `Bearer ${setJwtCookieDto.token}`;
+
+    try {
+      return await this.authService.validateAndSetJwtCookie(
+        setJwtCookieDto.token,
+        response,
+      );
+    } finally {
+      // Restore original authorization header
+      request.headers.authorization = originalAuth;
     }
   }
 

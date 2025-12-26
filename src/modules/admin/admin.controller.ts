@@ -2,9 +2,9 @@ import { Controller, Put, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { AdminAuth } from '../shared/decorators/admin-auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { JwtPayload } from '../../common/interfaces/jwt-payload';
 import { AdminCompanyService } from './services/admin-company.service';
 import { UpdateVerificationStatusDto } from './admin.dto';
+import { AuthenticatedUser } from 'src/common/interfaces/para-jwt-payload';
 
 @ApiTags('Admin')
 @AdminAuth()
@@ -32,12 +32,12 @@ export class AdminController {
     description: 'Company not found',
   })
   async updateVerificationStatus(
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) companyId: number,
     @Body() dto: UpdateVerificationStatusDto,
   ) {
     return this.adminCompanyService.updateVerificationStatus(
-      user.sub,
+      user.internalUserId,
       companyId,
       dto.status,
       dto.adminNotes,

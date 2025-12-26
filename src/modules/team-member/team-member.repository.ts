@@ -219,6 +219,36 @@ export class TeamMemberRepository extends BaseRepository<
   }
 
   /**
+   * Find team member by user email
+   * Used with Para authentication where users are identified by email
+   */
+  async findByUserEmail(
+    userEmail: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<TeamMemberWithRelations | null> {
+    const model = this.getModel(tx);
+    return model.findFirst({
+      where: {
+        user: {
+          email: userEmail,
+        },
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            companyName: true,
+            registrationNumber: true,
+            verificationStatus: true,
+            isActive: true,
+          },
+        },
+        user: true,
+      },
+    });
+  }
+
+  /**
    * Update team member by ID
    */
   async updateById(
