@@ -18,7 +18,7 @@ export class ClientRepository extends BaseRepository<
   }
 
   protected getModel(tx?: PrismaTransactionClient): PrismaClient['client'] {
-    return tx ? tx.client : this.prisma.clients;
+    return tx ? tx.client : this.prisma.client.client;
   }
 
   protected getModelName(): string {
