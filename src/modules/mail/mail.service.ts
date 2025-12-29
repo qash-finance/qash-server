@@ -59,7 +59,7 @@ export class MailService {
         <div style="width: 100%; background: #0e3ee0; padding: 32px 12px; box-sizing: border-box;">
           <div style="max-width: 720px; margin: 0 auto; background: #f5f7fb; overflow: hidden;">
             <div style="padding: 28px 36px 0 36px; text-align: left;">
-              <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/feat/v2/images/qash-logo.png" alt="Qash logo" style="width: 60px; height: 60px; margin-bottom: 8px;" />
+              <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/main/images/qash-logo.png" alt="Qash logo" style="width: 60px; height: 60px; margin-bottom: 8px;" />
               <p style="font-size: 30px; font-weight: 700; margin: 0 0 12px 0; color: #0f172a;">Login OTP code</p>
               <div style="height: 1px; width: 100%; background-color: #d9d9d9; margin-bottom: 20px;"></div>
               <p style="font-size: 16px; margin: 0; color: #1f2937;">Hello, ${email.split('@')[0]}</p> 
@@ -214,7 +214,7 @@ export class MailService {
         <div style="width: 100%; background: #0e3ee0; padding: 32px 12px; box-sizing: border-box;">
           <div style="max-width: 720px; margin: 0 auto; background: #f5f7fb; overflow: hidden;">
             <div style="padding: 28px 36px 0 36px; text-align: left;">
-               <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/feat/v2/images/qash-logo.png" alt="Qash logo" style="width: 60px; height: 60px; margin-bottom: 8px;" />
+               <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/main/images/qash-logo.png" alt="Qash logo" style="width: 60px; height: 60px; margin-bottom: 8px;" />
               <p style="font-size: 30px; font-weight: 700; margin: 0 0 12px 0; color: #0f172a;">Invoice confirmed</p>
               <div style="height: 1px; width: 100%; background-color: #d9d9d9; margin-bottom: 20px;"></div>
               <p style="font-size: 16px; margin: 0; margin-top: 40px; color: #1f2937; font-weight: bold;">Dear ${companyName}</p>
