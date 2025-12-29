@@ -120,14 +120,23 @@ export class AuthService {
         userId: payload.data.userId || payload.sub,
       };
     } catch (error) {
+      // Log the actual error for debugging
+      this.logger.error(
+        `❌ Para JWT validation failed: ${error?.message || 'Unknown error'}`,
+        error?.stack || error,
+      );
+
+      // Re-throw known exceptions as-is
       if (
         error instanceof BadRequestException ||
         error instanceof UnauthorizedException
       ) {
         throw error;
       }
-      this.logger.error('Para JWT validation failed:', error);
-      throw new UnauthorizedException(ErrorAuth.JwtValidationFailed);
+
+      // For unknown errors, wrap in UnauthorizedException
+      const errorMessage = error?.message || ErrorAuth.JwtValidationFailed;
+      throw new UnauthorizedException(errorMessage);
     }
   }
 
@@ -184,11 +193,24 @@ export class AuthService {
     request?: Request,
   ): Promise<{ message: string }> {
     try {
+      this.logger.log(
+        `🔍 Starting validateAndSetJwtCookie | ` +
+          `Token length: ${token?.length || 0} | ` +
+          `Has request: ${!!request}`,
+      );
+
       // Validate the JWT token using Passport strategy
       const paraPayload = await this.validateParaJwt(token);
 
+      this.logger.log(
+        `✅ JWT validated successfully | ` +
+          `Email: ${paraPayload.email || 'unknown'}`,
+      );
+
       // Sync user to database
+      this.logger.log(`🔄 Syncing user to database...`);
       await this.syncUserFromParaToken(paraPayload);
+      this.logger.log(`✅ User synced successfully`);
 
       // Simple detection: Check if behind proxy (GCP load balancer sets X-Forwarded-Proto)
       // - With proxy (GCP): Use proxy headers to detect HTTPS
@@ -233,10 +255,26 @@ export class AuthService {
 
       return { message: 'Cookie set successfully' };
     } catch (error) {
+      // Log the actual error for debugging
+      this.logger.error(
+        `❌ Failed to validate and set JWT cookie: ${error?.message || 'Unknown error'}`,
+        error?.stack || error,
+      );
+
+      // Re-throw known exceptions as-is
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new BadRequestException(ErrorAuth.JwtValidationFailed);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      // For unknown errors, wrap in BadRequestException with details
+      const errorMessage = error?.message || ErrorAuth.JwtValidationFailed;
+      this.logger.error(
+        `Wrapping error as BadRequestException: ${errorMessage}`,
+      );
+      throw new BadRequestException(errorMessage);
     }
   }
 }
