@@ -86,13 +86,23 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<MessageResponseDto> {
     try {
-      // Determine if request is secure (HTTPS)
-      const isSecure =
-        request.protocol === 'https' ||
-        request.get('x-forwarded-proto') === 'https';
+      // Use same logic as cookie setting: detect proxy
+      const hasProxy = !!(
+        request.get('x-forwarded-proto') || request.headers['x-forwarded-proto']
+      );
 
-      // Use same sameSite logic as cookie setting
-      const sameSite = isSecure ? ('none' as const) : ('lax' as const);
+      let isSecure = false;
+      let sameSite: 'lax' | 'none' = 'lax';
+
+      if (hasProxy) {
+        // Production (GCP): Behind load balancer
+        isSecure = request.protocol === 'https';
+        sameSite = isSecure ? ('none' as const) : ('lax' as const);
+      } else {
+        // Development (localhost): No proxy
+        isSecure = false;
+        sameSite = 'lax';
+      }
 
       // Clear the JWT cookie (must match the same options used when setting)
       response.clearCookie('para-jwt', {

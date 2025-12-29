@@ -40,6 +40,7 @@ async function bootstrap() {
     ) {
       return callback(null, origin); // Return specific origin, not true
     }
+    return callback(null, origin); // Return specific origin
 
     // In production, check allowed domains
     if (appConfigService.nodeEnv === 'production') {
