@@ -5,7 +5,7 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AppConfigService } from '../shared/config/config.service';
 import { UserRepository } from './repositories/user.repository';
 import { handleError } from 'src/common/utils/errors';
@@ -120,14 +120,23 @@ export class AuthService {
         userId: payload.data.userId || payload.sub,
       };
     } catch (error) {
+      // Log the actual error for debugging
+      this.logger.error(
+        `❌ Para JWT validation failed: ${error?.message || 'Unknown error'}`,
+        error?.stack || error,
+      );
+
+      // Re-throw known exceptions as-is
       if (
         error instanceof BadRequestException ||
         error instanceof UnauthorizedException
       ) {
         throw error;
       }
-      this.logger.error('Para JWT validation failed:', error);
-      throw new UnauthorizedException(ErrorAuth.JwtValidationFailed);
+
+      // For unknown errors, wrap in UnauthorizedException
+      const errorMessage = error?.message || ErrorAuth.JwtValidationFailed;
+      throw new UnauthorizedException(errorMessage);
     }
   }
 
@@ -175,47 +184,97 @@ export class AuthService {
    * Validate Para JWT token, sync user, and set HTTP-only cookie
    * @param token - JWT token from Para
    * @param response - Express Response object to set cookie
+   * @param request - Express Request object to check protocol
    * @returns Success message
    */
   async validateAndSetJwtCookie(
     token: string,
     response: Response,
+    request?: Request,
   ): Promise<{ message: string }> {
     try {
+      this.logger.log(
+        `🔍 Starting validateAndSetJwtCookie | ` +
+          `Token length: ${token?.length || 0} | ` +
+          `Has request: ${!!request}`,
+      );
+
       // Validate the JWT token using Passport strategy
       const paraPayload = await this.validateParaJwt(token);
 
+      this.logger.log(
+        `✅ JWT validated successfully | ` +
+          `Email: ${paraPayload.email || 'unknown'}`,
+      );
+
       // Sync user to database
+      this.logger.log(`🔄 Syncing user to database...`);
       await this.syncUserFromParaToken(paraPayload);
+      this.logger.log(`✅ User synced successfully`);
+
+      // Simple detection: Check if behind proxy (GCP load balancer sets X-Forwarded-Proto)
+      // - With proxy (GCP): Use proxy headers to detect HTTPS
+      // - Without proxy (local dev): Assume HTTP, use secure: false
+      const hasProxy = !!(
+        request?.get?.('x-forwarded-proto') ||
+        request?.headers?.['x-forwarded-proto']
+      );
+
+      let isSecure = false;
+      let sameSite: 'lax' | 'none' = 'lax';
+
+      if (hasProxy) {
+        // Production (GCP): Behind load balancer
+        // With 'trust proxy' enabled, Express sets request.protocol from X-Forwarded-Proto
+        isSecure = request ? request.protocol === 'https' : false;
+        sameSite = isSecure ? ('none' as const) : ('lax' as const);
+      } else {
+        // Development (localhost): No proxy, direct connection
+        isSecure = false; // HTTP in local dev
+        sameSite = 'lax'; // Same-origin, no cross-origin needed
+      }
 
       // Set HTTP-only cookie
-      // Note: secure: false for localhost dev, true for production (requires HTTPS)
-      const isProduction = process.env.NODE_ENV === 'production';
       const cookieOptions = {
         httpOnly: true,
-        secure: isProduction, // Only true with HTTPS
-        sameSite: 'lax' as const, // Allow cross-site requests for local dev
+        secure: isSecure,
+        sameSite,
         maxAge: 30 * 60 * 1000, // 30 minutes
         path: '/',
       };
-      
+
       response.cookie('para-jwt', token, cookieOptions);
-      
+
       this.logger.log(
         `✅ Para JWT cookie set successfully | ` +
-        `Env: ${process.env.NODE_ENV} | ` +
-        `Secure: ${isProduction} | ` +
-        `SameSite: lax | ` +
-        `MaxAge: 30min | ` +
-        `User: ${paraPayload.data?.email || paraPayload.data?.identifier}`,
+          `Env: ${hasProxy ? 'production (GCP)' : 'development (localhost)'} | ` +
+          `Secure: ${isSecure} | ` +
+          `SameSite: ${sameSite} | ` +
+          `User: ${paraPayload.data?.email || paraPayload.data?.identifier}`,
       );
 
       return { message: 'Cookie set successfully' };
     } catch (error) {
+      // Log the actual error for debugging
+      this.logger.error(
+        `❌ Failed to validate and set JWT cookie: ${error?.message || 'Unknown error'}`,
+        error?.stack || error,
+      );
+
+      // Re-throw known exceptions as-is
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new BadRequestException(ErrorAuth.JwtValidationFailed);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      // For unknown errors, wrap in BadRequestException with details
+      const errorMessage = error?.message || ErrorAuth.JwtValidationFailed;
+      this.logger.error(
+        `Wrapping error as BadRequestException: ${errorMessage}`,
+      );
+      throw new BadRequestException(errorMessage);
     }
   }
 }
