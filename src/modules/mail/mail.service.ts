@@ -55,7 +55,7 @@ export class MailService {
         <title>Login OTP code</title>
       </head>
       <body style="margin: 0; padding: 0; background: #0e3ee0; font-family: 'Inter', Arial, sans-serif; color: #0f172a;">
-        <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/feat/v2/images/top.png" style="height: 50px; width: 100%; display: block;" alt=""/>
+        <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/main/images/top.png" style="height: 50px; width: 100%; display: block;" alt=""/>
         <div style="width: 100%; background: #0e3ee0; padding: 32px 12px; box-sizing: border-box;">
           <div style="max-width: 720px; margin: 0 auto; background: #f5f7fb; overflow: hidden;">
             <div style="padding: 28px 36px 0 36px; text-align: left;">
@@ -130,7 +130,7 @@ export class MailService {
         <title>Invoice Review</title>
       </head>
       <body style="margin: 0; padding: 0; background: #0e3ee0; font-family: 'Inter', Arial, sans-serif; color: #0f172a;">
-        <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/feat/v2/images/top.png" style="height: 50px; width: 100%; display: block;" alt=""/>
+        <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/main/images/top.png" style="height: 50px; width: 100%; display: block;" alt=""/>
         <div style="width: 100%; background: #0e3ee0; padding: 32px 12px; box-sizing: border-box;">
           <div style="max-width: 720px; margin: 0 auto; background: #f5f7fb; overflow: hidden;">
             <div style="padding: 28px 36px 0 36px; text-align: left;">
@@ -210,7 +210,7 @@ export class MailService {
         <title>Invoice Confirmed</title>
       </head>
       <body style="margin: 0; padding: 0; background: #0e3ee0; font-family: 'Inter', Arial, sans-serif; color: #0f172a;">
-        <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/feat/v2/images/top.png" style="height: 50px; width: 100%; display: block;" alt=""/>
+        <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/main/images/top.png" style="height: 50px; width: 100%; display: block;" alt=""/>
         <div style="width: 100%; background: #0e3ee0; padding: 32px 12px; box-sizing: border-box;">
           <div style="max-width: 720px; margin: 0 auto; background: #f5f7fb; overflow: hidden;">
             <div style="padding: 28px 36px 0 36px; text-align: left;">
