@@ -5,7 +5,7 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AppConfigService } from '../shared/config/config.service';
 import { UserRepository } from './repositories/user.repository';
 import { handleError } from 'src/common/utils/errors';
@@ -175,11 +175,13 @@ export class AuthService {
    * Validate Para JWT token, sync user, and set HTTP-only cookie
    * @param token - JWT token from Para
    * @param response - Express Response object to set cookie
+   * @param request - Express Request object to check protocol
    * @returns Success message
    */
   async validateAndSetJwtCookie(
     token: string,
     response: Response,
+    request?: Request,
   ): Promise<{ message: string }> {
     try {
       // Validate the JWT token using Passport strategy
@@ -188,26 +190,59 @@ export class AuthService {
       // Sync user to database
       await this.syncUserFromParaToken(paraPayload);
 
+      // Determine if request is secure (HTTPS)
+      // With 'trust proxy' enabled in main.ts, Express will set request.protocol
+      // based on X-Forwarded-Proto header from load balancers/proxies (Google Cloud, etc.)
+      const isSecure = request ? request.protocol === 'https' : false;
+
+      // Determine sameSite setting
+      // - 'none': Required for cross-origin requests (needs secure: true)
+      // - 'lax': Works for same-origin and top-level navigation (default)
+      // - 'strict': Only same-origin (most secure)
+      // For HTTPS (ngrok, GCP), use 'none' to allow cross-origin requests
+      // For HTTP (local dev), use 'lax' for better compatibility
+      const sameSite = isSecure ? ('none' as const) : ('lax' as const);
+
+      // Extract domain from request host for cookie domain setting
+      // For ngrok and other proxies, we might need to set domain explicitly
+      const host = request?.get?.('host') || request?.headers?.host || '';
+      let cookieDomain: string | undefined = undefined;
+
+      // Only set domain for non-localhost hosts (ngrok, production, etc.)
+      // Don't set domain for localhost as it can cause issues
+      if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+        // Extract base domain (e.g., 'abc123.ngrok.io' -> 'abc123.ngrok.io')
+        // For ngrok, we want the full hostname
+        cookieDomain = host.split(':')[0]; // Remove port if present
+      }
+
       // Set HTTP-only cookie
-      // Note: secure: false for localhost dev, true for production (requires HTTPS)
-      const isProduction = process.env.NODE_ENV === 'production';
-      const cookieOptions = {
+      // secure: true only if request is actually over HTTPS
+      const cookieOptions: any = {
         httpOnly: true,
-        secure: isProduction, // Only true with HTTPS
-        sameSite: 'lax' as const, // Allow cross-site requests for local dev
+        secure: isSecure, // Only true if actually over HTTPS
+        sameSite, // 'none' for HTTPS (cross-origin), 'lax' for HTTP (same-origin)
         maxAge: 30 * 60 * 1000, // 30 minutes
         path: '/',
       };
-      
+
+      // Only set domain if we have a non-localhost domain
+      if (cookieDomain) {
+        cookieOptions.domain = cookieDomain;
+      }
+
       response.cookie('para-jwt', token, cookieOptions);
-      
+
       this.logger.log(
         `✅ Para JWT cookie set successfully | ` +
-        `Env: ${process.env.NODE_ENV} | ` +
-        `Secure: ${isProduction} | ` +
-        `SameSite: lax | ` +
-        `MaxAge: 30min | ` +
-        `User: ${paraPayload.data?.email || paraPayload.data?.identifier}`,
+          `Env: ${process.env.NODE_ENV} | ` +
+          `Secure: ${isSecure} | ` +
+          `Protocol: ${request?.protocol || 'unknown'} | ` +
+          `SameSite: ${sameSite} | ` +
+          `Domain: ${cookieDomain || 'not set (localhost)'} | ` +
+          `Host: ${host || 'unknown'} | ` +
+          `MaxAge: 30min | ` +
+          `User: ${paraPayload.data?.email || paraPayload.data?.identifier}`,
       );
 
       return { message: 'Cookie set successfully' };

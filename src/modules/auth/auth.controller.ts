@@ -82,14 +82,23 @@ export class AuthController {
     type: MessageResponseDto,
   })
   async logout(
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<MessageResponseDto> {
     try {
-      // Clear the JWT cookie
+      // Determine if request is secure (HTTPS)
+      const isSecure =
+        request.protocol === 'https' ||
+        request.get('x-forwarded-proto') === 'https';
+
+      // Use same sameSite logic as cookie setting
+      const sameSite = isSecure ? ('none' as const) : ('lax' as const);
+
+      // Clear the JWT cookie (must match the same options used when setting)
       response.clearCookie('para-jwt', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: isSecure,
+        sameSite,
         path: '/',
       });
 
@@ -131,6 +140,7 @@ export class AuthController {
       return await this.authService.validateAndSetJwtCookie(
         setJwtCookieDto.token,
         response,
+        request,
       );
     } finally {
       // Restore original authorization header
