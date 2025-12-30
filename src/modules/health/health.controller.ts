@@ -1,13 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
 import {
   HealthCheck,
-  HealthCheckResult,
   HealthCheckService,
-  HealthIndicatorResult,
-  TypeOrmHealthIndicator,
+  HealthCheckResult,
 } from '@nestjs/terminus';
-
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { PrismaHealthIndicator } from './prisma.health';
 import { Public } from '../shared/decorators/public';
 
 @Public()
@@ -16,7 +14,7 @@ import { Public } from '../shared/decorators/public';
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
-    private readonly db: TypeOrmHealthIndicator,
+    private readonly prismaHealthIndicator: PrismaHealthIndicator,
   ) {}
 
   @Get()
@@ -27,10 +25,7 @@ export class HealthController {
   })
   readiness(): Promise<HealthCheckResult> {
     return this.health.check([
-      async (): Promise<HealthIndicatorResult> =>
-        this.db.pingCheck('database', {
-          timeout: 5000,
-        }),
+      async () => this.prismaHealthIndicator.isHealthy('database'),
     ]);
   }
 }
