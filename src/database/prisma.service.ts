@@ -24,11 +24,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     // Create a Pool with SSL configuration
     this.pool = new Pool({
       connectionString: dbConfig.url,
-      ssl: isSSLRequired
-        ? {
-            rejectUnauthorized: false, // Allow self-signed certificates
-          }
-        : false,
+      ssl: dbConfig.ssl,
     });
 
     const adapter = new PrismaPg(this.pool);
