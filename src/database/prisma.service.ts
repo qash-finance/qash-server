@@ -19,7 +19,6 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   constructor(private readonly appConfigService: AppConfigService) {
     const dbConfig = appConfigService.databaseConfig;
-    const isSSLRequired = process.env.POSTGRES_DB_SSL === 'true';
 
     // Create a Pool with SSL configuration
     this.pool = new Pool({
