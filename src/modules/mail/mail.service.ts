@@ -331,4 +331,177 @@ export class MailService {
       throw error;
     }
   }
+
+  /**
+   * Send B2B invoice notification to recipient company
+   */
+  async sendB2BInvoiceNotification(
+    recipientEmail: string,
+    invoiceNumber: string,
+    invoiceUUID: string,
+    dueDate: Date,
+    senderCompanyName: string,
+    recipientCompanyName: string,
+    amount: string,
+    currency: string,
+    description: string,
+  ): Promise<void> {
+    try {
+      const fromEmail =
+        'noreply@' + this.appConfigService.mailConfig.mailgun.domain;
+      const invoiceReviewUrl = `${this.frontendUrl}/b2b-invoice-review?id=${invoiceUUID}&email=${encodeURIComponent(
+        recipientEmail,
+      )}`;
+
+      const subject = `Invoice ${invoiceNumber} from ${senderCompanyName} - Review Required`;
+      const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>B2B Invoice Review</title>
+      </head>
+      <body style="margin: 0; padding: 0; background: #0e3ee0; font-family: 'Inter', Arial, sans-serif; color: #0f172a;">
+        <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/feat/v2/images/top.png" style="height: 50px; width: 100%; display: block;" alt=""/>
+        <div style="width: 100%; background: #0e3ee0; padding: 32px 12px; box-sizing: border-box;">
+          <div style="max-width: 720px; margin: 0 auto; background: #f5f7fb; overflow: hidden;">
+            <div style="padding: 28px 36px 0 36px; text-align: left;">
+              <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/feat/v2/images/qash-logo.png" alt="Qash logo" style="width: 60px; height: 60px; margin-bottom: 8px;" />
+              <p style="font-size: 30px; font-weight: 700; margin: 0 0 12px 0; color: #0f172a;">New Invoice from ${senderCompanyName}</p>
+              <p style="color: #848484; margin: 0 0 12px 0;">Due date: ${new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</p>
+              <div style="height: 1px; width: 100%; background-color: #d9d9d9; margin-bottom: 20px;"></div>
+              <p style="font-size: 16px; margin: 0; margin-top: 40px; color: #1f2937; font-weight: bold;">Dear ${recipientCompanyName}</p>
+            </div>
+            <div>
+              <div style="padding: 0 36px 32px 36px; font-size: 15px; line-height: 1.6; color: #1f2937;">
+              <p style="margin-bottom: 20px; margin-top: 0;">
+                You have received a new invoice from ${senderCompanyName} for the amount of <strong>${amount} ${currency}</strong>.
+              </p>
+              ${description ? `<p style="margin-bottom: 20px;"><strong>Description:</strong> ${description}</p>` : ''}
+              <p style="margin-bottom: 40px;">
+                Please review the invoice details and confirm to proceed with payment processing.
+              </p>
+              <div style="margin: 20px 0;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(0deg, #002c69 0%, #0061e7 100%); border-radius: 10px; padding: 2px;">
+                  <tr>
+                    <td align="center" style="background: #0059ff; border-top: 2px solid #4888ff; border-radius: 8px; padding: 12px;">
+                      <a href="${invoiceReviewUrl}" style="color: white; font-size: 15px; text-decoration: none; font-weight: 500; display: block;">Review Invoice</a>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+               <div style="margin-top: 40px; height: 1px; width: 100%; background-color: #d9d9d9;"></div>
+              </div>
+            </div>
+            <div style="padding: 0 36px 28px 36px; font-size: 13px; color: #6b7280; line-height: 1.5;">
+              <p style="margin: 0;">This is an automated message, please do not reply to this email.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+      `;
+
+      await this.sendEmail({
+        to: recipientEmail,
+        fromEmail,
+        subject,
+        html,
+      });
+
+      this.logger.log(
+        `B2B invoice notification sent to ${recipientEmail} for invoice ${invoiceNumber}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send B2B invoice notification to ${recipientEmail}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Send B2B invoice confirmation notification to sender company
+   */
+  async sendB2BInvoiceConfirmationNotification(
+    senderEmail: string,
+    invoiceNumber: string,
+    senderCompanyName: string,
+    recipientCompanyName: string,
+    recipientEmail: string,
+    amount: string,
+    currency: string,
+  ): Promise<void> {
+    try {
+      const fromEmail =
+        'noreply@' + this.appConfigService.mailConfig.mailgun.domain;
+
+      const subject = `Invoice ${invoiceNumber} Confirmed by ${recipientCompanyName}`;
+      const html = `
+       <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>B2B Invoice Confirmed</title>
+      </head>
+      <body style="margin: 0; padding: 0; background: #0e3ee0; font-family: 'Inter', Arial, sans-serif; color: #0f172a;">
+        <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/feat/v2/images/top.png" style="height: 50px; width: 100%; display: block;" alt=""/>
+        <div style="width: 100%; background: #0e3ee0; padding: 32px 12px; box-sizing: border-box;">
+          <div style="max-width: 720px; margin: 0 auto; background: #f5f7fb; overflow: hidden;">
+            <div style="padding: 28px 36px 0 36px; text-align: left;">
+               <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/feat/v2/images/qash-logo.png" alt="Qash logo" style="width: 60px; height: 60px; margin-bottom: 8px;" />
+              <p style="font-size: 30px; font-weight: 700; margin: 0 0 12px 0; color: #0f172a;">B2B Invoice Confirmed</p>
+              <div style="height: 1px; width: 100%; background-color: #d9d9d9; margin-bottom: 20px;"></div>
+              <p style="font-size: 16px; margin: 0; margin-top: 40px; color: #1f2937; font-weight: bold;">Dear ${senderCompanyName}</p>
+            </div>
+            <div>
+              <div style="padding: 0 36px 32px 36px; font-size: 15px; line-height: 1.6; color: #1f2937;">
+              <p style="margin-bottom: 20px; margin-top: 0;">
+                 Great news! <strong>${recipientCompanyName}</strong> (${recipientEmail}) has confirmed invoice <strong>${invoiceNumber}</strong> for <strong>${amount} ${currency}</strong>.
+              </p>
+              <p style="margin-bottom: 40px;">
+                A corresponding bill has been automatically created in the <strong>Bills</strong> section for payment processing.
+              </p>
+              <div style="margin: 20px 0;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(0deg, #002c69 0%, #0061e7 100%); border-radius: 10px; padding: 2px;">
+                  <tr>
+                    <td align="center" style="background: #0059ff; border-top: 2px solid #4888ff; border-radius: 8px; padding: 12px;">
+                      <a href="${this.frontendUrl}" style="color: white; font-size: 15px; text-decoration: none; font-weight: 500; display: block;">View Bills</a>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+               <div style="margin-top: 40px; height: 1px; width: 100%; background-color: #d9d9d9;"></div>
+              </div>
+            </div>
+            <div style="padding: 0 36px 28px 36px; font-size: 13px; color: #6b7280; line-height: 1.5;">
+              <p style="margin: 0;">This is an automated message, please do not reply to this email.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+      `;
+
+      await this.sendEmail({
+        to: senderEmail,
+        fromEmail,
+        subject,
+        html,
+      });
+
+      this.logger.log(
+        `B2B invoice confirmation notification sent to ${senderEmail} for invoice ${invoiceNumber}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send B2B invoice confirmation notification to ${senderEmail}:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }

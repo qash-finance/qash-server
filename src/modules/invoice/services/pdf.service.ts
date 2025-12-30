@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InvoiceModel } from 'src/database/generated/models';
+import { InvoiceTypeEnum } from 'src/database/generated/client';
 import puppeteer from 'puppeteer';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
+import { CurrencySymbols } from 'src/common/constants/currency';
 
 @Injectable()
 export class PdfService {
@@ -115,12 +117,35 @@ export class PdfService {
     const fromDetails = (invoice as any).fromDetails || {};
     const toDetails = (invoice as any).toDetails || {};
     const items = (invoice as any).items || [];
+    const isB2B = invoice.invoiceType === InvoiceTypeEnum.B2B;
 
     // Use payment details from the invoice model if available, otherwise fallback to fromDetails
     const paymentNetwork = (invoice as any).paymentNetwork || {};
     const paymentToken = (invoice as any).paymentToken || {};
     const walletAddress =
       invoice.paymentWalletAddress || fromDetails.walletAddress || 'N/A';
+
+    // Get currency symbol
+    const currencySymbol = CurrencySymbols[invoice.currency] || invoice.currency;
+
+    // Prepare FROM section based on invoice type
+    const fromCompanyName = isB2B
+      ? (invoice as any).fromCompany?.companyName || fromDetails.companyName || 'N/A'
+      : fromDetails.companyName || fromDetails.name || 'N/A';
+    const fromName = isB2B
+      ? fromDetails.contactName || ''
+      : fromDetails.name || '';
+    const fromEmail = fromDetails.email || (invoice as any).fromCompany?.notificationEmail || 'N/A';
+    const fromTaxId = isB2B
+      ? fromDetails.taxId || (invoice as any).fromCompany?.taxId || ''
+      : '';
+
+    // Prepare TO section
+    const toCompanyName = toDetails.companyName || invoice.toCompanyName || 'N/A';
+    const toContactName = toDetails.contactName || invoice.toCompanyContactName || '';
+    const toEmail = toDetails.email || invoice.toCompanyEmail || '';
+    const toAddress = toDetails.address || toDetails.address1 || invoice.toCompanyAddress || '';
+    const toTaxId = toDetails.taxId || invoice.toCompanyTaxId || '';
 
     return `
     <!DOCTYPE html>
@@ -147,6 +172,14 @@ export class PdfService {
                 font-weight: bold;
                 color: #007bff;
             }
+            .invoice-type {
+                font-size: 12px;
+                color: #666;
+                background-color: ${isB2B ? '#e3f2fd' : '#f3e5f5'};
+                padding: 2px 8px;
+                border-radius: 4px;
+                margin-left: 10px;
+            }
             .invoice-number {
                 font-size: 18px;
                 color: #666;
@@ -167,6 +200,10 @@ export class PdfService {
             }
             .address-block {
                 line-height: 1.6;
+            }
+            .tax-id {
+                font-size: 12px;
+                color: #666;
             }
             .invoice-meta {
                 margin-bottom: 30px;
@@ -234,17 +271,28 @@ export class PdfService {
                 margin-top: 10px;
                 font-size: 12px;
             }
+            .terms-section {
+                margin-top: 30px;
+                padding: 15px;
+                background-color: #f8f9fa;
+                border-radius: 5px;
+                font-size: 12px;
+            }
         </style>
     </head>
     <body>
         <div class="invoice-header">
             <div>
-                <div class="invoice-title">INVOICE</div>
+                <div class="invoice-title">
+                    INVOICE
+                    <span class="invoice-type">${isB2B ? 'B2B' : 'Payroll'}</span>
+                </div>
                 <div class="invoice-number">#${invoice.invoiceNumber}</div>
             </div>
             <div>
                 <div><strong>Issue Date:</strong> ${invoice.issueDate.toLocaleDateString()}</div>
                 <div><strong>Due Date:</strong> ${invoice.dueDate.toLocaleDateString()}</div>
+                <div><strong>Currency:</strong> ${invoice.currency}</div>
             </div>
         </div>
 
@@ -252,12 +300,13 @@ export class PdfService {
             <div class="from-section">
                 <div class="section-title">FROM</div>
                 <div class="address-block">
-                    <div><strong>${fromDetails.name || 'N/A'}</strong></div>
-                    ${fromDetails.companyName ? `<div>${fromDetails.companyName}</div>` : ''}
-                    <div>${fromDetails.email || 'N/A'}</div>
+                    <div><strong>${fromCompanyName}</strong></div>
+                    ${fromName && fromName !== fromCompanyName ? `<div>${fromName}</div>` : ''}
+                    <div>${fromEmail}</div>
                     ${fromDetails.address1 ? `<div>${fromDetails.address1}</div>` : ''}
                     ${fromDetails.address2 ? `<div>${fromDetails.address2}</div>` : ''}
-                    ${fromDetails.city && fromDetails.country ? `<div>${fromDetails.city}, ${fromDetails.country} ${fromDetails.postalCode || ''}</div>` : ''}
+                    ${fromDetails.city || fromDetails.country ? `<div>${[fromDetails.city, fromDetails.state, fromDetails.country, fromDetails.postalCode].filter(Boolean).join(', ')}</div>` : ''}
+                    ${fromTaxId ? `<div class="tax-id">Tax ID: ${fromTaxId}</div>` : ''}
                 </div>
                 <div class="network-info">
                     <div><strong>Payment Details:</strong></div>
@@ -270,12 +319,13 @@ export class PdfService {
             <div class="bill-to-section">
                 <div class="section-title">BILL TO</div>
                 <div class="address-block">
-                    <div><strong>${toDetails.companyName || invoice.toCompanyName || 'N/A'}</strong></div>
-                    <div>${toDetails.contactName ? `Attn: ${toDetails.contactName}` : invoice.toCompanyContactName ? `Attn: ${invoice.toCompanyContactName}` : ''}</div>
-                    <div>${toDetails.email || invoice.toCompanyEmail || ''}</div>
-                    <div>${toDetails.address1 || invoice.toCompanyAddress || ''}</div>
+                    <div><strong>${toCompanyName}</strong></div>
+                    ${toContactName ? `<div>Attn: ${toContactName}</div>` : ''}
+                    ${toEmail ? `<div>${toEmail}</div>` : ''}
+                    ${toAddress ? `<div>${toAddress}</div>` : ''}
                     ${toDetails.address2 ? `<div>${toDetails.address2}</div>` : ''}
-                    <div>${[toDetails.city, toDetails.country, toDetails.postalCode].filter(Boolean).join(' ') || ''}</div>
+                    ${toDetails.city || toDetails.country ? `<div>${[toDetails.city, toDetails.state, toDetails.country, toDetails.postalCode].filter(Boolean).join(', ')}</div>` : ''}
+                    ${toTaxId ? `<div class="tax-id">Tax ID: ${toTaxId}</div>` : ''}
                 </div>
             </div>
         </div>
@@ -285,7 +335,8 @@ export class PdfService {
                 <tr>
                     <th>Description</th>
                     <th>Quantity</th>
-                    <th>Rate</th>
+                    <th>Unit</th>
+                    <th class="amount-column">Rate</th>
                     <th class="amount-column">Amount</th>
                 </tr>
             </thead>
@@ -296,8 +347,9 @@ export class PdfService {
                     <tr>
                         <td>${item.description}</td>
                         <td>${item.quantity}</td>
-                        <td class="amount-column">$${item.unitPrice || item.pricePerUnit || '0.00'}</td>
-                        <td class="amount-column">$${item.total}</td>
+                        <td>${item.unit || '-'}</td>
+                        <td class="amount-column">${currencySymbol}${item.unitPrice || item.pricePerUnit || '0.00'}</td>
+                        <td class="amount-column">${currencySymbol}${item.total}</td>
                     </tr>
                 `,
                   )
@@ -308,21 +360,34 @@ export class PdfService {
         <div class="totals-section">
             <div class="total-row">
                 <span>Subtotal:</span>
-                <span>$${invoice.subtotal}</span>
+                <span>${currencySymbol}${invoice.subtotal}</span>
             </div>
+            ${parseFloat(invoice.discount) > 0 ? `
+            <div class="total-row">
+                <span>Discount:</span>
+                <span>-${currencySymbol}${invoice.discount}</span>
+            </div>
+            ` : ''}
             <div class="total-row">
                 <span>Tax (${invoice.taxRate}%):</span>
-                <span>$${invoice.taxAmount}</span>
+                <span>${currencySymbol}${invoice.taxAmount}</span>
             </div>
             <div class="total-row">
-                <span>Total:</span>
-                <span>$${invoice.total}</span>
+                <span>Total (${invoice.currency}):</span>
+                <span>${currencySymbol}${invoice.total}</span>
             </div>
         </div>
 
+        ${(invoice as any).terms ? `
+        <div class="terms-section">
+            <strong>Terms & Conditions</strong>
+            <p>${typeof (invoice as any).terms === 'object' ? JSON.stringify((invoice as any).terms) : (invoice as any).terms}</p>
+        </div>
+        ` : ''}
+
         <div class="footer">
             <p>Thank you for your business!</p>
-            <p>This invoice was generated automatically by the payroll system.</p>
+            <p>${isB2B ? 'This is a business-to-business invoice.' : 'This invoice was generated automatically by the payroll system.'}</p>
         </div>
     </body>
     </html>
@@ -333,6 +398,7 @@ export class PdfService {
    * Get PDF filename for invoice
    */
   getInvoiceFilename(invoice: InvoiceModel): string {
-    return `invoice-${invoice.invoiceNumber}.pdf`;
+    const prefix = invoice.invoiceType === InvoiceTypeEnum.B2B ? 'b2b-invoice' : 'invoice';
+    return `${prefix}-${invoice.invoiceNumber}.pdf`;
   }
 }

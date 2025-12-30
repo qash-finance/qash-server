@@ -24,4 +24,38 @@ export class ClientRepository extends BaseRepository<
   protected getModelName(): string {
     return 'Client';
   }
+
+  /**
+   * Find client by UUID with company access check
+   */
+  async findByUUID(
+    uuid: string,
+    companyId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<Client | null> {
+    const model = this.getModel(tx);
+    return model.findFirst({
+      where: {
+        uuid,
+        companyId,
+      },
+    });
+  }
+
+  /**
+   * Find client by ID with company access check
+   */
+  async findByIdWithCompany(
+    id: number,
+    companyId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<Client | null> {
+    const model = this.getModel(tx);
+    return model.findFirst({
+      where: {
+        id,
+        companyId,
+      },
+    });
+  }
 }

@@ -20,7 +20,7 @@ model User {
   lastLogin DateTime?    @map("last_login") @db.Timestamp(6)
 
   teamMembership TeamMember? // 1:1 relationship, each user is a company team member
-  invitedMembers TeamMember[]  @relation("TeamMemberInviter")
+  invitedMembers TeamMember[] @relation("TeamMemberInviter")
 
   @@index([email])
   @@index([role])
@@ -86,15 +86,16 @@ model Company {
 
   metadata Json? @db.Json
 
-  teamMembers  TeamMember[]
-  contacts     Employee[]
-  clients      Client[]
-  groups       EmployeeGroup[]
-  payrolls     Payroll[]
-  bills        Bill[]
-  invoicesFrom Invoice[]       @relation("InvoiceFromCompany") // B2B invoices where this company is the sender
-  invoicesTo   Invoice[]       @relation("InvoiceToCompany") // B2B invoices where this company is the recipient
-  paymentLinks PaymentLink[]
+  teamMembers      TeamMember[]
+  contacts         Employee[]
+  clients          Client[]
+  groups           EmployeeGroup[]
+  payrolls         Payroll[]
+  bills            Bill[]
+  invoicesFrom     Invoice[]         @relation("InvoiceFromCompany") // B2B invoices where this company is the sender
+  invoicesTo       Invoice[]         @relation("InvoiceToCompany") // B2B invoices where this company is the recipient
+  paymentLinks     PaymentLink[]
+  invoiceSchedules InvoiceSchedule[]
 
   @@index([registrationNumber])
   @@index([companyName])
@@ -148,11 +149,11 @@ model Client {
   createdAt DateTime @map("created_at") @db.Timestamp(6)
   updatedAt DateTime @map("updated_at") @db.Timestamp(6)
 
-  companyId Int     @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId Int      @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   ccEmails  String[] @map("cc_emails") @db.VarChar(255)
 
-  email     String @db.VarChar(255)
+  email       String @db.VarChar(255)
   companyName String @map("company_name") @db.VarChar(255)
 
   companyType        String? @map("company_type") @db.VarChar(100)
@@ -165,9 +166,11 @@ model Client {
   postalCode         String? @map("postal_code") @db.VarChar(20)
   registrationNumber String? @map("registration_number") @db.VarChar(100)
 
+  invoiceSchedules InvoiceSchedule[]
+
+  @@unique([companyId, email])
   @@index([companyId])
   @@index([email])
-  @@unique([companyId, email])
   @@map("clients")
 }
 
@@ -369,9 +372,17 @@ model InvoiceSchedule {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  // Link to payroll (for employee invoices)
-  payrollId Int     @map("payroll_id")
-  payroll   Payroll @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+  // Link to payroll (for employee invoices) - mutually exclusive with clientId
+  payrollId Int?     @map("payroll_id")
+  payroll   Payroll? @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+
+  // Link to client (for B2B invoices) - mutually exclusive with payrollId
+  clientId Int?    @map("client_id")
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Company that owns this schedule (for B2B schedules)
+  companyId Int?     @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   // Schedule configuration
   isActive           Boolean @default(true) @map("is_active")
@@ -384,6 +395,9 @@ model InvoiceSchedule {
   nextGenerateDate DateTime? @map("next_generate_date") @db.Timestamp(6)
   lastGeneratedAt  DateTime? @map("last_generated_at") @db.Timestamp(6)
 
+  // Auto-send configuration (for B2B invoices)
+  autoSend Boolean @default(false) @map("auto_send")
+
   // Invoice template settings
   invoiceTemplate Json? @map("invoice_template") @db.Json // Template for auto-generated invoices
 
@@ -391,6 +405,8 @@ model InvoiceSchedule {
   metadata Json? @db.Json
 
   @@index([payrollId])
+  @@index([clientId])
+  @@index([companyId])
   @@index([isActive])
   @@index([nextGenerateDate])
   @@map("invoice_schedules")
