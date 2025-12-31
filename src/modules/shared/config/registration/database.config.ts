@@ -14,5 +14,5 @@ export default registerAs('database', () => ({
     process.env.POSTGRES_PASSWORD as string,
   )}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${encodeURIComponent(
     process.env.POSTGRES_DB as string,
-  )}?schema=public${process.env.POSTGRES_DB_SSL === 'true' ? '&sslmode=require' : ''}`,
+  )}?schema=public${process.env.POSTGRES_DB_SSL === 'true' ? '&sslmode=no-verify' : ''}`,
 }));
