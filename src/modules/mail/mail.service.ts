@@ -16,6 +16,13 @@ export class MailService {
     this.mailgundefaultFromName =
       this.appConfigService.mailConfig.mailgun.from.name;
     this.frontendUrl = this.appConfigService.otherConfig.frontendUrl;
+
+    // check NODE_ENV is production
+    if (process.env.NODE_ENV === 'production') {
+      if (this.frontendUrl !== 'https://app.qash.finance') {
+        this.frontendUrl = 'https://app.qash.finance';
+      }
+    }
   }
 
   async sendEmail({
