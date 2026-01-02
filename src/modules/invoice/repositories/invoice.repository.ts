@@ -359,9 +359,12 @@ export class InvoiceRepository extends BaseRepository<
   /**
    * Generate B2B invoice number
    * Format: INV-B2B-{YYYYMM}-{0001}
+   * Sequence increments per recipient company per month
    */
   async generateB2BInvoiceNumber(
     companyId: number,
+    toCompanyId?: number | null,
+    toCompanyName?: string | null,
     tx?: PrismaTransactionClient,
   ): Promise<string> {
     const model = this.getModel(tx);
@@ -369,15 +372,25 @@ export class InvoiceRepository extends BaseRepository<
     const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
     const prefix = `INV-B2B-${yearMonth}-`;
 
-    // Get the latest B2B invoice for this company in the current month
-    const latestInvoice = await model.findFirst({
-      where: {
-        fromCompanyId: companyId,
-        invoiceType: InvoiceTypeEnum.B2B,
-        invoiceNumber: {
-          startsWith: prefix,
-        },
+    // Build where clause: filter by sender company, month, and recipient
+    const where: Prisma.InvoiceWhereInput = {
+      fromCompanyId: companyId,
+      invoiceType: InvoiceTypeEnum.B2B,
+      invoiceNumber: {
+        startsWith: prefix,
       },
+    };
+
+    // If recipient company is identified, filter by it
+    if (toCompanyId) {
+      where.toCompanyId = toCompanyId;
+    } else if (toCompanyName) {
+      where.toCompanyName = toCompanyName;
+    }
+
+    // Get the latest B2B invoice for this company and recipient in the current month
+    const latestInvoice = await model.findFirst({
+      where,
       orderBy: {
         invoiceNumber: 'desc',
       },

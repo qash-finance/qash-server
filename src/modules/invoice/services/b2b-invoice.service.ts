@@ -234,9 +234,14 @@ export class B2BInvoiceService {
           );
         }
 
-        // Generate invoice number
+        // Generate invoice number (with recipient context for per-recipient sequencing)
         const invoiceNumber =
-          await this.invoiceRepository.generateB2BInvoiceNumber(companyId, tx);
+          await this.invoiceRepository.generateB2BInvoiceNumber(
+            companyId,
+            toCompanyId,
+            toCompanyName,
+            tx,
+          );
 
         // Prepare from details
         const fromDetails = dto.fromDetails || {
