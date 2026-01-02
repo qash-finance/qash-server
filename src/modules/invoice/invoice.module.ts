@@ -8,6 +8,9 @@ import { InvoiceScheduleRepository } from './repositories/invoice-schedule.repos
 import { InvoiceScheduleService } from './services/invoice-schedule.service';
 import { InvoiceSchedulerService } from './services/invoice-scheduler.service';
 import { PdfService } from './services/pdf.service';
+import { B2BInvoiceService } from './services/b2b-invoice.service';
+import { B2BInvoiceScheduleService } from './services/b2b-invoice-schedule.service';
+import { B2BInvoiceController } from './b2b-invoice.controller';
 import { PrismaModule } from '../../database/prisma.module';
 import { PayrollModule } from '../payroll/payroll.module';
 import { MailModule } from '../mail/mail.module';
@@ -16,6 +19,7 @@ import { CompanyModule } from '../company/company.module';
 import { EmployeeModule } from '../employee/employee.module';
 import { BillModule } from '../bill/bill.module';
 import { TeamMemberModule } from '../team-member/team-member.module';
+import { ClientModule } from '../client/client.module';
 
 @Module({
   imports: [
@@ -26,9 +30,10 @@ import { TeamMemberModule } from '../team-member/team-member.module';
     CompanyModule,
     EmployeeModule,
     TeamMemberModule,
+    ClientModule,
     forwardRef(() => BillModule),
   ],
-  controllers: [InvoiceController],
+  controllers: [InvoiceController, B2BInvoiceController],
   providers: [
     InvoiceService,
     InvoiceRepository,
@@ -38,6 +43,8 @@ import { TeamMemberModule } from '../team-member/team-member.module';
     InvoiceScheduleService,
     InvoiceSchedulerService,
     PdfService,
+    B2BInvoiceService,
+    B2BInvoiceScheduleService,
   ],
   exports: [
     InvoiceService,
@@ -47,6 +54,8 @@ import { TeamMemberModule } from '../team-member/team-member.module';
     InvoiceScheduleRepository,
     InvoiceScheduleService,
     PdfService,
+    B2BInvoiceService,
+    B2BInvoiceScheduleService,
   ],
 })
 export class InvoiceModule {}

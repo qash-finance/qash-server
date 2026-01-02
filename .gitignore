@@ -1,6 +1,7 @@
 # compiled output
 /dist
 /node_modules
+/.github/copilot-instructions.md
 
 # prisma generated files
 /src/database/generated/*

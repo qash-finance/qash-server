@@ -7,12 +7,15 @@ import {
 } from 'src/database/base.repository';
 
 export interface CreateInvoiceScheduleData {
-  payrollId: number;
+  payrollId?: number;
+  clientId?: number;
+  companyId?: number;
   frequency: string; // 'MONTHLY', 'WEEKLY', 'BIWEEKLY', 'QUARTERLY'
   dayOfMonth?: number;
   dayOfWeek?: number;
   generateDaysBefore: number;
   isActive?: boolean;
+  autoSend?: boolean;
   nextGenerateDate?: Date;
   invoiceTemplate?: any;
   metadata?: any;
@@ -24,6 +27,7 @@ export interface UpdateInvoiceScheduleData {
   dayOfWeek?: number;
   generateDaysBefore?: number;
   isActive?: boolean;
+  autoSend?: boolean;
   nextGenerateDate?: Date;
   invoiceTemplate?: any;
   metadata?: any;
@@ -153,6 +157,71 @@ export class InvoiceScheduleRepository extends BaseRepository<
       data: {
         lastGeneratedAt: lastGeneratedAt,
         nextGenerateDate: nextGenerateDate,
+      },
+    });
+  }
+
+  // =============================================================================
+  // B2B INVOICE SCHEDULE METHODS
+  // =============================================================================
+
+  /**
+   * Find all B2B schedules for a company
+   */
+  async findB2BSchedulesByCompany(
+    companyId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<any[]> {
+    const model = this.getModel(tx);
+    return model.findMany({
+      where: {
+        companyId,
+        clientId: { not: null }, // B2B schedules have clientId set
+      },
+      include: {
+        client: true,
+        company: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Find B2B schedules due for generation
+   */
+  async findB2BSchedulesDueForGeneration(
+    date: Date,
+    tx?: PrismaTransactionClient,
+  ): Promise<any[]> {
+    const model = this.getModel(tx);
+    return model.findMany({
+      where: {
+        isActive: true,
+        clientId: { not: null }, // B2B schedules
+        nextGenerateDate: {
+          lte: date,
+        },
+      },
+      include: {
+        client: true,
+        company: true,
+      },
+    });
+  }
+
+  /**
+   * Find schedule by client ID
+   */
+  async findByClientId(
+    clientId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<any | null> {
+    const model = this.getModel(tx);
+    return model.findFirst({
+      where: { clientId, isActive: true },
+      include: {
+        client: true,
+        company: true,
       },
     });
   }
