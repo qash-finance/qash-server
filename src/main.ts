@@ -19,25 +19,55 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const appConfigService = new AppConfigService(configService);
 
+  // Trust proxy for Google Cloud and other load balancers
+  // This allows Express to properly detect HTTPS via X-Forwarded-Proto header
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', true);
+
   // CORS configuration with proper credentials support for cookies
-  const corsOrigin =
-    appConfigService.nodeEnv === 'production'
-      ? (origin, callback) => {
-          if (!origin) {
-            return callback(null, true);
-          }
-          if (
-            appConfigService.otherConfig.allowedDomains &&
-            appConfigService.otherConfig.allowedDomains
-              .split(',')
-              .includes(origin)
-          ) {
-            return callback(null, true);
-          } else {
-            return callback(new Error('Not allowed by CORS'));
-          }
-        }
-      : true; // Allow all origins in development
+  const corsOrigin = (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Always allow localhost origins (for local development/testing)
+    if (
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('https://localhost:') ||
+      origin.startsWith('http://127.0.0.1:') ||
+      origin.startsWith('https://127.0.0.1:')
+    ) {
+      return callback(null, origin); // Return specific origin, not true
+    }
+    return callback(null, origin); // Return specific origin
+
+    // In production, check allowed domains
+    if (appConfigService.nodeEnv === 'production') {
+      const allowedDomains = appConfigService.otherConfig.allowedDomains;
+
+      // If no allowedDomains configured, log warning but allow (for easier debugging)
+      if (!allowedDomains) {
+        console.warn(
+          `⚠️  CORS: NODE_ENV is production but ALLOWED_DOMAINS is not set. ` +
+            `Allowing origin: ${origin}. Please set ALLOWED_DOMAINS for security.`,
+        );
+        return callback(null, origin); // Return specific origin
+      }
+
+      const allowedList = allowedDomains.split(',').map((d) => d.trim());
+
+      if (allowedList.includes(origin)) {
+        return callback(null, origin); // Return specific origin
+      } else {
+        return callback(new Error('Not allowed by CORS'));
+      }
+    }
+
+    // Development mode: allow all origins but return the specific origin
+    // This is required when credentials: true is set
+    return callback(null, origin);
+  };
 
   app.enableCors({
     origin: corsOrigin,

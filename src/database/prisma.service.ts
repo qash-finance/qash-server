@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaClient } from './generated/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import { AppConfigService } from '../modules/shared/config/config.service';
 import { handleError } from 'src/common/utils/errors';
 import { PrismaTransactionClient } from './base.repository';
@@ -14,11 +15,22 @@ import { PrismaTransactionClient } from './base.repository';
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public client: PrismaClient;
   private readonly logger = new Logger(PrismaService.name);
+  private pool: Pool;
 
   constructor(private readonly appConfigService: AppConfigService) {
-    const adapter = new PrismaPg({
-      connectionString: appConfigService.databaseConfig.url,
+    const dbConfig = appConfigService.databaseConfig;
+
+    // Create a Pool with SSL configuration
+    this.pool = new Pool({
+      connectionString: dbConfig.url,
+      ssl: dbConfig.ssl.require
+        ? {
+            rejectUnauthorized: false,
+          }
+        : false,
     });
+
+    const adapter = new PrismaPg(this.pool);
 
     this.client = new PrismaClient({ adapter });
   }

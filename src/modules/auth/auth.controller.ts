@@ -82,14 +82,33 @@ export class AuthController {
     type: MessageResponseDto,
   })
   async logout(
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<MessageResponseDto> {
     try {
-      // Clear the JWT cookie
+      // Use same logic as cookie setting: detect proxy
+      const hasProxy = !!(
+        request.get('x-forwarded-proto') || request.headers['x-forwarded-proto']
+      );
+
+      let isSecure = false;
+      let sameSite: 'lax' | 'none' = 'lax';
+
+      if (hasProxy) {
+        // Production (GCP): Behind load balancer
+        isSecure = request.protocol === 'https';
+        sameSite = isSecure ? ('none' as const) : ('lax' as const);
+      } else {
+        // Development (localhost): No proxy
+        isSecure = false;
+        sameSite = 'lax';
+      }
+
+      // Clear the JWT cookie (must match the same options used when setting)
       response.clearCookie('para-jwt', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: isSecure,
+        sameSite,
         path: '/',
       });
 
@@ -131,6 +150,7 @@ export class AuthController {
       return await this.authService.validateAndSetJwtCookie(
         setJwtCookieDto.token,
         response,
+        request,
       );
     } finally {
       // Restore original authorization header
