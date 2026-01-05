@@ -34,6 +34,8 @@ import { BillService } from 'src/modules/bill/bill.service';
 import { ClientRepository } from 'src/modules/client/repositories/client.repository';
 import { CompanyRepository } from 'src/modules/company/company.repository';
 import { TokenDto } from 'src/modules/employee/employee.dto';
+import { UserRepository } from 'src/modules/auth/repositories/user.repository';
+import { TeamMemberRepository } from 'src/modules/team-member/team-member.repository';
 
 @Injectable()
 export class B2BInvoiceService {
@@ -47,6 +49,8 @@ export class B2BInvoiceService {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly clientRepository: ClientRepository,
     private readonly companyRepository: CompanyRepository,
+    private readonly userRepository: UserRepository,
+    private readonly teamMemberRepository: TeamMemberRepository,
   ) {}
 
   //#region GET METHODS
@@ -508,6 +512,42 @@ export class B2BInvoiceService {
           throw new BadRequestException(ErrorInvoice.InvoiceNotSendable);
         }
 
+        // Check if recipient email belongs to a registered user with team membership
+        const teamMember = await this.teamMemberRepository.findByUserEmail(
+          invoice.emailTo,
+          tx,
+        );
+
+        let reviewUrl: string;
+        let billCreated = false;
+
+        if (teamMember && teamMember.company) {
+          // Recipient is a registered user with company membership
+          // Create bill immediately for their company
+          try {
+            await this.billService.createBillFromInvoice(
+              invoice.uuid,
+              teamMember.company.id,
+              tx,
+            );
+            billCreated = true;
+            reviewUrl = `/bill/review?invoiceUUID=${invoice.uuid}`;
+            this.logger.log(
+              `Bill created for registered user's company (${teamMember.company.companyName})`,
+            );
+          } catch (billError) {
+            this.logger.error(
+              'Failed to create bill for registered user:',
+              billError,
+            );
+            // Fallback to public confirmation flow
+            reviewUrl = `/invoice-review/b2b?uuid=${invoice.uuid}&email=${encodeURIComponent(invoice.emailTo)}`;
+          }
+        } else {
+          // Recipient is not a registered user - use public confirmation flow
+          reviewUrl = `/invoice-review/b2b?uuid=${invoice.uuid}&email=${encodeURIComponent(invoice.emailTo)}`;
+        }
+
         const updatedInvoice = await this.invoiceRepository.update(
           { uuid: invoiceUUID },
           {
@@ -517,7 +557,7 @@ export class B2BInvoiceService {
           tx,
         );
 
-        // Send email to recipient
+        // Send email to recipient with appropriate review link
         try {
           await this.mailService.sendB2BInvoiceNotification(
             invoice.emailTo,
@@ -527,8 +567,10 @@ export class B2BInvoiceService {
             invoice.fromCompany?.companyName || 'Unknown Company',
             invoice.toCompanyName || 'Unknown Recipient',
             invoice.total,
-            invoice.currency,
+            invoice.paymentToken as unknown as TokenDto,
             invoice.emailSubject || `Invoice ${invoice.invoiceNumber}`,
+            reviewUrl,
+            billCreated,
           );
         } catch (emailError) {
           this.logger.error(
@@ -572,12 +614,16 @@ export class B2BInvoiceService {
         );
 
         // Create bill for the sender company (they will receive payment)
-        if (invoice.fromCompanyId) {
+        // Only create if not already created (for unregistered users)
+        if (invoice.fromCompanyId && !invoice.bill) {
           try {
             await this.billService.createBillFromInvoice(
               invoice.uuid,
               invoice.fromCompanyId,
               tx,
+            );
+            this.logger.log(
+              `Bill created for sender company after public confirmation`,
             );
           } catch (billError) {
             this.logger.error('Failed to create bill from B2B invoice:', billError);
