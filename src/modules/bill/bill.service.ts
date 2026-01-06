@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { BillRepository, BillWithInvoice } from './bill.repository';
 import { InvoiceRepository } from '../invoice/repositories/invoice.repository';
+import { PdfService } from '../invoice/services/pdf.service';
+import { MailService } from '../mail/mail.service';
 import {
   BillQueryDto,
   BillStatsDto,
@@ -18,6 +20,7 @@ import { BillCreateInput, BillModel } from 'src/database/generated/models';
 import {
   BillStatusEnum,
   InvoiceStatusEnum,
+  InvoiceTypeEnum,
 } from 'src/database/generated/client';
 import { handleError } from 'src/common/utils/errors';
 import { PrismaService } from 'src/database/prisma.service';
@@ -32,6 +35,8 @@ export class BillService {
     private readonly prisma: PrismaService,
     private readonly billRepository: BillRepository,
     private readonly invoiceRepository: InvoiceRepository,
+    private readonly pdfService: PdfService,
+    private readonly mailService: MailService,
   ) {}
 
   //#region GET METHODS
@@ -253,14 +258,68 @@ export class BillService {
   }
 
   /**
-   * Pay multiple bills in batch
+   * Create bill from B2B invoice (for company-to-company invoices)
+   * Bill is created in the RECIPIENT company (the company that owes money)
    */
+  async createBillFromB2BInvoice(
+    invoiceUUID: string,
+    companyId: number,
+    tx: PrismaTransactionClient,
+  ): Promise<BillModel> {
+    // Verify invoice exists
+    const invoice = await this.invoiceRepository.findByUUID(invoiceUUID, tx);
+
+    if (!invoice) {
+      throw new NotFoundException(ErrorInvoice.InvoiceNotFound);
+    }
+
+    // Check if bill already exists for this invoice
+    if (invoice.bill) {
+      throw new ConflictException(ErrorBill.BillAlreadyExists);
+    }
+
+    // For B2B invoices, the bill should be created in the recipient company
+    // Validate that either:
+    // 1. The invoice has a toCompanyId that matches, OR
+    // 2. Allow bill creation in any company (for flexibility with unregistered recipients)
+    if (invoice.toCompanyId && invoice.toCompanyId !== companyId) {
+      throw new BadRequestException(
+        'This invoice is not addressed to this company',
+      );
+    }
+
+    const billData: BillCreateInput = {
+      company: {
+        connect: {
+          id: companyId,
+        },
+      },
+      invoice: {
+        connect: {
+          uuid: invoiceUUID,
+        },
+      },
+      status: BillStatusEnum.PENDING,
+      metadata: {
+        invoiceType: 'B2B',
+        fromCompanyName: invoice.fromCompany?.companyName,
+        toCompanyName: invoice.toCompanyName,
+      },
+    };
+
+    const bill = await this.billRepository.create(billData, tx);
+
+    return bill;
+  }
   async payBills(
     companyId: number,
     dto: PayBillsDto,
   ): Promise<BatchPaymentResultDto> {
-    return await this.prisma.$transaction(async (tx) => {
-      // Fetch all bills to validate with invoice included
+    // Store bills for sending emails after transaction
+    let billsWithInvoices: BillWithInvoice[] = [];
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Fetch all bills to validate with invoice and employee included
       const bills = (await this.billRepository.findMany(
         {
           uuid: { in: dto.billUUIDs.map((uuid) => uuid.toString()) },
@@ -268,11 +327,24 @@ export class BillService {
         },
         {
           include: {
-            invoice: true,
+            invoice: {
+              include: {
+                employee: true,
+                payroll: {
+                  include: {
+                    company: true,
+                  },
+                },
+                items: true,
+              },
+            },
           },
         },
         tx,
       )) as BillWithInvoice[];
+
+      // Store for later use
+      billsWithInvoices = bills;
 
       const foundBillIds = bills.map((bill) => bill.uuid);
       const notFoundBillIds = dto.billUUIDs.filter(
@@ -310,10 +382,88 @@ export class BillService {
         tx,
       );
 
+      // For B2B invoices, log the payment relationship
+      // The invoice being updated is the B2B invoice sent by fromCompany to toCompany
+      // Paying the bill (by toCompany) also marks the invoice as paid (for fromCompany)
+      for (const bill of bills) {
+        if (bill.invoice.invoiceType === InvoiceTypeEnum.B2B) {
+          this.logger.log(
+            `B2B Invoice Payment: ${bill.invoice.invoiceNumber} - Paid by receiving company (ID: ${companyId}), Updated for sending company (ID: ${bill.invoice.fromCompanyId})`,
+          );
+        }
+      }
+
       return {
         totalAmount,
       };
+    }, {
+      timeout: 60000, // 60 seconds timeout for transaction
     });
+
+    // After successful transaction, send payslip emails for employee invoices
+    // This is done outside the transaction to avoid blocking it
+    await this.sendPayslipEmails(billsWithInvoices);
+    
+    return result;
+  }
+
+  /**
+   * Send payslip emails to employees for their paid invoices
+   */
+  private async sendPayslipEmails(bills: BillWithInvoice[]): Promise<void> {
+    const emailPromises = bills
+      .filter((bill) => {
+        const invoice = bill.invoice as any;
+        // Only send payslips for employee payroll invoices (not B2B)
+        return (
+          invoice.invoiceType === InvoiceTypeEnum.EMPLOYEE &&
+          invoice.employee &&
+          invoice.employee.email
+        );
+      })
+      .map(async (bill) => {
+        try {
+          const invoice = bill.invoice;
+          const employee = invoice.employee;
+          const company = invoice.payroll?.company;
+
+          // Generate payslip PDF
+          const pdfBuffer = await this.pdfService.generatePayslipPdf(invoice);
+          const pdfFilename = this.pdfService.getPayslipFilename(invoice);
+
+          // Format pay period
+          const issueDate = new Date(invoice.issueDate);
+          const payPeriod = issueDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+          });
+
+          // Send email with PDF attachment
+          await this.mailService.sendPayslipEmail(
+            employee.email,
+            `${employee.name}`,
+            company?.companyName || 'Your Company',
+            payPeriod,
+            invoice.total,
+            invoice.currency,
+            pdfBuffer,
+            pdfFilename,
+          );
+
+          this.logger.log(
+            `Payslip email sent to ${employee.email} for invoice ${invoice.invoiceNumber}`,
+          );
+        } catch (error) {
+          // Log error but don't fail the entire operation
+          this.logger.error(
+            `Failed to send payslip email for bill ${bill.uuid}:`,
+            error,
+          );
+        }
+      });
+
+    // Wait for all emails to be sent
+    await Promise.allSettled(emailPromises);
   }
 
   /**

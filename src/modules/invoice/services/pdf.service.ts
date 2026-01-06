@@ -401,4 +401,516 @@ export class PdfService {
     const prefix = invoice.invoiceType === InvoiceTypeEnum.B2B ? 'b2b-invoice' : 'invoice';
     return `${prefix}-${invoice.invoiceNumber}.pdf`;
   }
+
+  /**
+   * Generate Payslip PDF buffer from invoice data
+   */
+  async generatePayslipPdf(invoice: InvoiceModel): Promise<Buffer> {
+    try {
+      const htmlContent = this.generatePayslipHtml(invoice);
+
+      const executablePath = this.getChromeExecutablePath();
+      const launchOptions: any = {
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      };
+
+      if (executablePath) {
+        launchOptions.executablePath = executablePath;
+      }
+
+      const browser = await puppeteer.launch(launchOptions);
+      const page = await browser.newPage();
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        margin: {
+          top: '0.5cm',
+          bottom: '0.5cm',
+          left: '0.5cm',
+          right: '0.5cm',
+        },
+        printBackground: true,
+      });
+
+      await browser.close();
+
+      this.logger.log(`Generated payslip PDF for invoice ${invoice.invoiceNumber}`);
+
+      return Buffer.from(pdfBuffer);
+    } catch (error) {
+      this.logger.error(
+        `Error generating payslip PDF for invoice ${invoice.invoiceNumber}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Generate HTML template for payslip
+   */
+  private generatePayslipHtml(invoice: InvoiceModel): string {
+    const employee = (invoice as any).employee || {};
+    const company = (invoice as any).payroll?.company || {};
+    const items = (invoice as any).items || [];
+    
+    // Get token symbol
+    const tokenSymbol = (invoice as any).paymentToken?.symbol || invoice.currency || 'USD';
+
+    // Calculate earnings and deductions
+    const earnings = items.filter((item) => parseFloat(item.total) > 0);
+    
+    const totalEarnings = earnings.reduce((sum, item) => sum + parseFloat(item.total), 0);
+    const totalBonus = 0; // Assuming no separate bonus items for now
+    const netPay = parseFloat(invoice.total);
+
+    // Format dates
+    const issueDate = new Date(invoice.issueDate);
+    const dueDate = new Date(invoice.dueDate);
+    const payPeriod = issueDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+    const paymentDate = dueDate.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+    
+    // Calculate payment period (assuming monthly, show start and end dates)
+    const startDate = new Date(issueDate);
+    startDate.setDate(1);
+    const endDate = new Date(issueDate.getFullYear(), issueDate.getMonth() + 1, 0);
+    const paymentPeriod = `${startDate.toLocaleDateString('en-GB')} - ${endDate.toLocaleDateString('en-GB')}`;
+
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Payslip - ${employee.name}</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                padding: 0;
+                color: #1b1b1b;
+                background: white;
+            }
+            .payslip-wrapper {
+                background: white;
+                max-width: 850px;
+                margin: 0 auto;
+            }
+            .payslip-container {
+                background: white;
+                padding: 20px;
+            }
+            .header-section {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding-bottom: 16px;
+                border-bottom: 1px solid rgba(153, 160, 174, 0.24);
+            }
+            .company-info {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .company-logo {
+                width: 40px;
+                height: 40px;
+                background: linear-gradient(135deg, #066eff 0%, #00a86b 100%);
+                border-radius: 5.926px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                color: white;
+                font-size: 14px;
+            }
+            .company-details h3 {
+                font-family: 'Barlow', sans-serif;
+                font-weight: 600;
+                font-size: 16px;
+                margin: 0;
+                color: #1b1b1b;
+            }
+            .company-details p {
+                font-size: 11px;
+                color: #848484;
+                margin: 0;
+                font-weight: 500;
+            }
+            .payslip-title {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1b1b1b;
+                text-transform: uppercase;
+                letter-spacing: -0.64px;
+            }
+            .date-section {
+                display: flex;
+                padding: 20px;
+                align-items: center;
+                border-bottom: 1px solid rgba(153, 160, 174, 0.24);
+            }
+            .date-item {
+                flex: 1;
+                text-align: center;
+            }
+            .date-item-label {
+                font-size: 14px;
+                font-weight: 500;
+                color: #848484;
+                margin-bottom: 4px;
+            }
+            .date-item-value {
+                font-size: 14px;
+                font-weight: 500;
+                color: #1b1b1b;
+            }
+            .content-section {
+                padding: 16px 40px;
+            }
+            .info-cards {
+                display: flex;
+                gap: 12px;
+                margin-bottom: 16px;
+                height: 160px;
+            }
+            .info-card {
+                flex: 1;
+                border: 0.978px solid rgba(153, 160, 174, 0.24);
+                border-radius: 16px;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+            .info-card-title {
+                font-size: 14px;
+                font-weight: 500;
+                color: #848484;
+                margin-bottom: 12px;
+            }
+            .info-card-name {
+                font-size: 16px;
+                font-weight: 600;
+                color: #066eff;
+                margin-bottom: 4px;
+            }
+            .info-card-detail {
+                font-size: 12px;
+                color: #848484;
+                font-weight: 400;
+                margin-bottom: 8px;
+            }
+            .info-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 12px;
+                font-weight: 500;
+            }
+            .info-row-label {
+                color: #848484;
+            }
+            .info-row-value {
+                color: #1b1b1b;
+            }
+            .summary-section {
+                margin-bottom: 16px;
+            }
+            .section-title {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1b1b1b;
+                margin-bottom: 16px;
+            }
+            .summary-cards {
+                display: flex;
+                gap: 8px;
+            }
+            .summary-card {
+                flex: 1;
+                background: #f5f5f6;
+                border-radius: 16px;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 2px;
+            }
+            .summary-card-label {
+                font-size: 12px;
+                font-weight: 500;
+                color: #848484;
+            }
+            .summary-card-amount {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1b1b1b;
+            }
+            .detail-box {
+                border: 0.978px solid rgba(153, 160, 174, 0.24);
+                border-radius: 16px;
+                padding: 20px;
+                margin-bottom: 12px;
+            }
+            .detail-box-title {
+                font-size: 14px;
+                font-weight: 600;
+                color: #1b1b1b;
+                margin-bottom: 12px;
+            }
+            .detail-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                font-size: 12px;
+            }
+            .detail-row-label {
+                color: #848484;
+                font-weight: 500;
+            }
+            .detail-row-value {
+                color: #1b1b1b;
+                font-weight: 500;
+                word-break: break-all;
+                text-align: right;
+                max-width: 50%;
+            }
+            .detail-row-value.link {
+                color: #066eff;
+                text-decoration: underline;
+                font-size: 11px;
+            }
+            .confirmation-box {
+                border: 0.978px solid rgba(153, 160, 174, 0.24);
+                border-radius: 16px;
+                padding: 20px;
+                display: flex;
+                gap: 16px;
+                align-items: center;
+            }
+            .check-icon {
+                flex-shrink: 0;
+                width: 24px;
+                height: 24px;
+                background: #02be75;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+            }
+            .confirmation-text {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .confirmation-title {
+                font-size: 14px;
+                font-weight: 600;
+                color: #1b1b1b;
+                margin-bottom: 4px;
+            }
+            .confirmation-detail {
+                font-size: 12px;
+                color: #848484;
+                font-weight: 500;
+            }
+            .confirmation-amount {
+                font-size: 20px;
+                font-weight: 600;
+                color: #1b1b1b;
+                white-space: nowrap;
+            }
+            .footer-section {
+                border-top: 1px solid rgba(153, 160, 174, 0.16);
+                padding: 18px 40px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .footer-text {
+                font-size: 9px;
+                color: rgba(132, 132, 132, 0.5);
+                font-weight: 700;
+            }
+            .qash-logo {
+                width: 33px;
+                height: 12.6px;
+                background: linear-gradient(135deg, #066eff 0%, #00a86b 100%);
+                border-radius: 2px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 8px;
+                font-weight: bold;
+            }
+            .status-success {
+                color: #02be75;
+                font-weight: 600;
+            }
+            .status-neutral {
+                color: #1b1b1b;
+                font-weight: 500;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="payslip-wrapper">
+            <div class="payslip-container">
+                <div class="header-section">
+                    <div class="company-info">
+                        <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/main/images/qash-logo.png" style="height: 40px; width: 100%; display: block;" alt=""/>
+                        <div class="company-details">
+                            <h3>${company.companyName}</h3>
+                            <p>${company.address}</p>
+                        </div>
+                    </div>
+                    <div class="payslip-title">Payslip</div>
+                </div>
+
+                <div class="date-section">
+                    <div class="date-item">
+                        <div class="date-item-label">Pay Period</div>
+                        <div class="date-item-value">${payPeriod}</div>
+                    </div>
+                    <div class="date-item">
+                        <div class="date-item-label">Payment date</div>
+                        <div class="date-item-value">${paymentDate}</div>
+                    </div>
+                    <div class="date-item">
+                        <div class="date-item-label">Payment period</div>
+                        <div class="date-item-value">${paymentPeriod}</div>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="info-cards">
+                        <div class="info-card">
+                            <div>
+                                <div class="info-card-title">Company Information</div>
+                                <div class="info-card-name">${company.companyName}</div>
+                                <div class="info-card-detail">${company.address}</div>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-row-label">Payment by</span>
+                                <span class="info-row-value">Finance Department</span>
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div>
+                                <div class="info-card-title">Employee Information</div>
+                                <div class="info-card-name">${employee.name}</div>
+                                <div class="info-card-detail">${employee.email || 'N/A'}</div>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-row-label">Department</span>
+                                <span class="info-row-value">${employee.group?.name || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="summary-section">
+                        <div class="section-title">Payment Summary</div>
+                        <div class="summary-cards">
+                            <div class="summary-card">
+                                <div class="summary-card-label">Base Salary</div>
+                                <div class="summary-card-amount">${tokenSymbol}${totalEarnings.toFixed(2)}</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-card-label">Bonus</div>
+                                <div class="summary-card-amount">${tokenSymbol}${totalBonus.toFixed(2)}</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-card-label">Take Home Pay</div>
+                                <div class="summary-card-amount">${tokenSymbol}${netPay.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-box">
+                        <div class="detail-box-title">Payment Transfer Detail</div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Token</span>
+                            <span class="detail-row-value">${invoice.currency || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Network</span>
+                            <span class="detail-row-value">${(invoice as any).paymentNetwork?.name || 'Ethereum'}</span>
+                        </div>
+                        ${(invoice as any).transactionHash ? `
+                        <div class="detail-row">
+                            <span class="detail-row-label">Transaction hash</span>
+                            <span class="detail-row-value link">${(invoice as any).transactionHash}</span>
+                        </div>
+                        ` : ''}
+                        ${(invoice as any).paymentWalletAddress ? `
+                        <div class="detail-row">
+                            <span class="detail-row-label">Wallet address</span>
+                            <span class="detail-row-value link">${(invoice as any).paymentWalletAddress}</span>
+                        </div>
+                        ` : ''}
+                        <div class="detail-row">
+                            <span class="detail-row-label">Amount</span>
+                            <span class="detail-row-value">${tokenSymbol}${netPay.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-box">
+                        <div class="detail-box-title">Transaction Information</div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Status</span>
+                            <span class="detail-row-value status-success">Success</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Processed</span>
+                            <span class="detail-row-value">${paymentDate}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Method</span>
+                            <span class="detail-row-value">Token Transfer</span>
+                        </div>
+                    </div>
+
+                    <div class="confirmation-box">
+                        <div class="confirmation-text">
+                            <div class="check-icon">✓</div>
+                            <div class="confirmation-title">Payment Confirmed</div>
+                            <div class="confirmation-detail">Your salary has been successfully transferred</div>
+                        </div>
+                        <div class="confirmation-amount">${tokenSymbol}${netPay.toFixed(2)}</div>
+                    </div>
+                </div>
+
+                <div class="footer-section">
+                    <div class="footer-text">This is a computer generated invoice, doesn't required any signature.</div>
+                    <img src="https://raw.githubusercontent.com/qash-finance/qash-server/refs/heads/main/images/qash-logo.png" style="width: 20px; display: block;" alt=""/>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+  }
+
+  /**
+   * Get PDF filename for payslip
+   */
+  getPayslipFilename(invoice: InvoiceModel): string {
+    const employee = (invoice as any).employee || {};
+    const employeeName = `${employee.name}`.toLowerCase().replace(/\s+/g, '-');
+    const date = new Date(invoice.issueDate);
+    const month = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).replace(' ', '-');
+    return `payslip-${employeeName}-${month}.pdf`;
+  }
 }

@@ -523,9 +523,15 @@ export class B2BInvoiceService {
 
         if (teamMember && teamMember.company) {
           // Recipient is a registered user with company membership
-          // Create bill immediately for their company
+          // Update invoice to link to recipient company
+          await this.invoiceRepository.update(
+            { uuid: invoiceUUID },
+            { toCompany: { connect: { id: teamMember.company.id } } },
+            tx,
+          );
+
           try {
-            await this.billService.createBillFromInvoice(
+            await this.billService.createBillFromB2BInvoice(
               invoice.uuid,
               teamMember.company.id,
               tx,
@@ -533,11 +539,11 @@ export class B2BInvoiceService {
             billCreated = true;
             reviewUrl = `/bill/review?invoiceUUID=${invoice.uuid}`;
             this.logger.log(
-              `Bill created for registered user's company (${teamMember.company.companyName})`,
+              `✅ Bill successfully created for registered user's company (${teamMember.company.companyName})`,
             );
           } catch (billError) {
             this.logger.error(
-              'Failed to create bill for registered user:',
+              `❌ Failed to create bill for registered user in company ${teamMember.company.companyName}:`,
               billError,
             );
             // Fallback to public confirmation flow
@@ -617,13 +623,13 @@ export class B2BInvoiceService {
         // Only create if not already created (for unregistered users)
         if (invoice.fromCompanyId && !invoice.bill) {
           try {
-            await this.billService.createBillFromInvoice(
+            await this.billService.createBillFromB2BInvoice(
               invoice.uuid,
               invoice.fromCompanyId,
               tx,
             );
             this.logger.log(
-              `Bill created for sender company after public confirmation`,
+              `✅ Bill created for sender company after public confirmation`,
             );
           } catch (billError) {
             this.logger.error('Failed to create bill from B2B invoice:', billError);
@@ -639,7 +645,7 @@ export class B2BInvoiceService {
             invoice.toCompanyName || 'Unknown Recipient',
             invoice.toCompanyEmail || invoice.emailTo || '',
             invoice.total,
-            invoice.currency,
+            (invoice.paymentToken as any).symbol,
           );
         } catch (emailError) {
           this.logger.error('Failed to send B2B confirmation email:', emailError);
