@@ -1025,7 +1025,7 @@ export class CreateB2BInvoiceDto {
   // Email configuration
   @ApiPropertyOptional({
     description: 'Custom email subject',
-    example: 'Invoice #INV-B2B-202412-0001 from My Company',
+    example: 'Invoice #INV-B2B-0001 from My Company',
   })
   @IsOptional()
   @IsString()

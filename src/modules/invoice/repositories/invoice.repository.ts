@@ -358,7 +358,7 @@ export class InvoiceRepository extends BaseRepository<
 
   /**
    * Generate B2B invoice number
-   * Format: INV-B2B-{YYYYMM}-{0001}
+   * Format: INV-B2B-{0001}
    * Sequence increments per recipient company per month
    */
   async generateB2BInvoiceNumber(
@@ -369,8 +369,7 @@ export class InvoiceRepository extends BaseRepository<
   ): Promise<string> {
     const model = this.getModel(tx);
     const now = new Date();
-    const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const prefix = `INV-B2B-${yearMonth}-`;
+    const prefix = `INV-B2B-`;
 
     // Build where clause: filter by sender company, month, and recipient
     const where: Prisma.InvoiceWhereInput = {

@@ -158,9 +158,6 @@ export class PaymentLinkRecordDto {
   })
   @IsNotEmpty()
   @IsString()
-  @Matches(/^(mt|mm)[a-zA-Z0-9]+$/, {
-    message: 'payer must be a valid address starting with mt or mm',
-  })
   @MinLength(3, { message: 'payer address is too short' })
   payer: string;
 

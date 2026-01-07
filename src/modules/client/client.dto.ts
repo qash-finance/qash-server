@@ -13,7 +13,7 @@ export class CreateClientDto {
     description: 'Contact email',
     example: 'client@example.com',
   })
-  @IsEmail()
+  @IsEmail({}, { message: 'email must be a valid email address' })
   @IsNotEmpty()
   @MaxLength(255)
   email: string;
