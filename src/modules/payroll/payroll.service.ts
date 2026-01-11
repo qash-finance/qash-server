@@ -443,8 +443,6 @@ export class PayrollService {
             tx,
           );
 
-          console.log('DID WE HIT HERE');
-
           if (!existingPayroll) {
             throw new NotFoundException(ErrorPayroll.PayrollNotFound);
           }
