@@ -1,6 +1,6 @@
 # Qash server implementation
 
-This server implementation that uses the following tech stack:
+This server implementation uses the following tech stack:
 
 - [NestJS](https://nestjs.com/)
 - [PostgreSQL](https://www.postgresql.org/)
