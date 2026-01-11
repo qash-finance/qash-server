@@ -20,6 +20,12 @@ export type BillWithInvoice = Prisma.BillGetPayload<{
             group: true;
           };
         };
+        payroll: {
+          include: {
+            company: true;
+          };
+        };
+        items: true;
       };
     };
   };
@@ -84,6 +90,12 @@ export class BillRepository extends BaseRepository<
                 group: true,
               },
             },
+            payroll: {
+              include: {
+                company: true,
+              },
+            },
+            items: true,
           },
         },
         company: true,

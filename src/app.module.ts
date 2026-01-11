@@ -25,6 +25,7 @@ import { SharedModule } from './modules/shared/shared.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { InvoiceModule } from './modules/invoice/invoice.module';
 import { BillModule } from './modules/bill/bill.module';
+import { ClientModule } from './modules/client/client.module';
 import { envValidator } from './common/validators/env.validation';
 import { HttpValidationPipe } from './modules/shared/pipes/http-validation';
 
@@ -59,6 +60,7 @@ import { HttpValidationPipe } from './modules/shared/pipes/http-validation';
     PayrollModule,
     InvoiceModule,
     BillModule,
+    ClientModule,
   ],
   controllers: [AppController],
   providers: [

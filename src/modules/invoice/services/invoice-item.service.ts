@@ -138,6 +138,19 @@ export class InvoiceItemService {
   }
 
   /**
+   * Delete all items for an invoice
+   */
+  async deleteAllItems(
+    invoiceId: number,
+    tx: PrismaTransactionClient,
+  ): Promise<void> {
+    const client = tx || this.prisma;
+    await client.invoiceItem.deleteMany({
+      where: { invoiceId },
+    });
+  }
+
+  /**
    * Recalculate invoice totals from items
    */
   async recalculateInvoiceTotals(

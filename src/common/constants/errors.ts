@@ -113,6 +113,11 @@ export enum ErrorBill {
   CannotDeletePaidBills = 'Cannot delete paid bills',
 }
 
+export enum ErrorClient {
+  NotFound = 'Client not found',
+  EmailAlreadyExists = 'Client with this email already exists',
+}
+
 export enum ErrorInvoiceSchedule {
   InvoiceScheduleNotFound = 'Invoice schedule not found',
   InvoiceScheduleAlreadyExists = 'Invoice schedule already exists for this payroll',

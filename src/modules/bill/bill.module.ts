@@ -6,6 +6,7 @@ import { PrismaModule } from '../../database/prisma.module';
 import { InvoiceModule } from '../invoice/invoice.module';
 import { AuthModule } from '../auth/auth.module';
 import { CompanyModule } from '../company/company.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { CompanyModule } from '../company/company.module';
     forwardRef(() => InvoiceModule),
     AuthModule,
     CompanyModule,
+    MailModule,
   ],
   controllers: [BillController],
   providers: [BillService, BillRepository],
