@@ -5,30 +5,25 @@ on:
     types: [created]
   pull_request_review_comment:
     types: [created]
-  issues:
-    types: [opened, assigned]
-  pull_request_review:
-    types: [submitted]
 
 jobs:
   claude:
+    # Only trigger when @claude is explicitly mentioned
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
-      issues: read
+      contents: write
+      pull-requests: write
+      issues: write
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Run Claude Code
         id: claude
@@ -40,8 +35,22 @@ jobs:
           additional_permissions: |
             actions: read
 
-          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
+          # Add neobank context to Claude's system prompt
+          system_prompt: |
+            You are assisting with a neobank solution backend (Qash Server) built with:
+            - **Framework**: NestJS with TypeScript
+            - **Database**: PostgreSQL 16 with Prisma ORM
+            - **Cache**: Redis 7
+            - **Auth**: JWT-based authentication with access/refresh tokens
+            - **Email**: Mailgun integration
+            - **Key Features**: B2B invoicing, payroll/payslips, employee management, team management, referral system
+
+            When working on this codebase, prioritize:
+            1. **Security**: Secure authentication, authorization, input validation, no SQL injection
+            2. **Financial accuracy**: Precise decimal handling for money, transaction integrity
+            3. **Compliance**: Audit trails, secure logging (no sensitive data exposure)
+            4. **Data integrity**: Proper database transactions, ACID compliance
+            5. **Code quality**: Follow NestJS best practices, proper error handling, TypeScript strict mode
 
           # Optional: Add claude_args to customize behavior and configuration
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
