@@ -14,14 +14,10 @@ import {
   Min,
   Max,
   IsBoolean,
-  IsUUID,
   ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import {
-  InvoiceStatusEnum,
-  InvoiceTypeEnum,
-} from 'src/database/generated/client';
+import { InvoiceStatusEnum } from 'src/database/generated/client';
 import { Currency } from 'src/common/constants/currency';
 import { NetworkDto, TokenDto } from '../employee/employee.dto';
 

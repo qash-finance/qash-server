@@ -368,7 +368,6 @@ export class InvoiceRepository extends BaseRepository<
     tx?: PrismaTransactionClient,
   ): Promise<string> {
     const model = this.getModel(tx);
-    const now = new Date();
     const prefix = `INV-B2B-`;
 
     // Build where clause: filter by sender company, month, and recipient
@@ -618,7 +617,10 @@ export class InvoiceRepository extends BaseRepository<
     // Calculate totals by currency
     const calculateTotalsByCurrency = (
       invoices: { total: string; currency: string }[],
-    ): { totalAmount: string; totalAmountByCurrency: Record<string, string> } => {
+    ): {
+      totalAmount: string;
+      totalAmountByCurrency: Record<string, string>;
+    } => {
       const byCurrency: Record<string, number> = {};
       let totalAmount = 0;
 

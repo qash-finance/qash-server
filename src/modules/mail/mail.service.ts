@@ -346,13 +346,13 @@ export class MailService {
   async sendB2BInvoiceNotification(
     recipientEmail: string,
     invoiceNumber: string,
-    invoiceUUID: string,
+    _invoiceUUID: string,
     dueDate: Date,
     senderCompanyName: string,
     recipientCompanyName: string,
     amount: string,
     token: TokenDto,
-    description: string,
+    _description: string,
     reviewUrl: string,
     billCreated: boolean = false,
   ): Promise<void> {
@@ -362,7 +362,7 @@ export class MailService {
       const fullReviewUrl = `${this.frontendUrl}${reviewUrl}`;
 
       const subject = `Invoice ${invoiceNumber} from ${senderCompanyName} - ${billCreated ? 'Bill Created' : 'Review Required'}`;
-      
+
       // Customize message based on whether bill was auto-created
       const actionMessage = billCreated
         ? 'A bill has been automatically created in your account. Please review and process payment.'
@@ -527,8 +527,8 @@ export class MailService {
     employeeName: string,
     companyName: string,
     payPeriod: string,
-    netPay: string,
-    currency: string,
+    _netPay: string,
+    _currency: string,
     pdfBuffer: Buffer,
     pdfFilename: string,
   ): Promise<void> {

@@ -29,7 +29,6 @@ import { MailService } from '../../mail/mail.service';
 import { JsonValue } from '@prisma/client/runtime/client';
 import { ErrorInvoice } from 'src/common/constants/errors';
 import { handleError } from 'src/common/utils/errors';
-import { PrismaTransactionClient } from 'src/database/base.repository';
 import { BillService } from 'src/modules/bill/bill.service';
 import { ClientRepository } from 'src/modules/client/repositories/client.repository';
 import { CompanyRepository } from 'src/modules/company/company.repository';
@@ -178,7 +177,10 @@ export class B2BInvoiceService {
     try {
       return await this.prisma.$transaction(async (tx) => {
         // Get sender company details
-        const fromCompany = await this.companyRepository.findById(companyId, tx);
+        const fromCompany = await this.companyRepository.findById(
+          companyId,
+          tx,
+        );
         if (!fromCompany) {
           throw new NotFoundException('Sender company not found');
         }
@@ -371,9 +373,7 @@ export class B2BInvoiceService {
 
         // Only DRAFT invoices can be updated
         if (invoice.status !== InvoiceStatusEnum.DRAFT) {
-          throw new BadRequestException(
-            'Only draft invoices can be updated',
-          );
+          throw new BadRequestException('Only draft invoices can be updated');
         }
 
         // Prepare update data
@@ -424,7 +424,11 @@ export class B2BInvoiceService {
         }
 
         // Recalculate totals if items or tax/discount changed
-        if (dto.items || dto.taxRate !== undefined || dto.discount !== undefined) {
+        if (
+          dto.items ||
+          dto.taxRate !== undefined ||
+          dto.discount !== undefined
+        ) {
           const items = dto.items || invoice.items;
           const taxRate = dto.taxRate ?? invoice.taxRate;
           const discount = dto.discount ?? invoice.discount;
@@ -599,8 +603,10 @@ export class B2BInvoiceService {
   async confirmB2BInvoice(invoiceUUID: string): Promise<InvoiceModel> {
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const invoice =
-          await this.invoiceRepository.findB2BByUUIDPublic(invoiceUUID, tx);
+        const invoice = await this.invoiceRepository.findB2BByUUIDPublic(
+          invoiceUUID,
+          tx,
+        );
 
         if (!invoice) {
           throw new NotFoundException(ErrorInvoice.InvoiceNotFound);
@@ -632,7 +638,10 @@ export class B2BInvoiceService {
               `✅ Bill created for sender company after public confirmation`,
             );
           } catch (billError) {
-            this.logger.error('Failed to create bill from B2B invoice:', billError);
+            this.logger.error(
+              'Failed to create bill from B2B invoice:',
+              billError,
+            );
           }
         }
 
@@ -648,7 +657,10 @@ export class B2BInvoiceService {
             (invoice.paymentToken as any).symbol,
           );
         } catch (emailError) {
-          this.logger.error('Failed to send B2B confirmation email:', emailError);
+          this.logger.error(
+            'Failed to send B2B confirmation email:',
+            emailError,
+          );
         }
 
         return updatedInvoice;
@@ -665,7 +677,7 @@ export class B2BInvoiceService {
   async markB2BInvoiceAsPaid(
     invoiceUUID: string,
     companyId: number,
-    transactionHash?: string,
+    _transactionHash?: string,
   ): Promise<InvoiceModel> {
     try {
       return await this.prisma.$transaction(async (tx) => {

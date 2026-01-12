@@ -7,11 +7,7 @@ import {
 import { InvoiceScheduleRepository } from '../repositories/invoice-schedule.repository';
 import { ClientRepository } from '../../client/repositories/client.repository';
 import { PrismaService } from '../../../database/prisma.service';
-import {
-  CreateB2BScheduleDto,
-  UpdateB2BScheduleDto,
-  B2BScheduleResponseDto,
-} from '../invoice.dto';
+import { CreateB2BScheduleDto, UpdateB2BScheduleDto } from '../invoice.dto';
 import { ErrorInvoiceSchedule } from 'src/common/constants/errors';
 import { PrismaTransactionClient } from 'src/database/base.repository';
 
@@ -187,10 +183,7 @@ export class B2BInvoiceScheduleService {
   /**
    * Toggle B2B schedule active status
    */
-  async toggleSchedule(
-    scheduleUUID: string,
-    companyId: number,
-  ): Promise<any> {
+  async toggleSchedule(scheduleUUID: string, companyId: number): Promise<any> {
     return await this.prisma.$transaction(async (tx) => {
       const schedule = await this.findByUUID(scheduleUUID, tx);
 
@@ -279,7 +272,9 @@ export class B2BInvoiceScheduleService {
   /**
    * Get B2B schedules due for generation
    */
-  async getB2BSchedulesDueForGeneration(date: Date = new Date()): Promise<any[]> {
+  async getB2BSchedulesDueForGeneration(
+    date: Date = new Date(),
+  ): Promise<any[]> {
     return this.scheduleRepository.findB2BSchedulesDueForGeneration(date);
   }
 

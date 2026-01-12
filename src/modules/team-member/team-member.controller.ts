@@ -15,9 +15,10 @@ import {
   ApiForbiddenResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { Auth } from '../auth/decorators/auth.decorator';
-import { CurrentUser, UserWithCompany } from '../auth/decorators/current-user.decorator';
-import { JwtPayload } from '../../common/interfaces/jwt-payload';
+import {
+  CurrentUser,
+  UserWithCompany,
+} from '../auth/decorators/current-user.decorator';
 import { UpdateTeamMemberDto, TeamMemberResponseDto } from './team-member.dto';
 import { CompanyAuth } from '../auth/decorators/company-auth.decorator';
 
