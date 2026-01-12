@@ -137,7 +137,7 @@ export class UpdateCompanyDto {
     example: 'notifications@company.com',
   })
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: 'email must be a valid email address' })
   @Length(5, 255)
   notificationEmail?: string;
 

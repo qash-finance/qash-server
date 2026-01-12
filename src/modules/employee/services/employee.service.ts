@@ -326,11 +326,19 @@ export class EmployeeService {
           throw new BadRequestException(ErrorQuery.NotExists);
         }
 
-        const isNameDuplicate = await this.employeeRepository.findOne({
-          name: dto.name,
-        });
+        // Validate and sanitize name and address before checks
+        validateName(dto.name, 'name');
+        const sanitizedName = sanitizeString(dto.name);
 
-        if (isNameDuplicate) {
+        validateAddress(dto.walletAddress, 'walletAddress');
+
+        const { isDuplicate } = await this.isEmployeeNameDuplicate(
+          company.id,
+          sanitizedName,
+          group.id,
+        );
+
+        if (isDuplicate) {
           throw new BadRequestException(ErrorEmployee.NameAlreadyExists);
         }
 
@@ -344,7 +352,7 @@ export class EmployeeService {
           {
             company: { connect: { id: company.id } },
             group: { connect: { id: group.id } },
-            name: dto.name,
+            name: sanitizedName,
             walletAddress: dto.walletAddress,
             email: dto.email || null,
             token: dto.token ? JSON.parse(JSON.stringify(dto.token)) : null,

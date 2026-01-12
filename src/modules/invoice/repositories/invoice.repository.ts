@@ -3,6 +3,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { InvoiceModel } from '../../../database/generated/models/Invoice';
 import {
   InvoiceStatusEnum,
+  InvoiceTypeEnum,
   Prisma,
   PrismaClient,
 } from '../../../database/generated/client';
@@ -349,5 +350,383 @@ export class InvoiceRepository extends BaseRepository<
     });
 
     return result.count;
+  }
+
+  // =============================================================================
+  // B2B INVOICE METHODS
+  // =============================================================================
+
+  /**
+   * Generate B2B invoice number
+   * Format: INV-B2B-{0001}
+   * Sequence increments per recipient company per month
+   */
+  async generateB2BInvoiceNumber(
+    companyId: number,
+    toCompanyId?: number | null,
+    toCompanyName?: string | null,
+    tx?: PrismaTransactionClient,
+  ): Promise<string> {
+    const model = this.getModel(tx);
+    const prefix = `INV-B2B-`;
+
+    // Build where clause: filter by sender company, month, and recipient
+    const where: Prisma.InvoiceWhereInput = {
+      fromCompanyId: companyId,
+      invoiceType: InvoiceTypeEnum.B2B,
+      invoiceNumber: {
+        startsWith: prefix,
+      },
+    };
+
+    // If recipient company is identified, filter by it
+    if (toCompanyId) {
+      where.toCompanyId = toCompanyId;
+    } else if (toCompanyName) {
+      where.toCompanyName = toCompanyName;
+    }
+
+    // Get the latest B2B invoice for this company and recipient in the current month
+    const latestInvoice = await model.findFirst({
+      where,
+      orderBy: {
+        invoiceNumber: 'desc',
+      },
+      select: {
+        invoiceNumber: true,
+      },
+    });
+
+    let sequence = 1;
+    if (latestInvoice) {
+      // Extract the sequence number from the invoice number
+      const match = latestInvoice.invoiceNumber.match(/(\d{4})$/);
+      if (match) {
+        sequence = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    return `${prefix}${String(sequence).padStart(4, '0')}`;
+  }
+
+  /**
+   * Find B2B invoices by company with direction filter
+   */
+  async findB2BInvoicesByCompany(
+    companyId: number,
+    direction: 'sent' | 'received' | 'both',
+    filters: {
+      status?: InvoiceStatusEnum;
+      currency?: string;
+      search?: string;
+    },
+    pagination: { page: number; limit: number },
+    tx?: PrismaTransactionClient,
+  ): Promise<{
+    invoices: InvoiceWithRelations[];
+    total: number;
+  }> {
+    const model = this.getModel(tx);
+
+    // Build direction filter
+    let directionFilter: Prisma.InvoiceWhereInput = {};
+    if (direction === 'sent') {
+      directionFilter = { fromCompanyId: companyId };
+    } else if (direction === 'received') {
+      directionFilter = { toCompanyId: companyId };
+    } else {
+      directionFilter = {
+        OR: [{ fromCompanyId: companyId }, { toCompanyId: companyId }],
+      };
+    }
+
+    // Build where clause
+    const where: Prisma.InvoiceWhereInput = {
+      invoiceType: InvoiceTypeEnum.B2B,
+      ...directionFilter,
+      ...(filters.status && { status: filters.status }),
+      ...(filters.currency && { currency: filters.currency }),
+      ...(filters.search && {
+        OR: [
+          { invoiceNumber: { contains: filters.search, mode: 'insensitive' } },
+          { toCompanyName: { contains: filters.search, mode: 'insensitive' } },
+          {
+            toCompany: {
+              companyName: { contains: filters.search, mode: 'insensitive' },
+            },
+          },
+          {
+            fromCompany: {
+              companyName: { contains: filters.search, mode: 'insensitive' },
+            },
+          },
+        ],
+      }),
+    };
+
+    const [invoices, total] = await Promise.all([
+      model.findMany({
+        where,
+        include: {
+          payroll: {
+            include: {
+              company: true,
+            },
+          },
+          employee: {
+            include: {
+              group: true,
+            },
+          },
+          fromCompany: true,
+          toCompany: true,
+          items: true,
+          bill: true,
+        },
+        skip: (pagination.page - 1) * pagination.limit,
+        take: pagination.limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      model.count({ where }),
+    ]);
+
+    return { invoices, total };
+  }
+
+  /**
+   * Get B2B invoice statistics for a company
+   */
+  async getB2BStats(
+    companyId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<{
+    sent: {
+      totalDraft: number;
+      totalSent: number;
+      totalConfirmed: number;
+      totalPaid: number;
+      totalOverdue: number;
+      totalAmount: string;
+      totalAmountByCurrency: Record<string, string>;
+    };
+    received: {
+      totalSent: number;
+      totalConfirmed: number;
+      totalPaid: number;
+      totalOverdue: number;
+      totalAmount: string;
+      totalAmountByCurrency: Record<string, string>;
+    };
+  }> {
+    const model = this.getModel(tx);
+
+    const baseB2BWhere = { invoiceType: InvoiceTypeEnum.B2B };
+
+    // Sent invoices stats
+    const [
+      sentDraft,
+      sentSent,
+      sentConfirmed,
+      sentPaid,
+      sentOverdue,
+      sentInvoices,
+    ] = await Promise.all([
+      model.count({
+        where: {
+          ...baseB2BWhere,
+          fromCompanyId: companyId,
+          status: InvoiceStatusEnum.DRAFT,
+        },
+      }),
+      model.count({
+        where: {
+          ...baseB2BWhere,
+          fromCompanyId: companyId,
+          status: InvoiceStatusEnum.SENT,
+        },
+      }),
+      model.count({
+        where: {
+          ...baseB2BWhere,
+          fromCompanyId: companyId,
+          status: InvoiceStatusEnum.CONFIRMED,
+        },
+      }),
+      model.count({
+        where: {
+          ...baseB2BWhere,
+          fromCompanyId: companyId,
+          status: InvoiceStatusEnum.PAID,
+        },
+      }),
+      model.count({
+        where: {
+          ...baseB2BWhere,
+          fromCompanyId: companyId,
+          status: InvoiceStatusEnum.OVERDUE,
+        },
+      }),
+      model.findMany({
+        where: { ...baseB2BWhere, fromCompanyId: companyId },
+        select: { total: true, currency: true },
+      }),
+    ]);
+
+    // Received invoices stats
+    const [
+      receivedSent,
+      receivedConfirmed,
+      receivedPaid,
+      receivedOverdue,
+      receivedInvoices,
+    ] = await Promise.all([
+      model.count({
+        where: {
+          ...baseB2BWhere,
+          toCompanyId: companyId,
+          status: InvoiceStatusEnum.SENT,
+        },
+      }),
+      model.count({
+        where: {
+          ...baseB2BWhere,
+          toCompanyId: companyId,
+          status: InvoiceStatusEnum.CONFIRMED,
+        },
+      }),
+      model.count({
+        where: {
+          ...baseB2BWhere,
+          toCompanyId: companyId,
+          status: InvoiceStatusEnum.PAID,
+        },
+      }),
+      model.count({
+        where: {
+          ...baseB2BWhere,
+          toCompanyId: companyId,
+          status: InvoiceStatusEnum.OVERDUE,
+        },
+      }),
+      model.findMany({
+        where: { ...baseB2BWhere, toCompanyId: companyId },
+        select: { total: true, currency: true },
+      }),
+    ]);
+
+    // Calculate totals by currency
+    const calculateTotalsByCurrency = (
+      invoices: { total: string; currency: string }[],
+    ): {
+      totalAmount: string;
+      totalAmountByCurrency: Record<string, string>;
+    } => {
+      const byCurrency: Record<string, number> = {};
+      let totalAmount = 0;
+
+      for (const inv of invoices) {
+        const amount = parseFloat(inv.total);
+        totalAmount += amount;
+        byCurrency[inv.currency] = (byCurrency[inv.currency] || 0) + amount;
+      }
+
+      const totalAmountByCurrency: Record<string, string> = {};
+      for (const [currency, amount] of Object.entries(byCurrency)) {
+        totalAmountByCurrency[currency] = amount.toFixed(2);
+      }
+
+      return {
+        totalAmount: totalAmount.toFixed(2),
+        totalAmountByCurrency,
+      };
+    };
+
+    const sentTotals = calculateTotalsByCurrency(sentInvoices);
+    const receivedTotals = calculateTotalsByCurrency(receivedInvoices);
+
+    return {
+      sent: {
+        totalDraft: sentDraft,
+        totalSent: sentSent,
+        totalConfirmed: sentConfirmed,
+        totalPaid: sentPaid,
+        totalOverdue: sentOverdue,
+        ...sentTotals,
+      },
+      received: {
+        totalSent: receivedSent,
+        totalConfirmed: receivedConfirmed,
+        totalPaid: receivedPaid,
+        totalOverdue: receivedOverdue,
+        ...receivedTotals,
+      },
+    };
+  }
+
+  /**
+   * Find B2B invoice by UUID with public access (no company filter)
+   * Used for recipient confirmation via email link
+   */
+  async findB2BByUUIDPublic(
+    uuid: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<InvoiceWithRelations | null> {
+    const model = this.getModel(tx);
+    return model.findFirst({
+      where: {
+        uuid,
+        invoiceType: InvoiceTypeEnum.B2B,
+      },
+      include: {
+        payroll: {
+          include: {
+            company: true,
+          },
+        },
+        employee: {
+          include: {
+            group: true,
+          },
+        },
+        fromCompany: true,
+        toCompany: true,
+        items: true,
+        bill: true,
+      },
+    });
+  }
+
+  /**
+   * Find B2B invoice by UUID with company access check
+   */
+  async findB2BByUUIDWithAccess(
+    uuid: string,
+    companyId: number,
+    tx?: PrismaTransactionClient,
+  ): Promise<InvoiceWithRelations | null> {
+    const model = this.getModel(tx);
+    return model.findFirst({
+      where: {
+        uuid,
+        invoiceType: InvoiceTypeEnum.B2B,
+        OR: [{ fromCompanyId: companyId }, { toCompanyId: companyId }],
+      },
+      include: {
+        payroll: {
+          include: {
+            company: true,
+          },
+        },
+        employee: {
+          include: {
+            group: true,
+          },
+        },
+        fromCompany: true,
+        toCompany: true,
+        items: true,
+        bill: true,
+      },
+    });
   }
 }

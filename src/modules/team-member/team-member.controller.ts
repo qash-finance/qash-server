@@ -1,47 +1,31 @@
 import {
   Controller,
-  // Get,
-  // Post,
-  // Put,
-  // Delete,
-  // Body,
-  // Param,
-  // Query,
-  // ParseIntPipe,
-  // HttpCode,
-  // HttpStatus,
+  Put,
+  Body,
+  Param,
+  ParseIntPipe,
   Logger,
 } from '@nestjs/common';
 import { TeamMemberService } from './team-member.service';
 import {
   ApiTags,
-  // ApiOperation,
-  // ApiResponse,
-  // ApiBadRequestResponse,
-  // ApiNotFoundResponse,
-  // ApiForbiddenResponse,
-  // ApiQuery,
+  ApiOperation,
+  ApiResponse,
+  ApiNotFoundResponse,
+  ApiForbiddenResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
-import { Auth } from '../auth/decorators/auth.decorator';
-// import { CurrentUser } from '../auth/decorators/current-user.decorator';
-// import { JwtPayload } from '../../common/interfaces/jwt-payload';
-// import {
-//   CreateTeamMemberDto,
-//   UpdateTeamMemberDto,
-//   InviteTeamMemberDto,
-//   UpdateTeamMemberRoleDto,
-//   TeamMemberResponseDto,
-//   TeamMemberWithRelationsResponseDto,
-//   TeamMemberStatsResponseDto,
-//   TeamMemberSearchQueryDto,
-//   AcceptInvitationDto,
-//   BulkInviteTeamMembersDto,
-// } from './team-member.dto';
-// import { TeamMemberRoleEnum } from '../../database/generated/client';
+import {
+  CurrentUser,
+  UserWithCompany,
+} from '../auth/decorators/current-user.decorator';
+import { UpdateTeamMemberDto, TeamMemberResponseDto } from './team-member.dto';
+import { CompanyAuth } from '../auth/decorators/company-auth.decorator';
 
 @ApiTags('KYB - Team Management')
-@Auth()
+@ApiBearerAuth()
 @Controller('kyb')
+@CompanyAuth()
 export class TeamMemberController {
   private readonly logger = new Logger(TeamMemberController.name);
 
@@ -223,38 +207,38 @@ export class TeamMemberController {
   //   }
   // }
 
-  // @Put('team-members/:id')
-  // @ApiOperation({
-  //   summary: 'Update team member',
-  //   description: 'Update team member information (Owner/Admin or own profile)',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Team member updated successfully',
-  //   type: TeamMemberResponseDto,
-  // })
-  // @ApiNotFoundResponse({ description: 'Team member not found' })
-  // @ApiForbiddenResponse({ description: 'Insufficient permissions' })
-  // async updateTeamMember(
-  //   @Param('id', ParseIntPipe) teamMemberId: number,
-  //   @CurrentUser() user: JwtPayload,
-  //   @Body() updateDto: UpdateTeamMemberDto,
-  // ): Promise<TeamMemberResponseDto> {
-  //   try {
-  //     const teamMember = await this.teamMemberService.updateTeamMember(
-  //       teamMemberId,
-  //       user.sub,
-  //       updateDto,
-  //     );
-  //     return teamMember as TeamMemberResponseDto;
-  //   } catch (error) {
-  //     this.logger.error(
-  //       `Update team member ${teamMemberId} failed for user ${user.sub}:`,
-  //       error,
-  //     );
-  //     throw error;
-  //   }
-  // }
+  @Put('team-members/:id')
+  @ApiOperation({
+    summary: 'Update team member',
+    description: 'Update team member information (Owner/Admin or own profile)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Team member updated successfully',
+    type: TeamMemberResponseDto,
+  })
+  @ApiNotFoundResponse({ description: 'Team member not found' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
+  async updateTeamMember(
+    @Param('id', ParseIntPipe) teamMemberId: number,
+    @CurrentUser('withCompany') user: UserWithCompany,
+    @Body() updateDto: UpdateTeamMemberDto,
+  ): Promise<TeamMemberResponseDto> {
+    try {
+      const teamMember = await this.teamMemberService.updateTeamMember(
+        teamMemberId,
+        user.internalUserId,
+        updateDto,
+      );
+      return teamMember as TeamMemberResponseDto;
+    } catch (error) {
+      this.logger.error(
+        `Update team member ${teamMemberId} failed for user ${user.sub}:`,
+        error,
+      );
+      throw error;
+    }
+  }
 
   // @Put('team-members/:id/role')
   // @ApiOperation({
